@@ -61,8 +61,9 @@ parameters:
 
   # Build options
   cmakeListsTxtPath: '$(Build.SourcesDirectory)/CMakeLists.txt'
-  cmakeConfigArgs: ''
   cmakeBuildConfigurations: [Debug, RelWithDebInfo]
+  cmakeGenerator: 'Ninja'
+  cmakeConfigArgs: ''
   cmakeBuildArgs: ''
   cmakeTestArgs: ''
 
@@ -78,6 +79,7 @@ parameters:
 #    target.vcpkgArgs: '' # appends to parameters.vcpkgArgs
 #    target.vcpkgPackages: '' # appends to parameters.vcpkgPackages
 #    target.cudaPackages: [] # appends to parameters.cudaPackages
+#    target.cmakeGenerator: '' # overrides parameters.cmakeGenerator
 #    target.cmakeConfigArgs: '' # appends to parameters.cmakeConfigArgs
 #    target.cmakeBuildArgs: '' # appends to parameters.cmakeBuildArgs
 #    target.cmakeTestArgs: '' # appends to parameters.cmakeTestArgs
@@ -300,8 +302,8 @@ jobs:
               cmakeListsTxtPath: '${{ parameters.cmakeListsTxtPath }}'
               useVcpkgToolchainFile: true
               buildDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
-              cmakeAppendedArgs: '-G Ninja $(finalCMakeConfigArgs) -DCMAKE_BUILD_TYPE=${{ config }}'
-              buildWithCMakeArgs: '--parallel --verbose $(finalCMakeBuildArgs)'
+              cmakeAppendedArgs: '-G "${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}" $(finalCMakeConfigArgs) -DCMAKE_BUILD_TYPE=${{ config }}'
+              buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(finalCMakeBuildArgs)'
 
           - pwsh: |
               & ctest -V -T Test $env:finalCMakeTestArgs
