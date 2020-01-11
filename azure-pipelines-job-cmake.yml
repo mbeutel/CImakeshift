@@ -1,5 +1,5 @@
 # Azure Pipelines job template for CMake builds
-# Version 0.1.4
+# Version 0.2.0
 # Author: Moritz Beutel
 #
 #
@@ -19,7 +19,7 @@
 # Supported compiler versions:
 #
 # Windows:
-#   MSVC: 2015, 2017, 2019
+#   MSVC: 19_0, 19_1, 19_2
 #   Clang: 9
 #   NVCC: 10_1, 10_2
 #
@@ -89,11 +89,11 @@ jobs:
       - job: '${{ coalesce(target.os, parameters.os) }}_${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}${{ cxxCompilerVersion }}_${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}_${{ target.displayTag }}_${{ platform }}'
         pool:
           name: Azure Pipelines
-          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'Clang'), le(9, cxxCompilerVersion)), and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'MSVC'), eq(cxxCompilerVersion, '2019')))) }}:
+          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'Clang'), le(9, cxxCompilerVersion)), and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'MSVC'), eq(cxxCompilerVersion, '19_2')))) }}:
             vmImage: 'windows-2019'
-          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), eq(cxxCompilerVersion, '2017')) }}:
+          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), eq(cxxCompilerVersion, '19_1')) }}:
             vmImage: 'vs2017-win2016'
-          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), eq(cxxCompilerVersion, '2015')) }}:
+          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), eq(cxxCompilerVersion, '19_0')) }}:
             vmImage: 'vs2015-win2012r2'
           ${{ if eq(coalesce(target.os, parameters.os), 'Linux') }}:
             vmImage: 'ubuntu-18.04'
