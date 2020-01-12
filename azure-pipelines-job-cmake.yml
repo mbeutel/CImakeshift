@@ -93,8 +93,10 @@ parameters:
 
 jobs:
 - ${{ each target in parameters.targets }}:
-  - ${{ each platform in coalesce(target.platforms, parameters.platforms) }}:
-    - ${{ each cxxCompilerVersion in coalesce(target.cxxCompilerVersions, parameters.cxxCompilerVersions) }}:
+  #- ${{ each platform in coalesce(target.platforms, parameters.platforms) }}:
+  - ${{ each platform in target.platforms }}:
+    #- ${{ each cxxCompilerVersion in coalesce(target.cxxCompilerVersions, parameters.cxxCompilerVersions) }}:
+    - ${{ each cxxCompilerVersion in target.cxxCompilerVersions }}:
       - job: '${{ coalesce(target.os, parameters.os) }}_${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}${{ cxxCompilerVersion }}_${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}_${{ coalesce(target.tag, parameters.tag) }}_${{ platform }}'
         pool:
           name: Azure Pipelines
@@ -118,7 +120,7 @@ jobs:
             elseif ($IsLinux) { $tripletOS = "linux" }
             elseif ($IsMacOS) { $tripletOS = "osx" }
             $vcpkgTriplet = "${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}" -replace "<os>","$tripletOS" -replace "<platform>","${{ platform }}"
-            $cudaPackagesRaw = ("${{ join(' ', coalesce(target.cudaPackages)) }}" -replace "<cudaPackages>","${{ join(' ', parameters.cudaPackages) }}" -replace '\s+',' ').Trim() + ' '
+            $cudaPackagesRaw = ("${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}" -replace "<cudaPackages>","${{ join(' ', parameters.cudaPackages) }}" -replace '\s+',' ').Trim() + ' '
             $cmakeGenerator = "${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}"
             if ($IsWindows) {
                 $msvcVersion_msbuildGenerator = @{
@@ -330,7 +332,8 @@ jobs:
           displayName: Set environment variables
           condition: eq(variables['Agent.OS'], 'Darwin')
 
-        - ${{ each config in coalesce(target.cmakeBuildConfigurations, parameters.cmakeBuildConfigurations) }}:
+        #- ${{ each config in coalesce(target.cmakeBuildConfigurations, parameters.cmakeBuildConfigurations) }}:
+        - ${{ each config in parameters.cmakeBuildConfigurations }}:
           - task: run-cmake@0
             displayName: 'Build ${{ config }}'
             inputs:
