@@ -124,23 +124,24 @@ jobs:
             $cudaPackagesRaw = ('${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}' -replace '<cudaPackages>','${{ join(' ', parameters.cudaPackages) }}' -replace '\s+',' ').Trim() + ' '
             $cmakeGenerator = '${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}'
             if ($IsWindows) {
-                $msvcVersion_msbuildGenerator = @{
-                    #'19'   = 'Visual Studio 14 2015'
-                    '19_1' = 'Visual Studio 15 2017'
-                    '19_2' = 'Visual Studio 16 2019'
+                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
+                    $msvcVersion_msbuildGenerator = @{
+                        #'19'   = 'Visual Studio 14 2015'
+                        '19_1' = 'Visual Studio 15 2017'
+                        '19_2' = 'Visual Studio 16 2019'
+                    }
+                    $cmakeGenerator = $cmakeGenerator -replace 'MSBuild',$msvcVersion_msbuildGenerator['${{ cxxCompilerVersion }}']
+                    #echo "##vso[task.setvariable variable=CC]cl.exe"
+                    #echo "##vso[task.setvariable variable=CXX]cl.exe"
                 }
-                $cmakeGenerator = $cmakeGenerator -replace 'MSBuild',$msvcVersion_msbuildGenerator['${{ cxxCompilerVersion }}']
-                #if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
-                #    echo "##vso[task.setvariable variable=CC]cl.exe"
-                #    echo "##vso[task.setvariable variable=CXX]cl.exe"
-                #}
-                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
+                elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
                     #$clangClPath = Join-Path $vsPath 'VC\Tools\Llvm\bin\clang-cl.exe'
                     $llvmRoot = "${env:ProgramFiles}\LLVM\bin"
                     echo "##vso[task.setvariable variable=Path]$llvmRoot;${env:Path}"
                     $clangClPath = "$llvmRoot\clang-cl.exe"
                     $clangClCompatPath = $clangClPath -replace '\\','/'
+                    $cmakeGenerator = $cmakeGenerator -replace 'MSBuild','Visual Studio 16 2019'
                     $cmakeCompilerFlag = "-DCMAKE_C_COMPILER=`"$clangClCompatPath`" -DCMAKE_CXX_COMPILER=`"$clangClCompatPath`""
                     if ('${{ platform }}' -eq 'x86') {
                         # Workaround for https://gitlab.kitware.com/cmake/cmake/issues/16259
@@ -362,21 +363,39 @@ jobs:
           condition: eq(variables['Agent.OS'], 'Darwin')
 
         #- ${{ each config in coalesce(target.cmakeBuildConfigurations, parameters.cmakeBuildConfigurations) }}:
-        - ${{ each config in parameters.cmakeBuildConfigurations }}:
-          - task: run-cmake@0
-            displayName: 'Build ${{ config }}'
-            inputs:
-              cmakeListsOrSettingsJson: 'CMakeListsTxtAdvanced'
-              cmakeListsTxtPath: '${{ parameters.cmakeListsTxtPath }}'
-              useVcpkgToolchainFile: true
-              buildDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
-              cmakeAppendedArgs: '-G "$(CI_CMAKE_GENERATOR)" $(CI_CMAKE_CONFIG_ARGS) -DCMAKE_BUILD_TYPE=${{ config }}'
-              buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CI_CMAKE_BUILD_ARGS)'
+        - ${{ if not(target.cmakeBuildConfigurations) }}:
+          - ${{ each config in parameters.cmakeBuildConfigurations }}:
+            - task: run-cmake@0
+              displayName: 'Build ${{ config }}'
+              inputs:
+                cmakeListsOrSettingsJson: 'CMakeListsTxtAdvanced'
+                cmakeListsTxtPath: '${{ parameters.cmakeListsTxtPath }}'
+                useVcpkgToolchainFile: true
+                buildDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
+                cmakeAppendedArgs: '-G "$(CI_CMAKE_GENERATOR)" $(CI_CMAKE_CONFIG_ARGS) -DCMAKE_BUILD_TYPE=${{ config }}'
+                buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CI_CMAKE_BUILD_ARGS)'
 
-          - pwsh: |
-              & ctest --verbose --test-action Test --build-config ${{ config }} $env:CI_CMAKE_TEST_ARGS
-            displayName: 'Run tests for ${{ config }}'
-            workingDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
+            - pwsh: |
+                & ctest --verbose --test-action Test --build-config ${{ config }} $env:CI_CMAKE_TEST_ARGS
+              displayName: 'Run tests for ${{ config }}'
+              workingDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
+
+        - ${{ if target.cmakeBuildConfigurations }}:
+          - ${{ each config in target.cmakeBuildConfigurations }}:
+            - task: run-cmake@0
+              displayName: 'Build ${{ config }}'
+              inputs:
+                cmakeListsOrSettingsJson: 'CMakeListsTxtAdvanced'
+                cmakeListsTxtPath: '${{ parameters.cmakeListsTxtPath }}'
+                useVcpkgToolchainFile: true
+                buildDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
+                cmakeAppendedArgs: '-G "$(CI_CMAKE_GENERATOR)" $(CI_CMAKE_CONFIG_ARGS) -DCMAKE_BUILD_TYPE=${{ config }}'
+                buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CI_CMAKE_BUILD_ARGS)'
+
+            - pwsh: |
+                & ctest --verbose --test-action Test --build-config ${{ config }} $env:CI_CMAKE_TEST_ARGS
+              displayName: 'Run tests for ${{ config }}'
+              workingDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
 
         - task: PublishTestResults@2
           displayName: Publish test results
