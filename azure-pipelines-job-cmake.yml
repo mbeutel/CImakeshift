@@ -118,8 +118,7 @@ jobs:
             elseif ($IsLinux) { $tripletOS = "linux" }
             elseif ($IsMacOS) { $tripletOS = "osx" }
             $vcpkgTriplet = "${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}" -replace "<os>","$tripletOS" -replace "<platform>","${{ platform }}"
-            $parametersCudaPackagesRaw = "${{ join(' ', coalesce(parameters.cudaPackages)) }}"
-            $cudaPackagesRaw = ("${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}" -replace "<cudaPackages>",$parametersCudaPackagesRaw -replace '\s+',' ').Trim() + ' '
+            $cudaPackagesRaw = ("${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}" -replace "<cudaPackages>","${{ join(' ', parameters.cudaPackages) }}" -replace '\s+',' ').Trim() + ' '
             $cmakeGenerator = "${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}"
             if ($IsWindows) {
                 $msvcVersion_msbuildGenerator = @{
