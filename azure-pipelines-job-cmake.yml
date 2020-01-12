@@ -228,7 +228,7 @@ jobs:
             key: '"$(buildCacheKey)"'
             path: '$(Build.BinariesDirectory)/dependencies'
             cacheHitVar: 'dependencyCacheHit'
-          condition: and(parameters.cache, ne('${{ parameters.vcpkgRef }}', ''))
+          condition: and(eq(parameters.cache, True), ne('${{ parameters.vcpkgRef }}', ''))
 
         - pwsh: |
             if ($IsWindows) {
