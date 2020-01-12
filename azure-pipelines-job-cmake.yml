@@ -147,7 +147,7 @@ jobs:
                 if('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
                     $cudaVersion = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}' -replace '_','.'
                     $cmakeCudaCompilerFlag = "-DCMAKE_CUDA_COMPILER=`"$env:SystemDrive/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v$cudaVersion/bin/nvcc.exe`""
-                    $cudaPackages = "nvcc $cudaPackagesRaw" -replace '\s+',' ' -replace ' ',"_$cudaVersion "
+                    $cudaPackages = ("nvcc $cudaPackagesRaw" -replace '\s+',' ' -replace ' ',"_$cudaVersion ").Trim()
                 }
                 #echo "##vso[task.setvariable variable=Path]$(Build.BinariesDirectory)/dependencies/cmake/bin;${env:Path}"
             }
@@ -175,7 +175,7 @@ jobs:
                     $cudaVersion = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}' -replace '_','.'
                     $cmakeCudaCompilerFlag = "-DCMAKE_CUDA_COMPILER=`"/usr/local/cuda-$cudaVersion/bin/nvcc`""
                     $cudaVersion_Dash = $cudaVersion -replace '\.','-'
-                    $cudaPackages = "cuda-core cuda-cudart-dev $cudaPackagesRaw" -replace '\s+',' ' -replace ' ',"-$cudaVersion_Dash "
+                    $cudaPackages = ("cuda-core cuda-cudart-dev $cudaPackagesRaw" -replace '\s+',' ' -replace ' ',"-$cudaVersion_Dash ").Trim()
                 }
             }
             elseif ($IsMacOS) {
@@ -229,6 +229,7 @@ jobs:
           condition: and(${{ parameters.cache }}, ne('${{ parameters.vcpkgRef }}', ''))
 
         - pwsh: |
+            Get-ChildItem env:
             if ($IsWindows) {
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     $clangVersion = '${{ cxxCompilerVersion }}.0.0'
@@ -242,8 +243,8 @@ jobs:
                         '10.2' = 'http://developer.download.nvidia.com/compute/cuda/10.2/Prod/network_installers/cuda_10.2.89_win10_network.exe'
                     }
                     Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
-                    Write-Host "Installing CUDA packages $env:cudaPackages"
-                    Start-Process -Wait "$HOME/cuda_installer_network.exe" '-s' $env:cudaPackages
+                    Write-Host "[CImakeshift] Installing CUDA packages $env:cudaPackages"
+                    Start-Process -Wait "$HOME/cuda_installer_network.exe" (@('-s') + ($env:cudaPackages -split ' '))
                 }
             }
             elseif ($IsLinux) {
@@ -256,7 +257,18 @@ jobs:
                     $packages += ('gcc-${{ cxxCompilerVersion }}', 'g++-${{ cxxCompilerVersion }}')
                 }
                 elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
-                    & sudo apt-add-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-$env:clangFullVersion main"
+                    $clangVersion_Repository = @{
+                        '4' = ''
+                        '5' = 'llvm-toolchain-bionic-5.0'
+                        '6' = 'llvm-toolchain-bionic-6.0'
+                        '7' = 'llvm-toolchain-bionic-7'
+                        '8' = 'llvm-toolchain-bionic-8'
+                        '9' = 'llvm-toolchain-bionic-9'
+                    }
+                    $clangRepository = $clangVersion_Repository['${{ cxxCompilerVersion }}']
+                    if ($clangRepository) {
+                        & sudo apt-add-repository "deb http://apt.llvm.org/bionic/ $clangRepository main"
+                    }
                     $packages += "clang-$env:clangFullVersion"
                 }
                 if ('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
@@ -267,14 +279,14 @@ jobs:
                         '10.2' = "cuda-repo-${ubuntuVersion}_10.2.89-1_amd64.deb"
                     }
                     $installer = $cudaVersion_installer[$cudaVersion]
-                    & wget http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/$installer
-                    & sudo dpkg -i $installer
                     & wget https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub
                     & sudo apt-key add 7fa2af80.pub
+                    & wget http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/$installer
+                    & sudo dpkg -i $installer
                     $packages += $env:cudaPackages -split ' '
                 }
                 & sudo apt-get update
-                Write-Host "Installing packages $packages"
+                Write-Host "[CImakeshift] Installing packages $packages"
                 & sudo apt-get install $packages
                 & ln -s /usr/bin/cmake $HOME/bin/cmake
                 & ln -s /usr/bin/ctest $HOME/bin/ctest
