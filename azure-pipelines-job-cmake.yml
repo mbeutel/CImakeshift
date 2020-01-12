@@ -123,7 +123,6 @@ jobs:
             $vcpkgTriplet = '${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}' -replace '<os>',$tripletOS -replace '<platform>','${{ platform }}'
             $cudaPackagesRaw = ('${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}' -replace '<cudaPackages>','${{ join(' ', parameters.cudaPackages) }}' -replace '\s+',' ').Trim() + ' '
             $cmakeGenerator = '${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}'
-            $path = ${env:Path}
             if ($IsWindows) {
                 $msvcVersion_msbuildGenerator = @{
                     #'19'   = 'Visual Studio 14 2015'
@@ -135,7 +134,7 @@ jobs:
                     #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
                     #$clangClPath = Join-Path $vsPath 'VC\Tools\Llvm\bin\clang-cl.exe'
                     $llvmRoot = "${env:ProgramFiles}\LLVM\bin"
-                    $path = "$llvmRoot;$path"
+                    echo "##vso[task.setvariable variable=Path]$llvmRoot;${env:Path}"
                     $clangClPath = "$llvmRoot\clang-cl.exe"
                     $clangClCompatPath = $clangClPath -replace '\\','/'
                     $cmakeCompilerFlag = "-DCMAKE_C_COMPILER=`"$clangClCompatPath`" -DCMAKE_CXX_COMPILER=`"$clangClCompatPath`""
@@ -150,9 +149,10 @@ jobs:
                     $cmakeCudaCompilerFlag = "-DCMAKE_CUDA_COMPILER=`"$env:SystemDrive/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v$cudaVersion/bin/nvcc.exe`""
                     $cudaPackages = "nvcc $cudaPackagesRaw" -replace '\s+',' ' -replace ' ',"_$cudaVersion "
                 }
+                #echo "##vso[task.setvariable variable=Path]$(Build.BinariesDirectory)/dependencies/cmake/bin;${env:Path}"
             }
             elseif ($IsLinux) {
-                New-Item -Type Directory -Force $HOME/bin
+                New-Item -Type Directory -Force "$HOME/bin"
                 echo "##vso[task.setvariable variable=PATH]$HOME/bin:${env:PATH}"
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     echo '##vso[task.setvariable variable=CC]gcc-${{ cxxCompilerVersion }}'
@@ -208,8 +208,6 @@ jobs:
             $cmakeTestArgs = '${{ join(' ', coalesce(target.cmakeTestArgs, parameters.cmakeTestArgs)) }}' -replace '<cmakeTestArgs>','${{ join(' ', parameters.cmakeTestArgs) }}'
             echo "##vso[task.setvariable variable=buildCacheKey]$buildCacheKey"
             echo "##vso[task.setvariable variable=clangFullVersion]$clangFullVersion"
-            #echo "##vso[task.setvariable variable=Path]$(Build.BinariesDirectory)/dependencies/cmake/bin;${env:Path}"
-            echo "##vso[task.setvariable variable=Path]$path"
             echo "##vso[task.setvariable variable=vcpkgRepo]$vcpkgRepo"
             echo '##vso[task.setvariable variable=VCPKG_ROOT]$(Build.BinariesDirectory)/dependencies/vcpkg'
             echo "##vso[task.setvariable variable=VCPKG_TRIPLET]$vcpkgTriplet"
