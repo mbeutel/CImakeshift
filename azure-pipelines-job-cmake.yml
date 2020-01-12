@@ -191,7 +191,7 @@ jobs:
             }
             $vcpkgArgs = '${{ coalesce(target.vcpkgArgs, parameters.vcpkgArgs) }}' -replace '<vcpkgArgs>','${{ parameters.vcpkgArgs }}'
             $vcpkgPackages = '${{ join(' ', coalesce(target.vcpkgPackages, parameters.vcpkgPackages)) }}' -replace '<vcpkgPackages>','${{ join(' ', parameters.vcpkgPackages) }}'
-            $buildCacheKey = @(
+            $cacheKey = @(
                 "revision-$revision",
                 '${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}${{ cxxCompilerVersion }}',
                 '${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}',
@@ -206,24 +206,24 @@ jobs:
             $cmakeConfigArgs = '${{ join(' ', coalesce(target.cmakeConfigArgs, parameters.cmakeConfigArgs)) }}' -replace '<cmakeConfigArgs>','${{ join(' ', parameters.cmakeConfigArgs) }}'
             $cmakeBuildArgs = '${{ join(' ', coalesce(target.cmakeBuildArgs, parameters.cmakeBuildArgs)) }}' -replace '<cmakeBuildArgs>','${{ join(' ', parameters.cmakeBuildArgs) }}'
             $cmakeTestArgs = '${{ join(' ', coalesce(target.cmakeTestArgs, parameters.cmakeTestArgs)) }}' -replace '<cmakeTestArgs>','${{ join(' ', parameters.cmakeTestArgs) }}'
-            echo "##vso[task.setvariable variable=buildCacheKey]$buildCacheKey"
-            echo "##vso[task.setvariable variable=clangFullVersion]$clangFullVersion"
-            echo "##vso[task.setvariable variable=vcpkgRepo]$vcpkgRepo"
+            echo "##vso[task.setvariable variable=CI_CACHE_KEY]$cacheKey"
+            echo "##vso[task.setvariable variable=CI_CLANG_FULL_VERSION]$clangFullVersion"
+            echo "##vso[task.setvariable variable=CI_VCPKG_REPO]$vcpkgRepo"
             echo '##vso[task.setvariable variable=VCPKG_ROOT]$(Build.BinariesDirectory)/dependencies/vcpkg'
             echo "##vso[task.setvariable variable=VCPKG_TRIPLET]$vcpkgTriplet"
-            echo "##vso[task.setvariable variable=vcpkgArgs]$vcpkgArgs"
-            echo "##vso[task.setvariable variable=vcpkgPackages]$vcpkgPackages"
-            echo "##vso[task.setvariable variable=cudaPackages]$cudaPackages"
-            echo "##vso[task.setvariable variable=cmakeGenerator]$cmakeGenerator"
-            echo "##vso[task.setvariable variable=cmakeConfigArgs]$cmakeCompilerFlag $cmakeCudaCompilerFlag $cmakeConfigArgs"
-            echo "##vso[task.setvariable variable=cmakeBuildArgs]$cmakeBuildArgs"
-            echo "##vso[task.setvariable variable=cmakeTestArgs]$cmakeTestArgs"
+            echo "##vso[task.setvariable variable=CI_VCPKG_ARGS]$vcpkgArgs"
+            echo "##vso[task.setvariable variable=CI_VCPKG_PACKAGES]$vcpkgPackages"
+            echo "##vso[task.setvariable variable=CI_CUDA_PACKAGES]$cudaPackages"
+            echo "##vso[task.setvariable variable=CI_CMAKE_GENERATOR]$cmakeGenerator"
+            echo "##vso[task.setvariable variable=CI_CMAKE_CONFIG_ARGS]$cmakeCompilerFlag $cmakeCudaCompilerFlag $cmakeConfigArgs"
+            echo "##vso[task.setvariable variable=CI_CMAKE_BUILD_ARGS]$cmakeBuildArgs"
+            echo "##vso[task.setvariable variable=CI_CMAKE_TEST_ARGS]$cmakeTestArgs"
           displayName: Set environment variables
 
         - task: Cache@2
           displayName: Cache dependencies
           inputs:
-            key: '"$(buildCacheKey)"'
+            key: '"$(CI_CACHE_KEY)"'
             path: '$(Build.BinariesDirectory)/dependencies'
             cacheHitVar: 'dependencyCacheHit'
           condition: and(${{ parameters.cache }}, ne('${{ parameters.vcpkgRef }}', ''))
@@ -243,8 +243,8 @@ jobs:
                         '10.2' = 'http://developer.download.nvidia.com/compute/cuda/10.2/Prod/network_installers/cuda_10.2.89_win10_network.exe'
                     }
                     Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
-                    Write-Host "[CImakeshift] Installing CUDA packages $env:cudaPackages"
-                    Start-Process -Wait "$HOME/cuda_installer_network.exe" (@('-s') + ($env:cudaPackages -split ' '))
+                    Write-Host "[CImakeshift] Installing CUDA packages $env:CI_CUDA_PACKAGES"
+                    Start-Process -Wait "$HOME/cuda_installer_network.exe" (@('-s') + ($env:CI_CUDA_PACKAGES -split ' '))
                 }
             }
             elseif ($IsLinux) {
@@ -269,7 +269,7 @@ jobs:
                     if ($clangRepository) {
                         & sudo apt-add-repository "deb http://apt.llvm.org/bionic/ $clangRepository main"
                     }
-                    $packages += "clang-$env:clangFullVersion"
+                    $packages += "clang-$env:CI_CLANG_FULL_VERSION"
                 }
                 if ('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
                     $cudaVersion = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}' -replace '_','.'
@@ -283,7 +283,7 @@ jobs:
                     & sudo apt-key add 7fa2af80.pub
                     & wget http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/$installer
                     & sudo dpkg -i $installer
-                    $packages += $env:cudaPackages -split ' '
+                    $packages += $env:CI_CUDA_PACKAGES -split ' '
                 }
                 & sudo apt-get update
                 Write-Host "[CImakeshift] Installing packages $packages"
@@ -309,10 +309,10 @@ jobs:
                 & git checkout --quiet --force ${{ parameters.vcpkgOverlayRef }}
                 New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports'
                 New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets'
-                echo '##vso[task.setvariable variable=vcpkgOverlayArgs]--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
+                echo '##vso[task.setvariable variable=CI_VCPKG_OVERLAY_ARGS]--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
             }
             else {
-                echo '##vso[task.setvariable variable=vcpkgOverlayArgs]'
+                echo '##vso[task.setvariable variable=CI_VCPKG_OVERLAY_ARGS]'
             }
           displayName: Clone Vcpkg overlay repository
           condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ parameters.vcpkgRef }}', ''))
@@ -321,10 +321,10 @@ jobs:
           displayName: Run Vcpkg to install dependencies
           inputs:
             vcpkgDirectory: '$(Build.BinariesDirectory)/dependencies/vcpkg'
-            vcpkgGitURL: '$(vcpkgRepo)'
+            vcpkgGitURL: '$(CI_VCPKG_REPO)'
             vcpkgGitCommitId: '${{ parameters.vcpkgRef }}'
             vcpkgTriplet: '$(VCPKG_TRIPLET)'
-            vcpkgArguments: '$(vcpkgOverlayArgs) $(vcpkgArgs) $(vcpkgPackages)'
+            vcpkgArguments: '$(CI_VCPKG_OVERLAY_ARGS) $(CI_VCPKG_ARGS) $(CI_VCPKG_PACKAGES)'
           condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ parameters.vcpkgRef }}', ''))
 
         - pwsh: |
@@ -366,11 +366,11 @@ jobs:
               cmakeListsTxtPath: '${{ parameters.cmakeListsTxtPath }}'
               useVcpkgToolchainFile: true
               buildDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
-              cmakeAppendedArgs: '-G "$(cmakeGenerator)" $(cmakeConfigArgs) -DCMAKE_BUILD_TYPE=${{ config }}'
-              buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(cmakeBuildArgs)'
+              cmakeAppendedArgs: '-G "$(CI_CMAKE_GENERATOR)" $(CI_CMAKE_CONFIG_ARGS) -DCMAKE_BUILD_TYPE=${{ config }}'
+              buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CI_CMAKE_BUILD_ARGS)'
 
           - pwsh: |
-              & ctest --verbose --test-action Test --build-config ${{ config }} $env:cmakeTestArgs
+              & ctest --verbose --test-action Test --build-config ${{ config }} $env:CI_CMAKE_TEST_ARGS
             displayName: 'Run tests for ${{ config }}'
             workingDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
 
