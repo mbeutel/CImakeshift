@@ -307,9 +307,9 @@ jobs:
           condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ parameters.vcpkgRef }}', ''))
 
         - pwsh: |
-            Remove-Item -Recurse -Force "$(Build.BinariesDirectory)/dependencies/vcpkg/buildtrees"
-            Remove-Item -Recurse -Force "$(Build.BinariesDirectory)/dependencies/vcpkg/downloads"
-            Remove-Item -Recurse -Force "$(Build.BinariesDirectory)/dependencies/vcpkg/packages"
+            Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/buildtrees'
+            Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/downloads'
+            Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/packages'
           displayName: Delete temporary files
           condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ parameters.vcpkgRef }}', ''))
 
