@@ -102,7 +102,7 @@ jobs:
             vmImage: 'windows-2019'
           ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), eq(cxxCompilerVersion, '19_1')) }}:
             vmImage: 'vs2017-win2016'
-          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), eq(cxxCompilerVersion, '19_0')) }}:
+          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), eq(cxxCompilerVersion, '19')) }}:
             vmImage: 'vs2015-win2012r2'
           ${{ if eq(coalesce(target.os, parameters.os), 'Linux') }}:
             vmImage: 'ubuntu-18.04'
@@ -120,7 +120,14 @@ jobs:
             $vcpkgTriplet = "${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}" -replace "<os>","$tripletOS" -replace "<platform>","${{ platform }}"
             $parametersCudaPackagesRaw = "${{ join(' ', coalesce(parameters.cudaPackages)) }}"
             $cudaPackagesRaw = ("${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}" -replace "<cudaPackages>",$parametersCudaPackagesRaw -replace '\s+',' ').Trim() + ' '
+            $cmakeGenerator = "${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}"
             if ($IsWindows) {
+                $msvcVersion_msbuildGenerator = @{
+                    '19'   = 'Visual Studio 14 2015'
+                    '19_1' = 'Visual Studio 15 2017'
+                    '19_2' = 'Visual Studio 16 2019'
+                }
+                $cmakeGenerator = $cmakeGenerator -replace 'MSBuild',msvcVersion_msbuildGenerator["${{ cxxCompilerVersion }}"]
                 if ("${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}" -eq "Clang") {
                     #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
                     #$clangClPath = Join-Path $vsPath 'VC\Tools\Llvm\bin\clang-cl.exe'
@@ -192,6 +199,7 @@ jobs:
             echo "##vso[task.setvariable variable=vcpkgArgs]$vcpkgArgs"
             echo "##vso[task.setvariable variable=vcpkgPackages]$vcpkgPackages"
             echo "##vso[task.setvariable variable=cudaPackages]$cudaPackages"
+            echo "##vso[task.setvariable variable=cmakeGenerator]$cmakeGenerator"
             echo "##vso[task.setvariable variable=cmakeConfigArgs]$cmakeCompilerFlag $cmakeCudaCompilerFlag $cmakeConfigArgs"
             echo "##vso[task.setvariable variable=cmakeBuildArgs]$cmakeBuildArgs"
             echo "##vso[task.setvariable variable=cmakeTestArgs]$cmakeTestArgs"
@@ -331,7 +339,7 @@ jobs:
               cmakeListsTxtPath: '${{ parameters.cmakeListsTxtPath }}'
               useVcpkgToolchainFile: true
               buildDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
-              cmakeAppendedArgs: '-G "${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}" $(cmakeConfigArgs) -DCMAKE_BUILD_TYPE=${{ config }}'
+              cmakeAppendedArgs: '-G "$(cmakeGenerator)" $(cmakeConfigArgs) -DCMAKE_BUILD_TYPE=${{ config }}'
               buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(cmakeBuildArgs)'
 
           - pwsh: |
