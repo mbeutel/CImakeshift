@@ -220,7 +220,7 @@ jobs:
             echo "##vso[task.setvariable variable=cmakeTestArgs]$cmakeTestArgs"
           displayName: Set environment variables
 
-        - task: CacheBeta@1
+        - task: Cache@2
           displayName: Cache dependencies
           inputs:
             key: '"$(buildCacheKey)"'
