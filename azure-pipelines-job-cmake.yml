@@ -128,7 +128,7 @@ jobs:
                     '19_1' = 'Visual Studio 15 2017'
                     '19_2' = 'Visual Studio 16 2019'
                 }
-                $cmakeGenerator = $cmakeGenerator -replace 'MSBuild',msvcVersion_msbuildGenerator["${{ cxxCompilerVersion }}"]
+                $cmakeGenerator = $cmakeGenerator -replace 'MSBuild',$msvcVersion_msbuildGenerator["${{ cxxCompilerVersion }}"]
                 if ("${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}" -eq "Clang") {
                     #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
                     #$clangClPath = Join-Path $vsPath 'VC\Tools\Llvm\bin\clang-cl.exe'
