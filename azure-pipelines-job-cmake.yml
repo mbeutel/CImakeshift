@@ -350,7 +350,7 @@ jobs:
                     # Cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell
                     $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
                     $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvarsall.bat"
-                    & cmd.exe /c "call `"$vcvarsPath`" && set > %temp%\vcvars.txt"
+                    & cmd.exe /c "call `"$vcvarsPath` ${{ platform }}" && set > %temp%\vcvars.txt"
                     Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
                         if ($_ -match '^(.*?)=(.*)$') {
                             echo "##vso[task.setvariable variable=$matches[1]]$matches[2]"
