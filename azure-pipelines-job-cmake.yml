@@ -401,9 +401,9 @@ jobs:
 
             - pwsh: |
                 echo $env:CI_CMAKE_TEST_ARGS
-                echo "$env:CI_CMAKE_TEST_ARGS"
+                & ctest -N
+                & ctest --verbose --test-action Test --build-config ${{ config }}
                 & ctest --verbose --test-action Test --build-config ${{ config }} $env:CI_CMAKE_TEST_ARGS
-                & ctest --verbose --test-action Test --build-config ${{ config }} "$env:CI_CMAKE_TEST_ARGS"
               displayName: 'Run tests for ${{ config }}'
               workingDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
 
@@ -421,9 +421,9 @@ jobs:
 
             - pwsh: |
                 echo $env:CI_CMAKE_TEST_ARGS
-                echo "$env:CI_CMAKE_TEST_ARGS"
+                & ctest -N
+                & ctest --verbose --test-action Test --build-config ${{ config }}
                 & ctest --verbose --test-action Test --build-config ${{ config }} $env:CI_CMAKE_TEST_ARGS
-                & ctest --verbose --test-action Test --build-config ${{ config }} "$env:CI_CMAKE_TEST_ARGS"
               displayName: 'Run tests for ${{ config }}'
               workingDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
 
