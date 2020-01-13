@@ -88,8 +88,8 @@ parameters:
 #    target.cudaPackages              # overrides parameters.cudaPackages; can refer to parameters.cudaPackages as '<cudaPackages>'
 #    target.cmakeGenerator            # overrides parameters.cmakeGenerator
 #    target.cmakeConfigArgs           # overrides parameters.cmakeConfigArgs; can refer to parameters.cmakeConfigArgs as '<cmakeConfigArgs>'
-#    target.cmakeBuildArgs            # appends to parameters.cmakeBuildArgs
-#    target.cmakeTestArgs             # appends to parameters.cmakeTestArgs
+#    target.cmakeBuildArgs            # appends to parameters.cmakeBuildArgs; can refer to parameters.cmakeBuildArgs as '<cmakeBuildArgs>'
+#    target.cmakeTestArgs             # appends to parameters.cmakeTestArgs; can refer to parameters.cmakeTestArgs as '<cmakeTestArgs>'
 
 jobs:
 - ${{ each target in parameters.targets }}:
@@ -209,9 +209,9 @@ jobs:
                 $vcpkgPackages,
                 '${{ coalesce(target.tag, parameters.tag) }}'
             ) -join ' '
-            $cmakeConfigArgs = '${{ join(' ', coalesce(target.cmakeConfigArgs, parameters.cmakeConfigArgs)) }}' -replace '<cmakeConfigArgs>','${{ join(' ', parameters.cmakeConfigArgs) }}'
-            $cmakeBuildArgs = '${{ join(' ', coalesce(target.cmakeBuildArgs, parameters.cmakeBuildArgs)) }}' -replace '<cmakeBuildArgs>','${{ join(' ', parameters.cmakeBuildArgs) }}'
-            $cmakeTestArgs = '${{ join(' ', coalesce(target.cmakeTestArgs, parameters.cmakeTestArgs)) }}' -replace '<cmakeTestArgs>','${{ join(' ', parameters.cmakeTestArgs) }}'
+            $cmakeConfigArgs = '${{ coalesce(target.cmakeConfigArgs, parameters.cmakeConfigArgs) }}' -replace '<cmakeConfigArgs>','${{ parameters.cmakeConfigArgs }}'
+            $cmakeBuildArgs = '${{ coalesce(target.cmakeBuildArgs, parameters.cmakeBuildArgs) }}' -replace '<cmakeBuildArgs>','${{ parameters.cmakeBuildArgs }}'
+            $cmakeTestArgs = '${{ coalesce(target.cmakeTestArgs, parameters.cmakeTestArgs) }}' -replace '<cmakeTestArgs>','${{ parameters.cmakeTestArgs }}'
             echo "##vso[task.setvariable variable=CI_CACHE_KEY]$cacheKey"
             echo "##vso[task.setvariable variable=CI_CLANG_FULL_VERSION]$clangFullVersion"
             echo "##vso[task.setvariable variable=CI_VCPKG_REPO]$vcpkgRepo"
