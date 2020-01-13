@@ -132,6 +132,10 @@ jobs:
             displayName: Bootstrap PowerShell Core
 
         - pwsh: |
+            if ('${{ or(eq(target.cache, True), parameters.cache) }}' -eq 'True') {
+            #    New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies'
+            }
+
             $revision='1' # Update this when making incompatible changes to the build pipeline definition.
             if ($IsWindows) { $tripletOS = 'windows' }
             elseif ($IsLinux) { $tripletOS = 'linux' }
@@ -276,7 +280,7 @@ jobs:
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CLANG_FULL_VERSION_]$clangFullVersion"
           displayName: Set environment variables
 
-        - ${{ if or(target.cache, parameters.cache) }}:
+        - ${{ if or(eq(target.cache, True), parameters.cache) }}:
           - task: Cache@2
             displayName: Cache dependencies
             inputs:
@@ -360,7 +364,7 @@ jobs:
             }
           displayName: Install tools
 
-        - ${{ if and(ne(coalesce(target.vcpkgRef, parameters.vcpkgRef, ''), ''), ne(coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo, ''), ''), ne(coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef, ''), '')) }}:
+        - ${{ if and(ne(coalesce(target.vcpkgRef, parameters.vcpkgRef), ''), ne(coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo), ''), ne(coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef), '')) }}:
           - pwsh: |
               & git clone ${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }} '$(Build.BinariesDirectory)/dependencies/overlay-repo'
               cd '$(Build.BinariesDirectory)/dependencies/overlay-repo'
@@ -371,7 +375,7 @@ jobs:
             displayName: Clone Vcpkg overlay repository
             condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
 
-        - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
+        - ${{ if ne(coalesce(target.vcpkgRef, parameters.vcpkgRef), '') }}:
           - task: run-vcpkg@0
             displayName: Run Vcpkg to install dependencies
             inputs:
