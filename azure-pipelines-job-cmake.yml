@@ -400,7 +400,7 @@ jobs:
                 buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CI_CMAKE_BUILD_ARGS)'
 
             - pwsh: |
-                & tree
+                gci -r
                 & ctest -N
                 & ctest --verbose --test-action Test
                 & ctest --verbose --test-action Test --build-config ${{ config }}
@@ -421,7 +421,7 @@ jobs:
                 buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CI_CMAKE_BUILD_ARGS)'
 
             - pwsh: |
-                & tree
+                gci -r
                 & ctest -N
                 & ctest --verbose --test-action Test
                 & ctest --verbose --test-action Test --build-config ${{ config }}
