@@ -436,8 +436,7 @@ jobs:
                  if ('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}' -eq '' -or "$env:CIMAKESHIFT_VCPKG_PACKAGES" -eq '' -or "$env:CIMAKESHIFT_NO_VCPKG_" -eq '') {
                     # If Vcpkg isn't being used, we need to set the correct environment manually.
                     # Cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell
-                    if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang'
-                            -or ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC' -and ($env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19_1' -or $env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19_2'))) {
+                    if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang' -or ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC' -and ($env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19_1' -or $env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19_2'))) {
                         # VS 2017 or newer
                         $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath
                         $vcvarsPath = "$vsPath\VC\vcvarsall.bat"
