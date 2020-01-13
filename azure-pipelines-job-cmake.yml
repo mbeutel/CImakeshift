@@ -132,8 +132,9 @@ jobs:
             displayName: Bootstrap PowerShell Core
 
         - pwsh: |
-            Write-Host 'target.cache: ${{ target.cache }}; parameters.cache: ${{ parameters.cache }}; eq(target.cache, True): ${{ eq(target.cache, True) }}; eq('true', target.cache): ${{ eq('true', target.cache) }}; eq(target.cache, 'true'): ${{ eq(target.cache, 'true') }}; cond: ${{ or(eq(target.cache, True), parameters.cache) }}'
-            if ('${{ or(eq(target.cache, True), parameters.cache) }}' -eq 'True') {
+            Write-Host "or(eq(target.cache, True), eq(parameters.cache, True)): ${{ or(eq(target.cache, True), eq(parameters.cache, True)) }}"
+            Write-Host "or(eq(target.cache, 'true'), eq(parameters.cache, 'true')): ${{ or(eq(target.cache, 'true'), eq(parameters.cache, 'true')) }}"
+            if ('${{ or(eq(target.cache, 'true'), eq(target.cache, 'true')) }}' -eq 'True') {
             #    New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies'
             }
 
@@ -283,7 +284,7 @@ jobs:
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CLANG_FULL_VERSION_]$clangFullVersion"
           displayName: Set environment variables
 
-        - ${{ if coalesce(target.cache, parameters.cache) }}:
+        - ${{ if or(eq(target.cache, 'true'), eq(target.cache, 'true')) }}:
           - task: Cache@2
             displayName: Cache dependencies
             inputs:
