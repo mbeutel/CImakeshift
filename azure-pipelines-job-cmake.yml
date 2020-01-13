@@ -19,18 +19,19 @@
 # Supported compiler versions:
 #
 # Windows:
-#   MSVC: 19_1, 19_2
-#   Clang: 9
-#   NVCC: 10_1, 10_2
+#   MSVC:                  16,   17,   18,   19, 19_1, 19_2
+#         (also known as 2010, 2012, 2013, 2015, 2017, 2019)
+#   Clang:                                                9
+#   NVCC:                                        10_1, 10_2
 #
 # Linux:
-#   GCC: 5, 6, 7, 8, 9
-#   Clang: 4, 5, 6, 7, 8, 9
-#   NVCC: 10_1, 10_2
+#   GCC:                                      5, 6, 7, 8, 9
+#   Clang:                                 4, 5, 6, 7, 8, 9
+#   NVCC:                                        10_1, 10_2
 #
 # MacOS:
-#   GCC: 5, 6, 7, 8, 9
-#   AppleClang: 8_1, 9, 9_1, 10, 10_0_1, 11
+#   GCC:                                      5, 6, 7, 8, 9
+#   AppleClang:                 8_1, 9, 9_1, 10, 10_0_1, 11
 
 
 parameters:
@@ -68,7 +69,7 @@ parameters:
   # Build options
   cmakeListsTxtPath: '$(Build.SourcesDirectory)/CMakeLists.txt'
   cmakeBuildConfigurations: [Debug, RelWithDebInfo]
-  cmakeGenerator: 'Ninja'
+  cmakeGenerator: ''
   cmakeConfigArgs: ''
   cmakeBuildArgs: ''
   cmakeTestArgs: ''
@@ -123,7 +124,7 @@ jobs:
           # This image doesn't come with pwsh; bootstrap PowerShell Core, and also and a recent version of CMake while we're at it.
           - powershell: |
               # PowerShell Core
-              $psCoreVersion = '6.2.3';
+              $psCoreVersion = '6.2.3'
               Invoke-WebRequest "https://github.com/PowerShell/PowerShell/releases/download/v$psCoreVersion/PowerShell-$psCoreVersion-win-x64.zip" -OutFile "PowerShell-$psCoreVersion-win-x64.zip"
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/tools/pwsh'
               Expand-Archive -Path "PowerShell-$psCoreVersion-win-x64.zip" -DestinationPath '$(Build.BinariesDirectory)/tools/pwsh'
@@ -141,9 +142,7 @@ jobs:
             displayName: Bootstrap PowerShell Core and CMake
 
         - pwsh: |
-            Write-Host "or(eq(target.cache, True), eq(parameters.cache, True)): ${{ or(eq(target.cache, True), eq(parameters.cache, True)) }}"
-            Write-Host "or(eq(target.cache, 'true'), eq(parameters.cache, 'true')): ${{ or(eq(target.cache, 'true'), eq(parameters.cache, 'true')) }}"
-            if ('or(eq(target.cache, 'true'), eq(target.cache, 'true'))' -eq 'true') {
+            if ('${{ or(eq(target.cache, 'true'), eq(target.cache, 'true')) }}' -eq 'true') {
                 New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies'
             }
 
@@ -180,7 +179,13 @@ jobs:
                         '19_1' = 'Visual Studio 15 2017'
                         '19_2' = 'Visual Studio 16 2019'
                     }
-                    $cmakeGenerator = $cmakeGenerator -replace 'MSBuild',$msvcVersion_msbuildGenerator[$cxxCompilerVersion]
+                    $msbuildGenerator = $msvcVersion_msbuildGenerator[$cxxCompilerVersion]
+                    if ($cxxCompilerVersion -eq '16' -or $cxxCompilerVersion -eq '17' -or $cxxCompilerVersion -eq '18' -eq $cxxCompilerVersion -eq '19') {
+                         $defaultCmakeGenerator = $msbuildGenerator
+                    }
+                    else {
+                         $defaultCmakeGenerator = 'Ninja'
+                    }
                 }
                 elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
@@ -196,7 +201,10 @@ jobs:
                         echo '##vso[task.setvariable variable=CFLAGS]-m32'
                         echo '##vso[task.setvariable variable=CXXFLAGS]-m32'
                     }
+                    $msbuildGenerator = 'Ninja'
+                    $defaultCmakeGenerator = 'Ninja'
                 }
+                $cmakeGenerator = $cmakeGenerator -replace 'MSBuild',$msbuildGenerator
                 if('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
                     $cudaVersionRaw = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}'
                     $cudaVersion = $cudaVersionRaw -replace '_','.'
@@ -228,6 +236,7 @@ jobs:
                     echo "##vso[task.setvariable variable=CC]clang-$clangFullVersion"
                     echo "##vso[task.setvariable variable=CXX]clang++-$clangFullVersion"
                 }
+                $defaultCmakeGenerator = 'Ninja'
                 if('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
                     $cudaVersion = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}' -replace '_','.'
                     $cmakeCudaCompilerFlag = "-DCMAKE_CUDA_COMPILER=`"/usr/local/cuda-$cudaVersion/bin/nvcc`""
@@ -242,6 +251,10 @@ jobs:
                     echo "##vso[task.setvariable variable=CC]gcc-$cxxCompilerVersion"
                     echo "##vso[task.setvariable variable=CXX]g++-$cxxCompilerVersion"
                 }
+                $defaultCmakeGenerator = 'Ninja'
+            }
+            if ($cmakeGenerator -eq '') {
+                $cmakeGenerator = $defaultCmakeGenerator
             }
             $vcpkgRepo = '${{ coalesce(target.vcpkgRepo, parameters.vcpkgRepo) }}'
             if ($vcpkgRepo -eq '' -and '${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}') {
