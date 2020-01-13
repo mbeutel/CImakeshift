@@ -131,8 +131,6 @@ jobs:
                         '19_2' = 'Visual Studio 16 2019'
                     }
                     $cmakeGenerator = $cmakeGenerator -replace 'MSBuild',$msvcVersion_msbuildGenerator['${{ cxxCompilerVersion }}']
-                    #echo "##vso[task.setvariable variable=CC]cl.exe"
-                    #echo "##vso[task.setvariable variable=CXX]cl.exe"
                 }
                 elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
@@ -237,7 +235,7 @@ jobs:
           condition: and(${{ parameters.cache }}, ne('${{ parameters.vcpkgRef }}', ''))
 
         - pwsh: |
-            If ('${{ variables['system.debug'] }}' -eq 'True') {
+            If ('${{ parameters.debug }}' -eq 'True') {
                 Get-ChildItem env: | Format-List
             }
             if ($IsWindows) {
@@ -345,7 +343,7 @@ jobs:
           condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ parameters.vcpkgRef }}', ''))
 
         - pwsh: |
-            If ('${{ variables['system.debug'] }}' -eq 'True') {
+            If ('${{ parameters.debug }}' -eq 'True') {
                 Get-ChildItem env: | Format-List # for debugging
             }
             if ($IsWindows) {
@@ -359,6 +357,10 @@ jobs:
                         if ($_ -match '^(.*?)=(.*)$') {
                             echo "##vso[task.setvariable variable=$($matches[1])]$($matches[2])"
                         }
+                    }
+                    if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
+                        echo "##vso[task.setvariable variable=CC]cl.exe"
+                        echo "##vso[task.setvariable variable=CXX]cl.exe"
                     }
                  }
             }
