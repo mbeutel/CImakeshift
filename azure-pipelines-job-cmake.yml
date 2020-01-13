@@ -132,7 +132,7 @@ jobs:
             displayName: Bootstrap PowerShell Core
 
         - pwsh: |
-            Write-Host 'Cache: ${{ or(eq(target.cache, True), parameters.cache) }}'
+            Write-Host 'target.cache: ${{ target.cache }}; parameters.cache: ${{ parameters.cache }}; eq(target.cache, True): ${{ eq(target.cache, True) }}; eq('true', target.cache): ${{ eq('true', target.cache) }}; eq(target.cache, 'true'): ${{ eq(target.cache, 'true') }}; cond: ${{ or(eq(target.cache, True), parameters.cache) }}'
             if ('${{ or(eq(target.cache, True), parameters.cache) }}' -eq 'True') {
             #    New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies'
             }
