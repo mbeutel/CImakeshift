@@ -345,7 +345,7 @@ jobs:
         - pwsh: |
             Get-ChildItem env: | Format-List # for debugging
             if ($IsWindows) {
-                 if ('${{ parameters.vcpkgRef }}' == '' -or "$env:CI_VCPKG_PACKAGES" == '') {
+                 if ('${{ parameters.vcpkgRef }}' -eq '' -or "$env:CI_VCPKG_PACKAGES" -eq '') {
                     # If Vcpkg isn't being used, we need to set the correct environment manually.
                     # Cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell
                     $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
