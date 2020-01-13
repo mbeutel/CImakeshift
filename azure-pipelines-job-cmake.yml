@@ -127,7 +127,7 @@ jobs:
               Expand-Archive -Path PowerShell-win-x64.zip -DestinationPath '$(Build.BinariesDirectory)/tools/pwsh'
               echo "##vso[task.setvariable variable=PATH];$(Build.BinariesDirectory)/tools/pwsh;${env:PATH}"
               if ('${{ cxxCompilerVersion }}' -ne '18' -and '${{ cxxCompilerVersion }}' -ne '2013' -and '${{ cxxCompilerVersion }}' -ne '17' -and '${{ cxxCompilerVersion }}' -ne '2012' -and '${{ cxxCompilerVersion }}' -ne '16' -and '${{ cxxCompilerVersion }}' -ne '2010') {
-                  echo "##vso[task.setvariable variable=CIMAKESHIFT_NO_VCPKG]1"
+                  echo "##vso[task.setvariable variable=CIMAKESHIFT_NO_VCPKG_]1"
               }
             displayName: Bootstrap PowerShell Core
 
@@ -276,7 +276,7 @@ jobs:
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CLANG_FULL_VERSION_]$clangFullVersion"
           displayName: Set environment variables
 
-        - ${{ if coalesce(target.cache, parameters.cache) }}:
+        - ${{ if or(target.cache, parameters.cache) }}:
           - task: Cache@2
             displayName: Cache dependencies
             inputs:
@@ -360,7 +360,7 @@ jobs:
             }
           displayName: Install tools
 
-        - ${{ if and(ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), ne('${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }}', ''), ne('${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}', '')) }}:
+        - ${{ if and(ne(coalesce(target.vcpkgRef, parameters.vcpkgRef, ''), ''), ne(coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo, ''), ''), ne(coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef, ''), '')) }}:
           - pwsh: |
               & git clone ${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }} '$(Build.BinariesDirectory)/dependencies/overlay-repo'
               cd '$(Build.BinariesDirectory)/dependencies/overlay-repo'
@@ -369,9 +369,9 @@ jobs:
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets'
               echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_ARGS]--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
             displayName: Clone Vcpkg overlay repository
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG, ''))
+            condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
 
-        - ${{ if ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', '') }}:
+        - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
           - task: run-vcpkg@0
             displayName: Run Vcpkg to install dependencies
             inputs:
@@ -380,7 +380,7 @@ jobs:
               vcpkgGitCommitId: '${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}'
               vcpkgTriplet: '$(VCPKG_TRIPLET)'
               vcpkgArguments: '$(CIMAKESHIFT_VCPKG_OVERLAY_ARGS) $(CIMAKESHIFT_VCPKG_ARGS) $(CIMAKESHIFT_VCPKG_PACKAGES)'
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG, ''))
+            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
 
         - ${{ each step in parameters.postSetupSteps }}:
           - ${{ each pair in step }}:
@@ -390,20 +390,20 @@ jobs:
             - ${{ each pair in step }}:
                 ${{ pair.key }}: ${{ pair.value }}
 
-        - ${{ if ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', '') }}:
+        - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
           - pwsh: |
               Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/buildtrees'
               Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/downloads'
               Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/packages'
             displayName: Delete temporary files
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG, ''))
+            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
 
         - pwsh: |
             If ('${{ parameters.debug }}' -eq 'True') {
                 Get-ChildItem env: | Format-List # for debugging
             }
             if ($IsWindows) {
-                 if ('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}' -eq '' -or "$env:CIMAKESHIFT_VCPKG_PACKAGES" -eq '' -or "$env:CIMAKESHIFT_NO_VCPKG" -eq '') {
+                 if ('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}' -eq '' -or "$env:CIMAKESHIFT_VCPKG_PACKAGES" -eq '' -or "$env:CIMAKESHIFT_NO_VCPKG_" -eq '') {
                     # If Vcpkg isn't being used, we need to set the correct environment manually.
                     # Cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell
                     if ($env:CIMAKESHIFT_CXX_COMPILER_VERSION -lt 19) {
@@ -415,21 +415,24 @@ jobs:
                         #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -version '[10.0,15.0)' -property installationPath
                         #$vcvarsPath = "$vsPath\VC\vcvarsall.bat"
                         #& cmd.exe /c call `"$vcvarsPath`" $vcvarsPlatform && set > %temp%\vcvars.txt"
-                    }
-                    elseif ($env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19') {
-                        $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath
-                        $vcvarsPath = "$vsPath\VC\vcvarsall.bat"
-                        & cmd.exe /c "call `"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd`" /${{ platform }} && call `"$vcvarsPath`" && set > %temp%\vcvars.txt"
+                        # TODO
                     }
                     else {
-                        # assume VS 2017 or newer
-                        $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-                        $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvarsall.bat"
-                        & cmd.exe /c "call `"$vcvarsPath`" ${{ platform }} && set > %temp%\vcvars.txt"
-                    }
-                    Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
-                        if ($_ -match '^(.*?)=(.*)$') {
-                            echo "##vso[task.setvariable variable=$($matches[1])]$($matches[2])"
+                        if ($env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19') {
+                            $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath
+                            $vcvarsPath = "$vsPath\VC\vcvarsall.bat"
+                            & cmd.exe /c "call `"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd`" /${{ platform }} && call `"$vcvarsPath`" && set > %temp%\vcvars.txt"
+                        }
+                        else {
+                            # assume VS 2017 or newer
+                            $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+                            $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvarsall.bat"
+                            & cmd.exe /c "call `"$vcvarsPath`" ${{ platform }} && set > %temp%\vcvars.txt"
+                        }
+                        Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
+                            if ($_ -match '^(.*?)=(.*)$') {
+                                echo "##vso[task.setvariable variable=$($matches[1])]$($matches[2])"
+                            }
                         }
                     }
                     if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
