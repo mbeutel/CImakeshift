@@ -441,9 +441,9 @@ jobs:
                 & ctest --exclude-regex cuda
                 Write-Host "Running tests with "--tests-regex gsl-lite-cpp17`|gsl-lite-altcfg-cpp17"
                 & ctest --tests-regex gsl-lite-cpp17`|gsl-lite-altcfg-cpp17
-                Write-Host "Running tests with "`"--tests-regex gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`""
+                Write-Host "Running tests with "--tests-regex `"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`""
                 & ctest --tests-regex "`"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`""
-                Write-Host "Running tests with "`"--tests-regex gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`", indirect"
+                Write-Host "Running tests with "--tests-regex `"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`", indirect"
                 $ctestArgs2 = "--tests-regex `"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`""
                 & ctest $ctestArgs2
               displayName: 'Run tests for ${{ config }}'
