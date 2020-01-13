@@ -150,9 +150,13 @@ jobs:
                     }
                 }
                 if('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
-                    $cudaVersion = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}' -replace '_','.'
-                    $cmakeCudaCompilerFlag = "-DCMAKE_CUDA_COMPILER=`"$env:SystemDrive/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v$cudaVersion/bin/nvcc.exe`""
+                    $cudaVersionRaw = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}'
+                    $cudaVersion = $cudaVersionRaw -replace '_','.'
+                    $cudaPath = "$env:SystemDrive/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v$cudaVersion"
+                    $cmakeCudaCompilerFlag = "-DCMAKE_CUDA_COMPILER=`"$cudaPath/bin/nvcc.exe`""
                     $cudaPackages = ("nvcc $cudaPackagesRaw" -replace '\s+',' ' -replace ' ',"_$cudaVersion ").Trim()
+                    echo "##vso[task.setvariable variable=CUDA_PATH]$cudaPath"
+                    echo "##vso[task.setvariable variable=CUDA_PATH_V$cudaVersionRaw]$cudaPath"
                 }
                 #echo "##vso[task.setvariable variable=Path]$(Build.BinariesDirectory)/dependencies/cmake/bin;${env:Path}"
             }
