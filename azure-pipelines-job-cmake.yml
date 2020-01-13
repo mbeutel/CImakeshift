@@ -135,7 +135,7 @@ jobs:
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/tools/cmake'
               Expand-Archive -Path "cmake-$cmakeVersion-win64-x64.zip" -DestinationPath '$(Build.BinariesDirectory)/tools/cmake'
 
-              echo "##vso[task.setvariable variable=PATH];$(Build.BinariesDirectory)/tools/pwsh;$(Build.BinariesDirectory)/tools/cmake/cmake-$cmakeVersion-win64-x64;${env:PATH}"
+              echo "##vso[task.setvariable variable=PATH];$(Build.BinariesDirectory)/tools/pwsh;$(Build.BinariesDirectory)/tools/cmake/cmake-$cmakeVersion-win64-x64/bin;${env:PATH}"
               if ('${{ cxxCompilerVersion }}' -ne '18' -and '${{ cxxCompilerVersion }}' -ne '2013' -and '${{ cxxCompilerVersion }}' -ne '17' -and '${{ cxxCompilerVersion }}' -ne '2012' -and '${{ cxxCompilerVersion }}' -ne '16' -and '${{ cxxCompilerVersion }}' -ne '2010') {
                   echo "##vso[task.setvariable variable=CIMAKESHIFT_NO_VCPKG_]1"
               }
