@@ -132,6 +132,7 @@ jobs:
             displayName: Bootstrap PowerShell Core
 
         - pwsh: |
+            Write-Host 'Cache: ${{ or(eq(target.cache, True), parameters.cache) }}'
             if ('${{ or(eq(target.cache, True), parameters.cache) }}' -eq 'True') {
             #    New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies'
             }
@@ -252,6 +253,7 @@ jobs:
             $cmakeConfigArgs = '${{ coalesce(target.cmakeConfigArgs, parameters.cmakeConfigArgs) }}' -replace '<cmakeConfigArgs>','${{ parameters.cmakeConfigArgs }}'
             $cmakeBuildArgs = '${{ coalesce(target.cmakeBuildArgs, parameters.cmakeBuildArgs) }}' -replace '<cmakeBuildArgs>','${{ parameters.cmakeBuildArgs }}'
             $cmakeTestArgs = '${{ coalesce(target.cmakeTestArgs, parameters.cmakeTestArgs) }}' -replace '<cmakeTestArgs>','${{ parameters.cmakeTestArgs }}'
+
             # public variables accessible to custom job steps
             echo '##vso[task.setvariable variable=CIMAKESHIFT_CACHE]${{ coalesce(target.cache, parameters.cache) }}'
             echo '##vso[task.setvariable variable=CIMAKESHIFT_TAG]${{ coalesce(target.tag, parameters.tag) }}'
@@ -275,12 +277,13 @@ jobs:
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_TEST_ARGS]$cmakeTestArgs"
             echo '##vso[task.setvariable variable=VCPKG_ROOT]$(Build.BinariesDirectory)/dependencies/vcpkg'
             echo "##vso[task.setvariable variable=VCPKG_TRIPLET]$vcpkgTriplet"
+
             # private variables
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CACHE_KEY_]$cacheKey"
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CLANG_FULL_VERSION_]$clangFullVersion"
           displayName: Set environment variables
 
-        - ${{ if or(eq(target.cache, True), parameters.cache) }}:
+        - ${{ if coalesce(target.cache, parameters.cache) }}:
           - task: Cache@2
             displayName: Cache dependencies
             inputs:
@@ -364,7 +367,7 @@ jobs:
             }
           displayName: Install tools
 
-        - ${{ if and(ne(coalesce(target.vcpkgRef, parameters.vcpkgRef), ''), ne(coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo), ''), ne(coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef), '')) }}:
+        - ${{ if and(coalesce(target.vcpkgRef, parameters.vcpkgRef), coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo), coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef)) }}:
           - pwsh: |
               & git clone ${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }} '$(Build.BinariesDirectory)/dependencies/overlay-repo'
               cd '$(Build.BinariesDirectory)/dependencies/overlay-repo'
@@ -375,7 +378,7 @@ jobs:
             displayName: Clone Vcpkg overlay repository
             condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
 
-        - ${{ if ne(coalesce(target.vcpkgRef, parameters.vcpkgRef), '') }}:
+        - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
           - task: run-vcpkg@0
             displayName: Run Vcpkg to install dependencies
             inputs:
@@ -471,10 +474,10 @@ jobs:
         - ${{ if not(target.cmakeBuildConfigurations) }}:
           - ${{ each config in parameters.cmakeBuildConfigurations }}:
 
-            - ${{ if or(parameters.preBuildSteps, target.preBuildSteps, parameters.postBuildSteps, target.postBuildSteps) }}:
+            - ${{ if coalesce(parameters.preBuildSteps, target.preBuildSteps, parameters.postBuildSteps, target.postBuildSteps) }}:
               - pwsh: |
                   echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION]${{ config }}'
-                displayName: Set environment variables
+                displayName: Set environment variables for build configuration
 
             - ${{ each step in parameters.preBuildSteps }}:
               - ${{ each pair in step }}:
@@ -511,11 +514,11 @@ jobs:
         - ${{ if target.cmakeBuildConfigurations }}:
           - ${{ each config in target.cmakeBuildConfigurations }}:
 
-            - ${{ if or(parameters.preBuildSteps, target.preBuildSteps, parameters.postBuildSteps, target.postBuildSteps) }}:
+            - ${{ if coalesce(parameters.preBuildSteps, target.preBuildSteps, parameters.postBuildSteps, target.postBuildSteps) }}:
             - task:
               - pwsh: |
                   echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION]${{ config }}'
-                displayName: Set environment variables
+                displayName: Set environment variables for build configuration
 
             - ${{ each step in parameters.preBuildSteps }}:
               - ${{ each pair in step }}:
