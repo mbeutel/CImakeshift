@@ -405,14 +405,14 @@ jobs:
                 echo "args: $ctestArgs"
                 Write-Host "Running regular tests:"
                 & ctest $ctestArgs
-                #& ctest --verbose --test-action Test --build-config ${{ config }} ${env:CI_CMAKE_TEST_ARGS}"
-                Write-Host "Running tests with "--exclude-regex cuda":"
+                #& ctest --verbose --test-action Test --build-config ${{ config }} ${env:CI_CMAKE_TEST_ARGS}
+                Write-Host "Running tests with `"--exclude-regex cuda`":"
                 & ctest --exclude-regex cuda
-                Write-Host "Running tests with "--tests-regex gsl-lite-cpp17`|gsl-lite-altcfg-cpp17"
+                Write-Host "Running tests with --tests-regex gsl-lite-cpp17`|gsl-lite-altcfg-cpp17"
                 & ctest --tests-regex gsl-lite-cpp17`|gsl-lite-altcfg-cpp17
-                Write-Host "Running tests with "--tests-regex `"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`""
+                Write-Host "Running tests with --tests-regex `"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`""
                 & ctest --tests-regex "`"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`""
-                Write-Host "Running tests with "--tests-regex `"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`", indirect"
+                Write-Host "Running tests with --tests-regex `"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`", indirect"
                 $ctestArgs2 = "--tests-regex `"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`""
                 & ctest $ctestArgs2
               displayName: 'Run tests for ${{ config }}'
@@ -436,14 +436,14 @@ jobs:
                 echo "args: $ctestArgs"
                 Write-Host "Running regular tests:"
                 & ctest $ctestArgs
-                #& ctest --verbose --test-action Test --build-config ${{ config }} ${env:CI_CMAKE_TEST_ARGS}"
-                Write-Host "Running tests with "--exclude-regex cuda":"
+                #& ctest --verbose --test-action Test --build-config ${{ config }} ${env:CI_CMAKE_TEST_ARGS}
+                Write-Host "Running tests with `"--exclude-regex cuda`":"
                 & ctest --exclude-regex cuda
-                Write-Host "Running tests with "--tests-regex gsl-lite-cpp17`|gsl-lite-altcfg-cpp17"
+                Write-Host "Running tests with --tests-regex gsl-lite-cpp17`|gsl-lite-altcfg-cpp17"
                 & ctest --tests-regex gsl-lite-cpp17`|gsl-lite-altcfg-cpp17
-                Write-Host "Running tests with "--tests-regex `"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`""
+                Write-Host "Running tests with --tests-regex `"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`""
                 & ctest --tests-regex "`"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`""
-                Write-Host "Running tests with "--tests-regex `"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`", indirect"
+                Write-Host "Running tests with --tests-regex `"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`", indirect"
                 $ctestArgs2 = "--tests-regex `"gsl-lite-cpp17`|gsl-lite-altcfg-cpp17`""
                 & ctest $ctestArgs2
               displayName: 'Run tests for ${{ config }}'
