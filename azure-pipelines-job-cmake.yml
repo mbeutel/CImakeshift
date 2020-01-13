@@ -237,7 +237,9 @@ jobs:
           condition: and(${{ parameters.cache }}, ne('${{ parameters.vcpkgRef }}', ''))
 
         - pwsh: |
-            Get-ChildItem env: | Format-List # for debugging
+            If ('${{ variables['system.debug'] }}' -eq 'True') {
+                Get-ChildItem env: | Format-List
+            }
             if ($IsWindows) {
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     $clangVersion = '${{ cxxCompilerVersion }}.0.0'
@@ -343,14 +345,16 @@ jobs:
           condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ parameters.vcpkgRef }}', ''))
 
         - pwsh: |
-            Get-ChildItem env: | Format-List # for debugging
+            If ('${{ variables['system.debug'] }}' -eq 'True') {
+                Get-ChildItem env: | Format-List # for debugging
+            }
             if ($IsWindows) {
                  if ('${{ parameters.vcpkgRef }}' -eq '' -or "$env:CI_VCPKG_PACKAGES" -eq '') {
                     # If Vcpkg isn't being used, we need to set the correct environment manually.
                     # Cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell
                     $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
                     $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvarsall.bat"
-                    & cmd.exe /c "call `"$vcvarsPath` ${{ platform }}" && set > %temp%\vcvars.txt"
+                    & cmd.exe /c "call `"$vcvarsPath`" ${{ platform }} && set > %temp%\vcvars.txt"
                     Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
                         if ($_ -match '^(.*?)=(.*)$') {
                             echo "##vso[task.setvariable variable=$matches[1]]$matches[2]"
