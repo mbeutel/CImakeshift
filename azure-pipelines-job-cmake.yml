@@ -85,7 +85,7 @@ parameters:
 #    target.cmakeBuildConfigurations  # overrides parameters.cmakeBuildConfigurations
 #    target.vcpkgRepo                 # overrides parameters.vcpkgRepo
 #    target.vcpkgRef                  # overrides parameters.vcpkgRef
-#    target.vcpkgOverlayRepo          # overrides coalesce(targets.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo)
+#    target.vcpkgOverlayRepo          # overrides parameters.vcpkgOverlayRepo
 #    target.vcpkgOverlayRef           # overrides parameters.vcpkgOverlayRef
 #    target.vcpkgTriplet              # overrides parameters.vcpkgTriplet
 #    target.vcpkgArgs                 # overrides parameters.vcpkgArgs; can refer to parameters.vcpkgArgs as '<vcpkgArgs>'
@@ -240,7 +240,7 @@ jobs:
                 '${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}',
                 $vcpkgTriplet,
                 "$vcpkgRepo" + '${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}',
-                '${{ coalesce(targets.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }}${{ coalesce(targets.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}',
+                '${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }}${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}',
                 $vcpkgArgs,
                 $vcpkgPackages,
                 '${{ coalesce(target.tag, parameters.tag) }}'
@@ -360,11 +360,11 @@ jobs:
             }
           displayName: Install tools
 
-        - ${{ if and(ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), ne('${{ coalesce(targets.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }}', ''), ne('${{ coalesce(targets.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}', '')) }}:
+        - ${{ if and(ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), ne('${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }}', ''), ne('${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}', '')) }}:
           - pwsh: |
-              & git clone ${{ coalesce(targets.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }} '$(Build.BinariesDirectory)/dependencies/overlay-repo'
+              & git clone ${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }} '$(Build.BinariesDirectory)/dependencies/overlay-repo'
               cd '$(Build.BinariesDirectory)/dependencies/overlay-repo'
-              & git checkout --quiet --force ${{ coalesce(targets.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}
+              & git checkout --quiet --force ${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports'
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets'
               echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_ARGS]--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
@@ -385,7 +385,7 @@ jobs:
         - ${{ each step in parameters.postSetupSteps }}:
           - ${{ each pair in step }}:
               ${{ pair.key }}: ${{ pair.value }}
-        - ${{ each step in targets.postSetupSteps }}:
+        - ${{ each step in target.postSetupSteps }}:
           - ${{ each pair in step }}:
               ${{ pair.key }}: ${{ pair.value }}
 
@@ -463,7 +463,7 @@ jobs:
         - ${{ if not(target.cmakeBuildConfigurations) }}:
           - ${{ each config in parameters.cmakeBuildConfigurations }}:
 
-            - ${{ if or(parameters.preBuildSteps, targets.preBuildSteps, parameters.postBuildSteps, targets.postBuildSteps) }}:
+            - ${{ if or(parameters.preBuildSteps, target.preBuildSteps, parameters.postBuildSteps, target.postBuildSteps) }}:
             - task:
               - pwsh: |
                   echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION]${{ config }}'
@@ -472,7 +472,7 @@ jobs:
             - ${{ each step in parameters.preBuildSteps }}:
               - ${{ each pair in step }}:
                   ${{ pair.key }}: ${{ pair.value }}
-            - ${{ each step in targets.preBuildSteps }}:
+            - ${{ each step in target.preBuildSteps }}:
               - ${{ each pair in step }}:
                   ${{ pair.key }}: ${{ pair.value }}
 
@@ -495,14 +495,14 @@ jobs:
             - ${{ each step in parameters.postBuildSteps }}:
               - ${{ each pair in step }}:
                   ${{ pair.key }}: ${{ pair.value }}
-            - ${{ each step in targets.postBuildSteps }}:
+            - ${{ each step in target.postBuildSteps }}:
               - ${{ each pair in step }}:
                   ${{ pair.key }}: ${{ pair.value }}
 
         - ${{ if target.cmakeBuildConfigurations }}:
           - ${{ each config in target.cmakeBuildConfigurations }}:
 
-            - ${{ if or(parameters.preBuildSteps, targets.preBuildSteps, parameters.postBuildSteps, targets.postBuildSteps) }}:
+            - ${{ if or(parameters.preBuildSteps, target.preBuildSteps, parameters.postBuildSteps, target.postBuildSteps) }}:
             - task:
               - pwsh: |
                   echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION]${{ config }}'
@@ -511,7 +511,7 @@ jobs:
             - ${{ each step in parameters.preBuildSteps }}:
               - ${{ each pair in step }}:
                   ${{ pair.key }}: ${{ pair.value }}
-            - ${{ each step in targets.preBuildSteps }}:
+            - ${{ each step in target.preBuildSteps }}:
               - ${{ each pair in step }}:
                   ${{ pair.key }}: ${{ pair.value }}
 
@@ -534,7 +534,7 @@ jobs:
             - ${{ each step in parameters.postBuildSteps }}:
               - ${{ each pair in step }}:
                   ${{ pair.key }}: ${{ pair.value }}
-            - ${{ each step in targets.postBuildSteps }}:
+            - ${{ each step in target.postBuildSteps }}:
               - ${{ each pair in step }}:
                   ${{ pair.key }}: ${{ pair.value }}
 
