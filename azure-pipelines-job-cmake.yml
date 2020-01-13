@@ -400,8 +400,7 @@ jobs:
                 buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CI_CMAKE_BUILD_ARGS)'
 
             - pwsh: |
-                echo "& ctest --verbose --test-action Test --build-config ${{ config }} $env:CI_CMAKE_TEST_ARGS"
-                & ctest --verbose --test-action Test --build-config ${{ config }} $env:CI_CMAKE_TEST_ARGS
+                & ctest --verbose --test-action Test --build-config ${{ config }} "$env:CI_CMAKE_TEST_ARGS"
               displayName: 'Run tests for ${{ config }}'
               workingDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
 
@@ -418,8 +417,7 @@ jobs:
                 buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CI_CMAKE_BUILD_ARGS)'
 
             - pwsh: |
-                echo "& ctest --verbose --test-action Test --build-config ${{ config }} $env:CI_CMAKE_TEST_ARGS"
-                & ctest --verbose --test-action Test --build-config ${{ config }} $env:CI_CMAKE_TEST_ARGS
+                & ctest --verbose --test-action Test --build-config ${{ config }} "$env:CI_CMAKE_TEST_ARGS"
               displayName: 'Run tests for ${{ config }}'
               workingDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
 
