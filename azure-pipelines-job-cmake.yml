@@ -234,7 +234,7 @@ jobs:
           condition: and(${{ parameters.cache }}, ne('${{ parameters.vcpkgRef }}', ''))
 
         - pwsh: |
-            Get-ChildItem env: # for debugging
+            Get-ChildItem env: | Format-List # for debugging
             if ($IsWindows) {
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     $clangVersion = '${{ cxxCompilerVersion }}.0.0'
@@ -340,7 +340,7 @@ jobs:
           condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ parameters.vcpkgRef }}', ''))
 
         - pwsh: |
-            Get-ChildItem env: # for debugging
+            Get-ChildItem env: | Format-List # for debugging
             if ($IsMacOS) {
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS_OLD"
