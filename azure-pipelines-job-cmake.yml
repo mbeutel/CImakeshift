@@ -209,7 +209,6 @@ jobs:
                 '${{ parameters.vcpkgOverlayRepo }}${{ parameters.vcpkgOverlayRef }}',
                 $vcpkgArgs,
                 $vcpkgPackages,
-                $cudaPackages,
                 '${{ coalesce(target.tag, parameters.tag) }}'
             ) -join ' '
             $cmakeConfigArgs = '${{ join(' ', coalesce(target.cmakeConfigArgs, parameters.cmakeConfigArgs)) }}' -replace '<cmakeConfigArgs>','${{ join(' ', parameters.cmakeConfigArgs) }}'
@@ -324,7 +323,7 @@ jobs:
                 echo '##vso[task.setvariable variable=CI_VCPKG_OVERLAY_ARGS]'
             }
           displayName: Clone Vcpkg overlay repository
-          condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ parameters.vcpkgRef }}', ''))
+          condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ parameters.vcpkgRef }}', ''), ne(variables.CI_VCPKG_PACKAGES, ''))
         
         - task: run-vcpkg@0
           displayName: Run Vcpkg to install dependencies
@@ -345,6 +344,20 @@ jobs:
 
         - pwsh: |
             Get-ChildItem env: | Format-List # for debugging
+            if ($IsWindows) {
+                 if ('${{ parameters.vcpkgRef }}' == '' -or "$env:CI_VCPKG_PACKAGES" == '') {
+                    # If Vcpkg isn't being used, we need to set the correct environment manually.
+                    # Cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell
+                    $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+                    $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvarsall.bat"
+                    & cmd.exe /c "call `"$vcvarsPath`" && set > %temp%\vcvars.txt"
+                    Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
+                        if ($_ -match '^(.*?)=(.*)$') {
+                            echo "##vso[task.setvariable variable=$matches[1]]$matches[2]"
+                        }
+                    }
+                 }
+            }
             if ($IsMacOS) {
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS_OLD"
@@ -368,7 +381,6 @@ jobs:
             }
           displayName: Set environment variables
 
-        #- ${{ each config in coalesce(target.cmakeBuildConfigurations, parameters.cmakeBuildConfigurations) }}:
         - ${{ if not(target.cmakeBuildConfigurations) }}:
           - ${{ each config in parameters.cmakeBuildConfigurations }}:
             - task: run-cmake@0
