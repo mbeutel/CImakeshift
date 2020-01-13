@@ -49,11 +49,11 @@ parameters:
 
   # Platform options
   os: ''
-  platforms: []
+  platforms: [] # <-- TODO: currently ignored
 
   # C++ options
   cxxCompiler: ''
-  cxxCompilerVersions: []
+  cxxCompilerVersions: [] # <-- TODO: currently ignored
 
   # CUDA options
   cudaCompiler: ''
@@ -234,7 +234,7 @@ jobs:
           condition: and(${{ parameters.cache }}, ne('${{ parameters.vcpkgRef }}', ''))
 
         - pwsh: |
-            Get-ChildItem env:
+            Get-ChildItem env: # for debugging
             if ($IsWindows) {
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     $clangVersion = '${{ cxxCompilerVersion }}.0.0'
@@ -340,27 +340,29 @@ jobs:
           condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ parameters.vcpkgRef }}', ''))
 
         - pwsh: |
-            if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
-                echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS_OLD"
-                echo '##vso[task.setvariable variable=CC]gcc-${{ cxxCompilerVersion }}'
-                echo '##vso[task.setvariable variable=CXX]g++-${{ cxxCompilerVersion }}'
-            }
-            elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'AppleClang') {
-                $appleClangVersion_xcodeVersion = @{
-                    '8_1'    = '8.3.3'
-                    '9'      = '9.2'   # also 9.1, 9.0.1, 9.0
-                    '9_1'    = '9.4.1'
-                    '10'     = '10.1'  # also 10
-                    '10_0_1' = '10.3'  # also 10.2, 10.2.1
-                    '11'     = '11.3'  # also 11.1, 11.2, 11.2.1
+            Get-ChildItem env: # for debugging
+            if ($IsMacOS) {
+                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
+                    echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS_OLD"
+                    echo '##vso[task.setvariable variable=CC]gcc-${{ cxxCompilerVersion }}'
+                    echo '##vso[task.setvariable variable=CXX]g++-${{ cxxCompilerVersion }}'
                 }
-                $xcodeVersion = $appleClangVersion_xcodeVersion['${{ cxxCompilerVersion }}']
-                & sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer
-                echo '##vso[task.setvariable variable=CC]clang'
-                echo '##vso[task.setvariable variable=CXX]clang++'
+                elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'AppleClang') {
+                    $appleClangVersion_xcodeVersion = @{
+                        '8_1'    = '8.3.3'
+                        '9'      = '9.2'   # also 9.1, 9.0.1, 9.0
+                        '9_1'    = '9.4.1'
+                        '10'     = '10.1'  # also 10
+                        '10_0_1' = '10.3'  # also 10.2, 10.2.1
+                        '11'     = '11.3'  # also 11.1, 11.2, 11.2.1
+                    }
+                    $xcodeVersion = $appleClangVersion_xcodeVersion['${{ cxxCompilerVersion }}']
+                    & sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer
+                    echo '##vso[task.setvariable variable=CC]clang'
+                    echo '##vso[task.setvariable variable=CXX]clang++'
+                }
             }
           displayName: Set environment variables
-          condition: eq(variables['Agent.OS'], 'Darwin')
 
         #- ${{ each config in coalesce(target.cmakeBuildConfigurations, parameters.cmakeBuildConfigurations) }}:
         - ${{ if not(target.cmakeBuildConfigurations) }}:
