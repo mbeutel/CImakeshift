@@ -39,6 +39,19 @@ parameters:
   cache: True
   tag: ''
 
+  # Platform options
+  os: ''
+  #platforms: [] # currently unavailable
+
+  # C++ options
+  cxxCompiler: ''
+  #cxxCompilerVersions: [] # currently unavailable
+
+  # CUDA options
+  cudaCompiler: ''
+  cudaCompilerVersion: ''
+  cudaPackages: [] # cf. https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#install-cuda-software for Windows, https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/ for Linux
+
   # Vcpkg repository
   vcpkgRepo: ''
   vcpkgRef: ''
@@ -46,19 +59,6 @@ parameters:
   # Repository with additional port and triplet overlays
   vcpkgOverlayRepo: ''
   vcpkgOverlayRef: ''
-
-  # Platform options
-  os: ''
-  platforms: [] # <-- TODO: currently ignored
-
-  # C++ options
-  cxxCompiler: ''
-  cxxCompilerVersions: [] # <-- TODO: currently ignored
-
-  # CUDA options
-  cudaCompiler: ''
-  cudaCompilerVersion: ''
-  cudaPackages: [] # cf. https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#install-cuda-software for Windows, https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/ for Linux
 
   # Vcpkg options
   vcpkgTriplet: '<platform>-<os>'
@@ -76,11 +76,6 @@ parameters:
   targets: []
 #    target.cache                     # overrides parameters.cache
 #    target.tag                       # overrides parameters.tag
-#    target.vcpkgRepo                 # overrides parameters.vcpkgRepo
-#    target.vcpkgRef                  # overrides parameters.vcpkgRef
-#    target.vcpkgOverlayRepo          # overrides coalesce(targets.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo)
-#    target.vcpkgOverlayRef           # overrides parameters.vcpkgOverlayRef
-
 #    target.os: ''                    # overrides parameters.os
 #    target.platforms: []             # overrides parameters.platforms
 #    target.cxxCompiler               # overrides parameters.cxxCompiler
@@ -88,6 +83,10 @@ parameters:
 #    target.cudaCompiler              # overrides parameters.cudaCompiler
 #    target.cudaCompilerVersion       # overrides parameters.cudaCompilerVersion
 #    target.cmakeBuildConfigurations  # overrides parameters.cmakeBuildConfigurations
+#    target.vcpkgRepo                 # overrides parameters.vcpkgRepo
+#    target.vcpkgRef                  # overrides parameters.vcpkgRef
+#    target.vcpkgOverlayRepo          # overrides coalesce(targets.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo)
+#    target.vcpkgOverlayRef           # overrides parameters.vcpkgOverlayRef
 #    target.vcpkgTriplet              # overrides parameters.vcpkgTriplet
 #    target.vcpkgArgs                 # overrides parameters.vcpkgArgs; can refer to parameters.vcpkgArgs as '<vcpkgArgs>'
 #    target.vcpkgPackages             # overrides parameters.vcpkgPackages; can refer to parameters.vcpkgPackages as '<vcpkgPackages>'
@@ -128,7 +127,7 @@ jobs:
               Expand-Archive -Path PowerShell-win-x64.zip -DestinationPath '$(Build.BinariesDirectory)/tools/pwsh'
               echo "##vso[task.setvariable variable=PATH];$(Build.BinariesDirectory)/tools/pwsh;${env:PATH}"
               if ('${{ cxxCompilerVersion }}' -ne '18' -and '${{ cxxCompilerVersion }}' -ne '2013' -and '${{ cxxCompilerVersion }}' -ne '17' -and '${{ cxxCompilerVersion }}' -ne '2012' -and '${{ cxxCompilerVersion }}' -ne '16' -and '${{ cxxCompilerVersion }}' -ne '2010') {
-                  echo "##vso[task.setvariable variable=CI_NO_VCPKG]1"
+                  echo "##vso[task.setvariable variable=CIMAKESHIFT_NO_VCPKG]1"
               }
             displayName: Bootstrap PowerShell Core
 
@@ -249,26 +248,39 @@ jobs:
             $cmakeConfigArgs = '${{ coalesce(target.cmakeConfigArgs, parameters.cmakeConfigArgs) }}' -replace '<cmakeConfigArgs>','${{ parameters.cmakeConfigArgs }}'
             $cmakeBuildArgs = '${{ coalesce(target.cmakeBuildArgs, parameters.cmakeBuildArgs) }}' -replace '<cmakeBuildArgs>','${{ parameters.cmakeBuildArgs }}'
             $cmakeTestArgs = '${{ coalesce(target.cmakeTestArgs, parameters.cmakeTestArgs) }}' -replace '<cmakeTestArgs>','${{ parameters.cmakeTestArgs }}'
-            echo "##vso[task.setvariable variable=CI_CACHE_KEY]$cacheKey"
-            echo "##vso[task.setvariable variable=CI_CXX_COMPILER_VERSION]$cxxCompilerVersion"
-            echo "##vso[task.setvariable variable=CI_CLANG_FULL_VERSION]$clangFullVersion"
-            echo "##vso[task.setvariable variable=CI_VCPKG_REPO]$vcpkgRepo"
+            # public variables accessible to custom job steps
+            echo '##vso[task.setvariable variable=CIMAKESHIFT_CACHE]${{ coalesce(target.cache, parameters.cache) }}'
+            echo '##vso[task.setvariable variable=CIMAKESHIFT_TAG]${{ coalesce(target.tag, parameters.tag) }}'
+            echo '##vso[task.setvariable variable=CIMAKESHIFT_OS]${{ coalesce(target.os, parameters.os) }}'
+            echo '##vso[task.setvariable variable=CIMAKESHIFT_PLATFORM]${{ platform }}'
+            echo '##vso[task.setvariable variable=CIMAKESHIFT_CXX_COMPILER]${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}'
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_CXX_COMPILER_VERSION]$cxxCompilerVersion"
+            echo '##vso[task.setvariable variable=CIMAKESHIFT_CUDA_COMPILER]${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}'
+            echo '##vso[task.setvariable variable=CIMAKESHIFT_CUDA_COMPILER_VERSION]${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}'
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_CUDA_PACKAGES]$cudaPackages"
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_REPO]$vcpkgRepo"
+            echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_REF]${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}'
+            echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_REPO]${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }}'
+            echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_REF]${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}'
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_ARGS]$vcpkgArgs"
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_PACKAGES]$vcpkgPackages"
+            echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATIONS]${{ join(target.cmakeBuildConfigurations, ';') }}'
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_GENERATOR]$cmakeGenerator"
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_CONFIG_ARGS]$cmakeCompilerFlag $cmakeCudaCompilerFlag $cmakeConfigArgs"
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_ARGS]$cmakeBuildArgs"
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_TEST_ARGS]$cmakeTestArgs"
             echo '##vso[task.setvariable variable=VCPKG_ROOT]$(Build.BinariesDirectory)/dependencies/vcpkg'
             echo "##vso[task.setvariable variable=VCPKG_TRIPLET]$vcpkgTriplet"
-            echo "##vso[task.setvariable variable=CI_VCPKG_ARGS]$vcpkgArgs"
-            echo "##vso[task.setvariable variable=CI_VCPKG_PACKAGES]$vcpkgPackages"
-            echo "##vso[task.setvariable variable=CI_CUDA_PACKAGES]$cudaPackages"
-            echo "##vso[task.setvariable variable=CI_CMAKE_GENERATOR]$cmakeGenerator"
-            echo "##vso[task.setvariable variable=CI_CMAKE_CONFIG_ARGS]$cmakeCompilerFlag $cmakeCudaCompilerFlag $cmakeConfigArgs"
-            echo "##vso[task.setvariable variable=CI_CMAKE_BUILD_ARGS]$cmakeBuildArgs"
-            echo "##vso[task.setvariable variable=CI_CMAKE_TEST_ARGS]$cmakeTestArgs"
+            # private variables
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_CACHE_KEY_]$cacheKey"
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_CLANG_FULL_VERSION_]$clangFullVersion"
           displayName: Set environment variables
 
         - ${{ if coalesce(target.cache, parameters.cache) }}:
           - task: Cache@2
             displayName: Cache dependencies
             inputs:
-              key: '"$(CI_CACHE_KEY)"'
+              key: '"$(CIMAKESHIFT_CACHE_KEY_)"'
               path: '$(Build.BinariesDirectory)/dependencies'
               cacheHitVar: 'dependencyCacheHit'
 
@@ -278,7 +290,7 @@ jobs:
             }
             if ($IsWindows) {
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
-                    $clangVersion = "$env:CI_CXX_COMPILER_VERSION.0.0"
+                    $clangVersion = "$env:CIMAKESHIFT_CXX_COMPILER_VERSION.0.0"
                     Invoke-WebRequest http://releases.llvm.org/$clangVersion/LLVM-${clangVersion}-win64.exe -OutFile "$HOME/LLVM-installer.exe"
                     Start-Process -Wait "$HOME/LLVM-installer.exe" '/S'
                 }
@@ -289,8 +301,8 @@ jobs:
                         '10.2' = 'http://developer.download.nvidia.com/compute/cuda/10.2/Prod/network_installers/cuda_10.2.89_win10_network.exe'
                     }
                     Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
-                    Write-Host "[CImakeshift] Installing CUDA packages $env:CI_CUDA_PACKAGES"
-                    Start-Process -Wait "$HOME/cuda_installer_network.exe" (@('-s') + ($env:CI_CUDA_PACKAGES -split ' '))
+                    Write-Host "[CImakeshift] Installing CUDA packages $env:CIMAKESHIFT_CUDA_PACKAGES"
+                    Start-Process -Wait "$HOME/cuda_installer_network.exe" (@('-s') + ($env:CIMAKESHIFT_CUDA_PACKAGES -split ' '))
                 }
             }
             elseif ($IsLinux) {
@@ -300,7 +312,7 @@ jobs:
                 & sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     & sudo apt-add-repository ppa:ubuntu-toolchain-r/test
-                    $packages += ("gcc-$env:CI_CXX_COMPILER_VERSION", "g++-$env:CI_CXX_COMPILER_VERSION")
+                    $packages += ("gcc-$env:CIMAKESHIFT_CXX_COMPILER_VERSION", "g++-$env:CIMAKESHIFT_CXX_COMPILER_VERSION")
                 }
                 elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     $clangVersion_Repository = @{
@@ -311,11 +323,11 @@ jobs:
                         '8' = 'llvm-toolchain-bionic-8'
                         '9' = 'llvm-toolchain-bionic-9'
                     }
-                    $clangRepository = $clangVersion_Repository[$env:CI_CXX_COMPILER_VERSION]
+                    $clangRepository = $clangVersion_Repository[$env:CIMAKESHIFT_CXX_COMPILER_VERSION]
                     if ($clangRepository) {
                         & sudo apt-add-repository "deb http://apt.llvm.org/bionic/ $clangRepository main"
                     }
-                    $packages += "clang-$env:CI_CLANG_FULL_VERSION"
+                    $packages += "clang-$env:CIMAKESHIFT_CLANG_FULL_VERSION_"
                 }
                 if ('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
                     $cudaVersion = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}' -replace '_','.'
@@ -329,7 +341,7 @@ jobs:
                     & sudo apt-key add 7fa2af80.pub
                     Invoke-WebRequest http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/$installer -OutFile $installer
                     & sudo dpkg -i $installer
-                    $packages += $env:CI_CUDA_PACKAGES -split ' '
+                    $packages += $env:CIMAKESHIFT_CUDA_PACKAGES -split ' '
                 }
                 & sudo apt-get update
                 Write-Host "[CImakeshift] Installing packages $packages"
@@ -340,7 +352,7 @@ jobs:
             elseif ($IsMacOS) {
                 & sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
-                    & brew install gcc@$env:CI_CXX_COMPILER_VERSION
+                    & brew install gcc@$env:CIMAKESHIFT_CXX_COMPILER_VERSION
                 }
                 if ('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}') {
                     & brew install gcc@9
@@ -355,20 +367,20 @@ jobs:
               & git checkout --quiet --force ${{ coalesce(targets.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports'
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets'
-              echo '##vso[task.setvariable variable=CI_VCPKG_OVERLAY_ARGS]--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
+              echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_ARGS]--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
             displayName: Clone Vcpkg overlay repository
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), ne(variables.CI_VCPKG_PACKAGES, ''), eq(variables.CI_NO_VCPKG, ''))
+            condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG, ''))
 
         - ${{ if ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', '') }}:
           - task: run-vcpkg@0
             displayName: Run Vcpkg to install dependencies
             inputs:
               vcpkgDirectory: '$(Build.BinariesDirectory)/dependencies/vcpkg'
-              vcpkgGitURL: '$(CI_VCPKG_REPO)'
+              vcpkgGitURL: '$(CIMAKESHIFT_VCPKG_REPO)'
               vcpkgGitCommitId: '${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}'
               vcpkgTriplet: '$(VCPKG_TRIPLET)'
-              vcpkgArguments: '$(CI_VCPKG_OVERLAY_ARGS) $(CI_VCPKG_ARGS) $(CI_VCPKG_PACKAGES)'
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CI_VCPKG_PACKAGES, ''), eq(variables.CI_NO_VCPKG, ''))
+              vcpkgArguments: '$(CIMAKESHIFT_VCPKG_OVERLAY_ARGS) $(CIMAKESHIFT_VCPKG_ARGS) $(CIMAKESHIFT_VCPKG_PACKAGES)'
+            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG, ''))
 
         - ${{ each step in parameters.postSetupSteps }}:
           - ${{ each pair in step }}:
@@ -383,17 +395,17 @@ jobs:
               Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/downloads'
               Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/packages'
             displayName: Delete temporary files
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CI_VCPKG_PACKAGES, ''), eq(variables.CI_NO_VCPKG, ''))
+            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG, ''))
 
         - pwsh: |
             If ('${{ parameters.debug }}' -eq 'True') {
                 Get-ChildItem env: | Format-List # for debugging
             }
             if ($IsWindows) {
-                 if ('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}' -eq '' -or "$env:CI_VCPKG_PACKAGES" -eq '' -or "$env:CI_NO_VCPKG" -eq '') {
+                 if ('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}' -eq '' -or "$env:CIMAKESHIFT_VCPKG_PACKAGES" -eq '' -or "$env:CIMAKESHIFT_NO_VCPKG" -eq '') {
                     # If Vcpkg isn't being used, we need to set the correct environment manually.
                     # Cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell
-                    if ($env:CI_CXX_COMPILER_VERSION -lt 19) {
+                    if ($env:CIMAKESHIFT_CXX_COMPILER_VERSION -lt 19) {
                         #$platform_vcvarsPlatform = @{
                         #    'x86': ''
                         #    'x64': 'amd64'
@@ -403,7 +415,7 @@ jobs:
                         #$vcvarsPath = "$vsPath\VC\vcvarsall.bat"
                         #& cmd.exe /c call `"$vcvarsPath`" $vcvarsPlatform && set > %temp%\vcvars.txt"
                     }
-                    elseif ($env:CI_CXX_COMPILER_VERSION -eq '19') {
+                    elseif ($env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19') {
                         $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath
                         $vcvarsPath = "$vsPath\VC\vcvarsall.bat"
                         & cmd.exe /c "call `"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd`" /${{ platform }} && call `"$vcvarsPath`" && set > %temp%\vcvars.txt"
@@ -428,8 +440,8 @@ jobs:
             if ($IsMacOS) {
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS_OLD"
-                    echo "##vso[task.setvariable variable=CC]gcc-$env:CI_CXX_COMPILER_VERSION"
-                    echo "##vso[task.setvariable variable=CXX]g++-$env:CI_CXX_COMPILER_VERSION"
+                    echo "##vso[task.setvariable variable=CC]gcc-$env:CIMAKESHIFT_CXX_COMPILER_VERSION"
+                    echo "##vso[task.setvariable variable=CXX]g++-$env:CIMAKESHIFT_CXX_COMPILER_VERSION"
                 }
                 elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'AppleClang') {
                     $appleClangVersion_xcodeVersion = @{
@@ -440,7 +452,7 @@ jobs:
                         '10_0_1' = '10.3'  # also 10.2, 10.2.1
                         '11'     = '11.3'  # also 11.1, 11.2, 11.2.1
                     }
-                    $xcodeVersion = $appleClangVersion_xcodeVersion[$env:CI_CXX_COMPILER_VERSION]
+                    $xcodeVersion = $appleClangVersion_xcodeVersion[$env:CIMAKESHIFT_CXX_COMPILER_VERSION]
                     & sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer
                     echo '##vso[task.setvariable variable=CC]clang'
                     echo '##vso[task.setvariable variable=CXX]clang++'
@@ -450,6 +462,12 @@ jobs:
 
         - ${{ if not(target.cmakeBuildConfigurations) }}:
           - ${{ each config in parameters.cmakeBuildConfigurations }}:
+
+            - ${{ if or(parameters.preBuildSteps, targets.preBuildSteps, parameters.postBuildSteps, targets.postBuildSteps) }}:
+            - task:
+              - pwsh: |
+                  echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION]${{ config }}'
+                displayName: Set environment variables
 
             - ${{ each step in parameters.preBuildSteps }}:
               - ${{ each pair in step }}:
@@ -465,11 +483,11 @@ jobs:
                 cmakeListsTxtPath: '${{ parameters.cmakeListsTxtPath }}'
                 useVcpkgToolchainFile: true
                 buildDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
-                cmakeAppendedArgs: '-G "$(CI_CMAKE_GENERATOR)" $(CI_CMAKE_CONFIG_ARGS) -DCMAKE_BUILD_TYPE=${{ config }}'
-                buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CI_CMAKE_BUILD_ARGS)'
+                cmakeAppendedArgs: '-G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) -DCMAKE_BUILD_TYPE=${{ config }}'
+                buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CIMAKESHIFT_CMAKE_BUILD_ARGS)'
 
             - pwsh: |
-                $ctestArglist = $env:CI_CMAKE_TEST_ARGS -split ' '
+                $ctestArglist = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
                 & ctest --verbose --test-action Test --build-config ${{ config }} $ctestArglist
               displayName: 'Run tests for ${{ config }}'
               workingDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
@@ -483,6 +501,20 @@ jobs:
 
         - ${{ if target.cmakeBuildConfigurations }}:
           - ${{ each config in target.cmakeBuildConfigurations }}:
+
+            - ${{ if or(parameters.preBuildSteps, targets.preBuildSteps, parameters.postBuildSteps, targets.postBuildSteps) }}:
+            - task:
+              - pwsh: |
+                  echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION]${{ config }}'
+                displayName: Set environment variables
+
+            - ${{ each step in parameters.preBuildSteps }}:
+              - ${{ each pair in step }}:
+                  ${{ pair.key }}: ${{ pair.value }}
+            - ${{ each step in targets.preBuildSteps }}:
+              - ${{ each pair in step }}:
+                  ${{ pair.key }}: ${{ pair.value }}
+
             - task: run-cmake@0
               displayName: 'Build ${{ config }}'
               inputs:
@@ -490,11 +522,11 @@ jobs:
                 cmakeListsTxtPath: '${{ parameters.cmakeListsTxtPath }}'
                 useVcpkgToolchainFile: true
                 buildDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
-                cmakeAppendedArgs: '-G "$(CI_CMAKE_GENERATOR)" $(CI_CMAKE_CONFIG_ARGS) -DCMAKE_BUILD_TYPE=${{ config }}'
-                buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CI_CMAKE_BUILD_ARGS)'
+                cmakeAppendedArgs: '-G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) -DCMAKE_BUILD_TYPE=${{ config }}'
+                buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CIMAKESHIFT_CMAKE_BUILD_ARGS)'
 
             - pwsh: |
-                $ctestArglist = $env:CI_CMAKE_TEST_ARGS -split ' '
+                $ctestArglist = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
                 & ctest --verbose --test-action Test --build-config ${{ config }} $ctestArglist
               displayName: 'Run tests for ${{ config }}'
               workingDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
