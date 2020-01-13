@@ -334,7 +334,7 @@ jobs:
             vcpkgGitCommitId: '${{ parameters.vcpkgRef }}'
             vcpkgTriplet: '$(VCPKG_TRIPLET)'
             vcpkgArguments: '$(CI_VCPKG_OVERLAY_ARGS) $(CI_VCPKG_ARGS) $(CI_VCPKG_PACKAGES)'
-          condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ parameters.vcpkgRef }}', ''))
+          condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ parameters.vcpkgRef }}', ''), ne(variables.CI_VCPKG_PACKAGES, ''))
 
         - pwsh: |
             Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/buildtrees'
