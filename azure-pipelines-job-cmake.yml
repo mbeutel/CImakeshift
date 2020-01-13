@@ -385,9 +385,10 @@ jobs:
         - ${{ each step in parameters.postSetupSteps }}:
           - ${{ each pair in step }}:
               ${{ pair.key }}: ${{ pair.value }}
-        - ${{ each step in target.postSetupSteps }}:
-          - ${{ each pair in step }}:
-              ${{ pair.key }}: ${{ pair.value }}
+        - ${{ if target.postSetupSteps }}:
+          - ${{ each step in target.postSetupSteps }}:
+            - ${{ each pair in step }}:
+                ${{ pair.key }}: ${{ pair.value }}
 
         - ${{ if ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', '') }}:
           - pwsh: |
@@ -472,9 +473,10 @@ jobs:
             - ${{ each step in parameters.preBuildSteps }}:
               - ${{ each pair in step }}:
                   ${{ pair.key }}: ${{ pair.value }}
-            - ${{ each step in target.preBuildSteps }}:
-              - ${{ each pair in step }}:
-                  ${{ pair.key }}: ${{ pair.value }}
+            - ${{ if target.preBuildSteps }}:
+              - ${{ each step in target.preBuildSteps }}:
+                - ${{ each pair in step }}:
+                    ${{ pair.key }}: ${{ pair.value }}
 
             - task: run-cmake@0
               displayName: 'Build ${{ config }}'
@@ -495,9 +497,10 @@ jobs:
             - ${{ each step in parameters.postBuildSteps }}:
               - ${{ each pair in step }}:
                   ${{ pair.key }}: ${{ pair.value }}
-            - ${{ each step in target.postBuildSteps }}:
-              - ${{ each pair in step }}:
-                  ${{ pair.key }}: ${{ pair.value }}
+            - ${{ if target.postBuildSteps }}:
+              - ${{ each step in target.postBuildSteps }}:
+                - ${{ each pair in step }}:
+                    ${{ pair.key }}: ${{ pair.value }}
 
         - ${{ if target.cmakeBuildConfigurations }}:
           - ${{ each config in target.cmakeBuildConfigurations }}:
@@ -511,9 +514,10 @@ jobs:
             - ${{ each step in parameters.preBuildSteps }}:
               - ${{ each pair in step }}:
                   ${{ pair.key }}: ${{ pair.value }}
-            - ${{ each step in target.preBuildSteps }}:
-              - ${{ each pair in step }}:
-                  ${{ pair.key }}: ${{ pair.value }}
+            - ${{ if target.preBuildSteps }}:
+              - ${{ each step in target.preBuildSteps }}:
+                - ${{ each pair in step }}:
+                    ${{ pair.key }}: ${{ pair.value }}
 
             - task: run-cmake@0
               displayName: 'Build ${{ config }}'
@@ -534,9 +538,10 @@ jobs:
             - ${{ each step in parameters.postBuildSteps }}:
               - ${{ each pair in step }}:
                   ${{ pair.key }}: ${{ pair.value }}
-            - ${{ each step in target.postBuildSteps }}:
-              - ${{ each pair in step }}:
-                  ${{ pair.key }}: ${{ pair.value }}
+            - ${{ if target.postBuildSteps }}:
+              - ${{ each step in target.postBuildSteps }}:
+                - ${{ each pair in step }}:
+                    ${{ pair.key }}: ${{ pair.value }}
 
         - task: PublishTestResults@2
           displayName: Publish test results
