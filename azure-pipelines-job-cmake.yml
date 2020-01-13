@@ -120,22 +120,31 @@ jobs:
 
         steps:
         - ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(eq(cxxCompilerVersion, '19'), eq(cxxCompilerVersion, '2015'), eq(cxxCompilerVersion, '18'), eq(cxxCompilerVersion, '2013'), eq(cxxCompilerVersion, '17'), eq(cxxCompilerVersion, '2012'), eq(cxxCompilerVersion, '16'), eq(cxxCompilerVersion, '2010'))) }}:
-          # This image doesn't come with pwsh; bootstrap PS Core before continuing.
+          # This image doesn't come with pwsh; bootstrap PowerShell Core, and also and a recent version of CMake while we're at it.
           - powershell: |
-              Invoke-WebRequest https://github.com/PowerShell/PowerShell/releases/download/v6.2.3/PowerShell-6.2.3-win-x64.zip -OutFile PowerShell-win-x64.zip
+              # PowerShell Core
+              $psCoreVersion = '6.2.3';
+              Invoke-WebRequest "https://github.com/PowerShell/PowerShell/releases/download/v$psCoreVersion/PowerShell-$psCoreVersion-win-x64.zip" -OutFile "PowerShell-$psCoreVersion-win-x64.zip"
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/tools/pwsh'
-              Expand-Archive -Path PowerShell-win-x64.zip -DestinationPath '$(Build.BinariesDirectory)/tools/pwsh'
-              echo "##vso[task.setvariable variable=PATH];$(Build.BinariesDirectory)/tools/pwsh;${env:PATH}"
+              Expand-Archive -Path "PowerShell-$psCoreVersion-win-x64.zip" -DestinationPath '$(Build.BinariesDirectory)/tools/pwsh'
+
+              # CMake
+              $cmakeVersion = '3.16.2'
+              Invoke-WebRequest "https://github.com/Kitware/CMake/releases/download/v$cmakeVersion/cmake-$cmakeVersion-win64-x64.zip" -OutFile "cmake-$cmakeVersion-win64-x64.zip"
+              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/tools/cmake'
+              Expand-Archive -Path "cmake-$cmakeVersion-win64-x64.zip" -DestinationPath '$(Build.BinariesDirectory)/tools/cmake'
+
+              echo "##vso[task.setvariable variable=PATH];$(Build.BinariesDirectory)/tools/pwsh;$(Build.BinariesDirectory)/tools/cmake/cmake-$cmakeVersion-win64-x64;${env:PATH}"
               if ('${{ cxxCompilerVersion }}' -ne '18' -and '${{ cxxCompilerVersion }}' -ne '2013' -and '${{ cxxCompilerVersion }}' -ne '17' -and '${{ cxxCompilerVersion }}' -ne '2012' -and '${{ cxxCompilerVersion }}' -ne '16' -and '${{ cxxCompilerVersion }}' -ne '2010') {
                   echo "##vso[task.setvariable variable=CIMAKESHIFT_NO_VCPKG_]1"
               }
-            displayName: Bootstrap PowerShell Core
+            displayName: Bootstrap PowerShell Core and CMake
 
         - pwsh: |
             Write-Host "or(eq(target.cache, True), eq(parameters.cache, True)): ${{ or(eq(target.cache, True), eq(parameters.cache, True)) }}"
             Write-Host "or(eq(target.cache, 'true'), eq(parameters.cache, 'true')): ${{ or(eq(target.cache, 'true'), eq(parameters.cache, 'true')) }}"
-            if ('${{ or(eq(target.cache, 'true'), eq(target.cache, 'true')) }}' -eq 'True') {
-            #    New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies'
+            if ('or(eq(target.cache, 'true'), eq(target.cache, 'true'))' -eq 'true') {
+                New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies'
             }
 
             $revision='1' # Update this when making incompatible changes to the build pipeline definition.
@@ -299,7 +308,7 @@ jobs:
             if ($IsWindows) {
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     $clangVersion = "$env:CIMAKESHIFT_CXX_COMPILER_VERSION.0.0"
-                    Invoke-WebRequest http://releases.llvm.org/$clangVersion/LLVM-${clangVersion}-win64.exe -OutFile "$HOME/LLVM-installer.exe"
+                    Invoke-WebRequest "http://releases.llvm.org/$clangVersion/LLVM-${clangVersion}-win64.exe" -OutFile "$HOME/LLVM-installer.exe"
                     Start-Process -Wait "$HOME/LLVM-installer.exe" '/S'
                 }
                 if ('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
@@ -345,9 +354,9 @@ jobs:
                         '10.2' = "cuda-repo-${ubuntuVersion}_10.2.89-1_amd64.deb"
                     }
                     $installer = $cudaVersion_installer[$cudaVersion]
-                    Invoke-WebRequest https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub -OutFile 7fa2af80.pub
+                    Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub" -OutFile 7fa2af80.pub
                     & sudo apt-key add 7fa2af80.pub
-                    Invoke-WebRequest http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/$installer -OutFile $installer
+                    Invoke-WebRequest "http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/$installer" -OutFile $installer
                     & sudo dpkg -i $installer
                     $packages += $env:CIMAKESHIFT_CUDA_PACKAGES -split ' '
                 }
@@ -414,29 +423,14 @@ jobs:
                  if ('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}' -eq '' -or "$env:CIMAKESHIFT_VCPKG_PACKAGES" -eq '' -or "$env:CIMAKESHIFT_NO_VCPKG_" -eq '') {
                     # If Vcpkg isn't being used, we need to set the correct environment manually.
                     # Cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell
-                    if ($env:CIMAKESHIFT_CXX_COMPILER_VERSION -lt 19) {
-                        #$platform_vcvarsPlatform = @{
-                        #    'x86': ''
-                        #    'x64': 'amd64'
-                        #}
-                        #$vcvarsPlatform = $platform_vcvarsPlatform['${{ platform }}']
-                        #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -version '[10.0,15.0)' -property installationPath
-                        #$vcvarsPath = "$vsPath\VC\vcvarsall.bat"
-                        #& cmd.exe /c call `"$vcvarsPath`" $vcvarsPlatform && set > %temp%\vcvars.txt"
-                        # TODO
-                    }
-                    else {
-                        if ($env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19') {
-                            $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath
-                            $vcvarsPath = "$vsPath\VC\vcvarsall.bat"
-                            & cmd.exe /c "call `"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd`" /${{ platform }} && call `"$vcvarsPath`" && set > %temp%\vcvars.txt"
-                        }
-                        else {
-                            # assume VS 2017 or newer
-                            $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-                            $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvarsall.bat"
-                            & cmd.exe /c "call `"$vcvarsPath`" ${{ platform }} && set > %temp%\vcvars.txt"
-                        }
+                    if ($env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19_1' -or $env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19_2') {
+                        # VS 2017 or newer
+                        $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath
+                        $vcvarsPath = "$vsPath\VC\vcvarsall.bat"
+                        & cmd.exe /c "call `"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd`" /${{ platform }} && call `"$vcvarsPath`" && set > %temp%\vcvars.txt"
+                        $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+                        $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvarsall.bat"
+                        & cmd.exe /c "call `"$vcvarsPath`" ${{ platform }} && set > %temp%\vcvars.txt"
                         Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
                             if ($_ -match '^(.*?)=(.*)$') {
                                 echo "##vso[task.setvariable variable=$($matches[1])]$($matches[2])"
