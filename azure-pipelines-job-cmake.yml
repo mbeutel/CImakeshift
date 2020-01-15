@@ -315,8 +315,11 @@ jobs:
               cacheHitVar: 'dependencyCacheHit'
 
         - pwsh: |
-            If ('${{ parameters.debug }}' -eq 'True') {
+            if ('${{ parameters.debug }}' -eq 'True') {
                 Get-ChildItem env: | Format-List
+            }
+            if ('${{ or(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), 'true'), and(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), ''), coalesce(target.vcpkgRef, parameters.vcpkgRef))) }}' -eq 'True' ) {
+                Get-ChildItem -Force -Recurse '$(Build.BinariesDirectory)/dependencies'
             }
             if ($IsWindows) {
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
