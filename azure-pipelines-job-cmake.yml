@@ -413,8 +413,7 @@ jobs:
               vcpkgGitCommitId: '${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}'
               vcpkgTriplet: '$(VCPKG_TRIPLET)'
               vcpkgArguments: '$(CIMAKESHIFT_VCPKG_OVERLAY_ARGS) $(CIMAKESHIFT_VCPKG_ARGS) $(CIMAKESHIFT_VCPKG_PACKAGES)'
-            #condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
-            condition: and(ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
+            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
 
         - ${{ each step in parameters.postSetupSteps }}:
           - ${{ each pair in step }}:
@@ -424,16 +423,8 @@ jobs:
             - ${{ each pair in step }}:
                 ${{ pair.key }}: ${{ pair.value }}
 
-        - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
-          - pwsh: |
-              Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/buildtrees'
-              Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/downloads'
-              Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/packages'
-            displayName: Delete temporary files
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
-
         - pwsh: |
-            If ('${{ parameters.debug }}' -eq 'True') {
+            if ('${{ parameters.debug }}' -eq 'True') {
                 Get-ChildItem env: | Format-List # for debugging
             }
             if ($IsWindows) {
@@ -482,6 +473,15 @@ jobs:
                 }
             }
           displayName: Set environment variables
+          
+        - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
+          - pwsh: |
+              Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/buildtrees'
+              Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/downloads'
+              Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/packages'
+            displayName: Delete temporary files
+            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
+
 
         - ${{ if not(target.cmakeBuildConfigurations) }}:
           - ${{ each config in parameters.cmakeBuildConfigurations }}:
@@ -504,7 +504,8 @@ jobs:
               inputs:
                 cmakeListsOrSettingsJson: 'CMakeListsTxtAdvanced'
                 cmakeListsTxtPath: '${{ parameters.cmakeListsTxtPath }}'
-                useVcpkgToolchainFile: true
+                ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
+                  cmakeToolchainPath: '$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake'
                 buildDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
                 cmakeAppendedArgs: '-G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) -DCMAKE_BUILD_TYPE=${{ config }}'
                 buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CIMAKESHIFT_CMAKE_BUILD_ARGS)'
@@ -545,7 +546,8 @@ jobs:
               inputs:
                 cmakeListsOrSettingsJson: 'CMakeListsTxtAdvanced'
                 cmakeListsTxtPath: '${{ parameters.cmakeListsTxtPath }}'
-                useVcpkgToolchainFile: true
+                ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
+                  cmakeToolchainPath: '$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake'
                 buildDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
                 cmakeAppendedArgs: '-G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) -DCMAKE_BUILD_TYPE=${{ config }}'
                 buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CIMAKESHIFT_CMAKE_BUILD_ARGS)'
