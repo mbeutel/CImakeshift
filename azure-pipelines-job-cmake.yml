@@ -75,7 +75,6 @@ parameters:
   cmakeTestArgs: ''
 
   targets: []
-#    target.cache                     # overrides parameters.cache
 #    target.tag                       # overrides parameters.tag
 #    target.os: ''                    # overrides parameters.os
 #    target.platforms: []             # overrides parameters.platforms
@@ -411,7 +410,8 @@ jobs:
               vcpkgGitCommitId: '${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}'
               vcpkgTriplet: '$(VCPKG_TRIPLET)'
               vcpkgArguments: '$(CIMAKESHIFT_VCPKG_OVERLAY_ARGS) $(CIMAKESHIFT_VCPKG_ARGS) $(CIMAKESHIFT_VCPKG_PACKAGES)'
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
+            #condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
+            condition: and(ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
 
         - ${{ each step in parameters.postSetupSteps }}:
           - ${{ each pair in step }}:
