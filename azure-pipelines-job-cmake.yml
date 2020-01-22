@@ -222,8 +222,6 @@ jobs:
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     echo "##vso[task.setvariable variable=CC]gcc-$cxxCompilerVersion"
                     echo "##vso[task.setvariable variable=CXX]g++-$cxxCompilerVersion"
-                    & ln -s $(Get-Command gcc-$cxxCompilerVersion).Path $HOME/bin/gcc
-                    & ln -s $(Get-Command g++-$cxxCompilerVersion).Path $HOME/bin/g++
                 }
                 elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     $clangVersion_clangFullVersion = @{
@@ -453,7 +451,17 @@ jobs:
                     }
                  }
             }
-            if ($IsMacOS) {
+            elseif ($IsLinux) {
+                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
+                    & ln -s $(Get-Command $env:CC).Path $HOME/bin/gcc
+                    & ln -s $(Get-Command $env:CXX).Path $HOME/bin/g++
+                }
+                elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
+                    & ln -s $(Get-Command $env:CC).Path $HOME/bin/clang
+                    & ln -s $(Get-Command $env:CXX).Path $HOME/bin/clang++
+                }
+            }
+            elseif ($IsMacOS) {
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS_OLD"
                     echo "##vso[task.setvariable variable=CC]gcc-$env:CIMAKESHIFT_CXX_COMPILER_VERSION"
