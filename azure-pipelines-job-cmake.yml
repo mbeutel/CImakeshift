@@ -222,8 +222,8 @@ jobs:
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     echo "##vso[task.setvariable variable=CC]gcc-$cxxCompilerVersion"
                     echo "##vso[task.setvariable variable=CXX]g++-$cxxCompilerVersion"
-                    & sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-$cxxCompilerVersion 50
-                    & sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-$cxxCompilerVersion 50
+                    & ln -s $(Get-Command gcc-$cxxCompilerVersion).Path $HOME/bin/gcc
+                    & ln -s $(Get-Command g++-$cxxCompilerVersion).Path $HOME/bin/g++
                 }
                 elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     $clangVersion_clangFullVersion = @{
