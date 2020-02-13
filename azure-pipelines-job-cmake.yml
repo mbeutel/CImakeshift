@@ -326,9 +326,9 @@ jobs:
         - pwsh: |
             if ('${{ parameters.debug }}' -eq 'True') {
                 Get-ChildItem env: | Format-List
-            }
-            if ('${{ or(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), 'true'), and(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), ''), coalesce(target.vcpkgRef, parameters.vcpkgRef))) }}' -eq 'True' ) {
-                Get-ChildItem -Force -Recurse '$(Build.BinariesDirectory)/dependencies'
+                if ('${{ or(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), 'true'), and(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), ''), coalesce(target.vcpkgRef, parameters.vcpkgRef))) }}' -eq 'True') {
+                    Get-ChildItem -Force -Recurse '$(Build.BinariesDirectory)/dependencies'
+                }
             }
             if ($IsWindows) {
                 $ninjaOS = 'win'
@@ -487,11 +487,18 @@ jobs:
               cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
               & git checkout --quiet --force ${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}
               if ($IsWindows) {
-                   & ./bootstrap-vcpkg.bat
+                  & ./bootstrap-vcpkg.bat
               }
               else { # Linux or MacOS
-                   & chmod +x ./bootstrap-vcpkg.sh
-                   & ./bootstrap-vcpkg.sh
+                  # let Vcpkg's bootstrap script figure out which version of GCC to use
+                  $oldCC = $env:CC
+                  $oldCXX = $env:CXX
+                  $env:CC = ''
+                  $env:CXX = ''
+                  & chmod +x ./bootstrap-vcpkg.sh
+                  & ./bootstrap-vcpkg.sh
+                  $env:CC = $oldCC
+                  $env:CXX = $oldCXX
               }
               & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
               Remove-Item -Recurse -Force './buildtrees'
