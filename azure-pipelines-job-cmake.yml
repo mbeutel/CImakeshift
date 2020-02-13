@@ -19,19 +19,19 @@
 # Supported compiler versions:
 #
 # Windows:
-#   MSVC:                  16,   17,   18,   19, 19_1, 19_2
-#         (also known as 2010, 2012, 2013, 2015, 2017, 2019)
-#   Clang:                                                9
-#   NVCC:                                        10_1, 10_2
+#   MSVC:                      19_1, 19_2
+#               (also known as 2017, 2019)
+#   Clang:                              9
+#   NVCC:                      10_1, 10_2
 #
 # Linux:
-#   GCC:                                      5, 6, 7, 8, 9
-#   Clang:                                 4, 5, 6, 7, 8, 9
-#   NVCC:                                        10_1, 10_2
+#   GCC:                    5, 6, 7, 8, 9
+#   Clang:               4, 5, 6, 7, 8, 9
+#   NVCC:                      10_1, 10_2
 #
 # MacOS:
-#   GCC:                                      5, 6, 7, 8, 9
-#   AppleClang:                 8_1, 9, 9_1, 10, 10_0_1, 11
+#   GCC:                    5, 6, 7, 8, 9
+#   AppleClang:       9_1, 10, 10_0_1, 11
 
 
 parameters:
@@ -116,37 +116,12 @@ jobs:
             vmImage: 'windows-2019'
           ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(eq(cxxCompilerVersion, '19_1'), eq(cxxCompilerVersion, '2017'))) }}:
             vmImage: 'vs2017-win2016'
-          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(eq(cxxCompilerVersion, '19'), eq(cxxCompilerVersion, '2015'), eq(cxxCompilerVersion, '18'), eq(cxxCompilerVersion, '2013'), eq(cxxCompilerVersion, '17'), eq(cxxCompilerVersion, '2012'), eq(cxxCompilerVersion, '16'), eq(cxxCompilerVersion, '2010'))) }}:
-            vmImage: 'vs2015-win2012r2'
           ${{ if eq(coalesce(target.os, parameters.os), 'Linux') }}:
             vmImage: 'ubuntu-18.04'
-          ${{ if and(eq(coalesce(target.os, parameters.os), 'MacOS'), or(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'GCC'), and(ne(cxxCompilerVersion, '9'), ne(cxxCompilerVersion, '8_1')))) }}:
+          ${{ if eq(coalesce(target.os, parameters.os), 'MacOS') }}:
             vmImage: 'macOS-10.14'
-          ${{ if and(eq(coalesce(target.os, parameters.os), 'MacOS'), eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'AppleClang'), or(eq(cxxCompilerVersion, '9'), eq(cxxCompilerVersion, '8_1'))) }}:
-            vmImage: 'macOS-10.13'
 
         steps:
-        - ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(eq(cxxCompilerVersion, '19'), eq(cxxCompilerVersion, '2015'), eq(cxxCompilerVersion, '18'), eq(cxxCompilerVersion, '2013'), eq(cxxCompilerVersion, '17'), eq(cxxCompilerVersion, '2012'), eq(cxxCompilerVersion, '16'), eq(cxxCompilerVersion, '2010'))) }}:
-          # This image doesn't come with pwsh; bootstrap PowerShell Core, and also and a recent version of CMake while we're at it.
-          - powershell: |
-              # PowerShell Core
-              $psCoreVersion = '6.2.3'
-              Invoke-WebRequest "https://github.com/PowerShell/PowerShell/releases/download/v$psCoreVersion/PowerShell-$psCoreVersion-win-x64.zip" -OutFile "PowerShell-$psCoreVersion-win-x64.zip"
-              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/tools/pwsh'
-              Expand-Archive -Path "PowerShell-$psCoreVersion-win-x64.zip" -DestinationPath '$(Build.BinariesDirectory)/tools/pwsh'
-
-              # CMake
-              $cmakeVersion = '3.16.2'
-              Invoke-WebRequest "https://github.com/Kitware/CMake/releases/download/v$cmakeVersion/cmake-$cmakeVersion-win64-x64.zip" -OutFile "cmake-$cmakeVersion-win64-x64.zip"
-              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/tools/cmake'
-              Expand-Archive -Path "cmake-$cmakeVersion-win64-x64.zip" -DestinationPath '$(Build.BinariesDirectory)/tools/cmake'
-
-              echo "##vso[task.setvariable variable=PATH];$(Build.BinariesDirectory)/tools/pwsh;$(Build.BinariesDirectory)/tools/cmake/cmake-$cmakeVersion-win64-x64/bin;${env:PATH}"
-              if ('${{ cxxCompilerVersion }}' -ne '18' -and '${{ cxxCompilerVersion }}' -ne '2013' -and '${{ cxxCompilerVersion }}' -ne '17' -and '${{ cxxCompilerVersion }}' -ne '2012' -and '${{ cxxCompilerVersion }}' -ne '16' -and '${{ cxxCompilerVersion }}' -ne '2010') {
-                  echo "##vso[task.setvariable variable=CIMAKESHIFT_NO_VCPKG_]1"
-              }
-            displayName: Bootstrap PowerShell Core and CMake
-
         - pwsh: |
             if ('${{ or(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), 'true'), and(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), ''), coalesce(target.vcpkgRef, parameters.vcpkgRef))) }}' -eq 'true') {
                 New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies'
@@ -166,17 +141,7 @@ jobs:
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
                     echo "##vso[task.setvariable variable=CC]cl.exe"
                     echo "##vso[task.setvariable variable=CXX]cl.exe"
-                }
-                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
                     $msvcOrVSVersion_msvcVersion = @{
-                        '16'   = '16'
-                        '2010' = '16'
-                        '17'   = '17'
-                        '2012' = '17'
-                        '18'   = '18'
-                        '2013' = '18'
-                        '19'   = '19'
-                        '2015' = '19'
                         '19_1' = '19_1'
                         '2017' = '19_1'
                         '19_2' = '19_2'
@@ -184,23 +149,14 @@ jobs:
                     }
                     $cxxCompilerVersion = $msvcOrVSVersion_msvcVersion[$cxxCompilerVersion]
                     $msvcVersion_msbuildGenerator = @{
-                        '16'   = 'Visual Studio 10 2010'
-                        '17'   = 'Visual Studio 11 2012'
-                        '18'   = 'Visual Studio 12 2013'
-                        '19'   = 'Visual Studio 14 2015'
                         '19_1' = 'Visual Studio 15 2017'
                         '19_2' = 'Visual Studio 16 2019'
                     }
                     $msbuildGenerator = $msvcVersion_msbuildGenerator[$cxxCompilerVersion]
-                    if ($cxxCompilerVersion -eq '16' -or $cxxCompilerVersion -eq '17' -or $cxxCompilerVersion -eq '18' -eq $cxxCompilerVersion -eq '19') {
-                         $defaultCmakeGenerator = $msbuildGenerator
-                    }
-                    else {
-                         $defaultCmakeGenerator = 'Ninja'
-                    }
+                    $defaultCmakeGenerator = 'Ninja'
                 }
                 elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
-                    #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+                    #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
                     #$clangClPath = Join-Path $vsPath 'VC\Tools\Llvm\bin\clang-cl.exe'
                     $llvmRoot = "${env:ProgramFiles}\LLVM\bin"
                     $extraPath = "$llvmRoot;$extraPath"
@@ -228,11 +184,6 @@ jobs:
                 }
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang' -or '${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
                     # Set the correct VS environment manually, cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell.
-                    # VS 2015
-                    #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath
-                    #$vcvarsPath = "$vsPath\VC\vcvarsall.bat"
-                    #& cmd.exe /c "set > %temp%\vcvars-before.txt && call `"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd`" /${{ platform }} && call `"$vcvarsPath`" && set > %temp%\vcvars-after.txt"
-                    # VS 2017 or newer
                     $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
                     $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvarsall.bat"
                     & cmd.exe /c "set > %temp%\vcvars-before.txt && call `"$vcvarsPath`" ${{ platform }} && set > %temp%\vcvars-after.txt"
@@ -381,10 +332,11 @@ jobs:
             }
             elseif ($IsLinux) {
                 $ninjaOS = 'linux'
-                $packages = @('cmake')
-                Invoke-WebRequest -OutFile "$HOME/kitware-archive-latest.asc" https://apt.kitware.com/keys/kitware-archive-latest.asc
-                & sudo apt-key add "$HOME/kitware-archive-latest.asc"
-                & sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+                $packages = @()
+                #$packages += 'cmake'
+                #Invoke-WebRequest -OutFile "$HOME/kitware-archive-latest.asc" https://apt.kitware.com/keys/kitware-archive-latest.asc
+                #& sudo apt-key add "$HOME/kitware-archive-latest.asc"
+                #& sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
                 if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                     & sudo apt-add-repository ppa:ubuntu-toolchain-r/test
                     $packages += ('gcc-$(CIMAKESHIFT_CXX_COMPILER_VERSION)', 'g++-$(CIMAKESHIFT_CXX_COMPILER_VERSION)')
@@ -421,8 +373,8 @@ jobs:
                 & sudo apt-get update
                 Write-Host "[CImakeshift] Installing packages $packages"
                 & sudo apt-get install $packages
-                & ln -s /usr/bin/cmake $HOME/bin/cmake
-                & ln -s /usr/bin/ctest $HOME/bin/ctest
+                #& ln -s /usr/bin/cmake $HOME/bin/cmake
+                #& ln -s /usr/bin/ctest $HOME/bin/ctest
                 if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                     & ln -s $(Get-Command $env:CC).Path $HOME/bin/gcc
                     & ln -s $(Get-Command $env:CXX).Path $HOME/bin/g++
@@ -434,7 +386,7 @@ jobs:
             }
             elseif ($IsMacOS) {
                 $ninjaOS = 'mac'
-                & sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer
+                & sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer # TODO: something like this is required for the Vcpkg build to work, but it won't work with the 'macOS-10.15' image which has only Xcode >= 11.0
                 if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                     & brew install gcc@$(CIMAKESHIFT_CXX_COMPILER_VERSION)
                 }
@@ -467,7 +419,7 @@ jobs:
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets'
               Remove-Item -Recurse -Force './.git'
             displayName: Clone Vcpkg overlay repository
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
+            condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''))
 
         - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
           - pwsh: |
@@ -488,7 +440,7 @@ jobs:
               Remove-Item -Recurse -Force './toolsrc'
               Remove-Item -Recurse -Force './docs'
             displayName: Bootstrap Vcpkg
-            condition: and(ne(variables.dependencyCacheHit, 'true'), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
+            condition: and(ne(variables.dependencyCacheHit, 'true'))
 
         - pwsh: |
             if ('${{ parameters.debug }}' -eq 'True') {
@@ -502,8 +454,6 @@ jobs:
                 }
                 elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang') {
                     $appleClangVersion_xcodeVersion = @{
-                        '8_1'    = '8.3.3'
-                        '9'      = '9.2'   # also 9.1, 9.0.1, 9.0
                         '9_1'    = '9.4.1'
                         '10'     = '10.1'  # also 10
                         '10_0_1' = '10.3'  # also 10.2, 10.2.1
@@ -526,7 +476,7 @@ jobs:
               Remove-Item -Recurse -Force './packages'
               #Remove-Item -Recurse -Force './ports' # ??
             displayName: Run Vcpkg to install dependencies
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
+            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''))
 
         - ${{ each step in parameters.postSetupSteps }}:
           - ${{ each pair in step }}:
