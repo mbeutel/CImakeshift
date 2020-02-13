@@ -586,8 +586,8 @@ jobs:
 
         - ${{ if eq(coalesce(target.cmakeTest, parameters.cmakeTest), 'true') }}:
           - task: PublishTestResults@2
-              displayName: Publish test results
-              inputs:
-                testResultsFormat: 'cTest'
-                testResultsFiles: '$(Build.BinariesDirectory)/build/*/Testing/*/Test.xml'
-                testRunTitle: '$(Agent.JobName)'
+            displayName: Publish test results
+            inputs:
+              testResultsFormat: 'cTest'
+              testResultsFiles: '$(Build.BinariesDirectory)/build/*/Testing/*/Test.xml'
+              testRunTitle: '$(Agent.JobName)'
