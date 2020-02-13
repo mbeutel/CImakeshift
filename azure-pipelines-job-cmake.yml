@@ -440,7 +440,7 @@ jobs:
               Remove-Item -Recurse -Force './toolsrc'
               Remove-Item -Recurse -Force './docs'
             displayName: Bootstrap Vcpkg
-            condition: and(ne(variables.dependencyCacheHit, 'true'))
+            condition: ne(variables.dependencyCacheHit, 'true')
 
         - pwsh: |
             if ('${{ parameters.debug }}' -eq 'True') {
