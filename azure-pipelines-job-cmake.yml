@@ -301,6 +301,9 @@ jobs:
                 $vcpkgRepo = 'https://github.com/microsoft/vcpkg.git'
             }
             $vcpkgArgs = '${{ coalesce(target.vcpkgArgs, parameters.vcpkgArgs) }}' -replace '<vcpkgArgs>','${{ parameters.vcpkgArgs }}'
+            if ('${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}') {
+                $vcpkgOverlayArgs = '--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
+            }
             $vcpkgPackages = '${{ join(' ', coalesce(target.vcpkgPackages, parameters.vcpkgPackages)) }}' -replace '<vcpkgPackages>','${{ join(' ', parameters.vcpkgPackages) }}'
             $cacheKey = @(
                 "revision-$revision",
@@ -313,6 +316,9 @@ jobs:
                 $vcpkgPackages,
                 '${{ coalesce(target.tag, parameters.tag) }}'
             ) -join ' '
+            if ('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}') {
+                $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET)'
+            }
             $cmakeConfigArgs = '${{ coalesce(target.cmakeConfigArgs, parameters.cmakeConfigArgs) }}' -replace '<cmakeConfigArgs>','${{ parameters.cmakeConfigArgs }}'
             $cmakeBuildArgs = '${{ coalesce(target.cmakeBuildArgs, parameters.cmakeBuildArgs) }}' -replace '<cmakeBuildArgs>','${{ parameters.cmakeBuildArgs }}'
             $cmakeTestArgs = '${{ coalesce(target.cmakeTestArgs, parameters.cmakeTestArgs) }}' -replace '<cmakeTestArgs>','${{ parameters.cmakeTestArgs }}'
@@ -344,6 +350,8 @@ jobs:
             # private variables
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CACHE_KEY_]$cacheKey"
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CLANG_FULL_VERSION_]$clangFullVersion"
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_ARGS_]$vcpkgOverlayArgs"
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_VCPKG_ARGS_]$cmakeVcpkgArgs"
           displayName: Set environment variables
 
         - pwsh: |
@@ -457,7 +465,7 @@ jobs:
               & git checkout --quiet --force $(CIMAKESHIFT_VCPKG_OVERLAY_REF)
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports'
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets'
-              echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_ARGS_]--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
+              Remove-Item -Recurse -Force './.git'
             displayName: Clone Vcpkg overlay repository
             condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
 
@@ -476,7 +484,9 @@ jobs:
                   & chmod +x ./bootstrap-vcpkg.sh
                   & ./bootstrap-vcpkg.sh -disableMetrics
               }
-              echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_VCPKG_ARGS_]-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET)'
+              Remove-Item -Recurse -Force './.git'
+              Remove-Item -Recurse -Force './toolsrc'
+              Remove-Item -Recurse -Force './docs'
             displayName: Bootstrap Vcpkg
             condition: and(ne(variables.dependencyCacheHit, 'true'), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
 
@@ -510,12 +520,11 @@ jobs:
         - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
           - pwsh: |
               cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
-              $overlayArgs = "$env:CIMAKESHIFT_VCPKG_OVERLAY_ARGS_" -split ' '
-              & ./vcpkg $overlayArgs --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
+              & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
               Remove-Item -Recurse -Force './buildtrees'
               Remove-Item -Recurse -Force './downloads'
               Remove-Item -Recurse -Force './packages'
-              echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_VCPKG_ARGS_]-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET)'
+              #Remove-Item -Recurse -Force './ports' # ??
             displayName: Run Vcpkg to install dependencies
             condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
 
@@ -547,9 +556,8 @@ jobs:
               - pwsh: |
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  $vcpkgArgs = "$env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_" -split ' '
                   $args = '$(CIMAKESHIFT_CMAKE_CONFIG_ARGS)' -split ' '
-                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $vcpkgArgs -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
+                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_VCPKG_ARGS_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
                 displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
@@ -593,9 +601,8 @@ jobs:
               - pwsh: |
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  $vcpkgArgs = "$env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_" -split ' '
                   $args = '$(CIMAKESHIFT_CMAKE_CONFIG_ARGS)' -split ' '
-                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $vcpkgArgs -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
+                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_VCPKG_ARGS_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
                 displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
