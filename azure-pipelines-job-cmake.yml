@@ -153,7 +153,6 @@ jobs:
             }
 
             $revision='1' # Update this when making incompatible changes to the build pipeline definition.
-            $newPath = "${env:PATH}"
             if ($IsWindows) { $tripletOS = 'windows' }
             elseif ($IsLinux) { $tripletOS = 'linux' }
             elseif ($IsMacOS) { $tripletOS = 'osx' }
@@ -163,7 +162,11 @@ jobs:
             $cmakeGenerator = '${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}'
             New-Item -Type Directory -Force "$HOME/bin"
             if ($IsWindows) {
-                $newPath = "$HOME/bin;$newPath"
+                $extraPath = "$HOME/bin"
+                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
+                    echo "##vso[task.setvariable variable=CC]cl.exe"
+                    echo "##vso[task.setvariable variable=CXX]cl.exe"
+                }
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
                     $msvcOrVSVersion_msvcVersion = @{
                         '16'   = '16'
@@ -200,7 +203,7 @@ jobs:
                     #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
                     #$clangClPath = Join-Path $vsPath 'VC\Tools\Llvm\bin\clang-cl.exe'
                     $llvmRoot = "${env:ProgramFiles}\LLVM\bin"
-                    $newPath = "$llvmRoot;$newPath"
+                    $extraPath = "$llvmRoot;$extraPath"
                     $clangClPath = "$llvmRoot\clang-cl.exe"
                     $clangClCompatPath = $clangClPath -replace '\\','/'
                     $cmakeGenerator = $cmakeGenerator -replace 'MSBuild','Visual Studio 16 2019'
@@ -223,9 +226,36 @@ jobs:
                     echo "##vso[task.setvariable variable=CUDA_PATH]$cudaPath"
                     echo "##vso[task.setvariable variable=CUDA_PATH_V$cudaVersionRaw]$cudaPath"
                 }
+                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang' -or ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC' -and ('$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -eq '19_1' -or '$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -eq '19_2'))) {
+                    # Set the correct VS environment manually, cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell.
+                    # VS 2015
+                    #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath
+                    #$vcvarsPath = "$vsPath\VC\vcvarsall.bat"
+                    #& cmd.exe /c "set > %temp%\vcvars-before.txt && call `"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd`" /${{ platform }} && call `"$vcvarsPath`" && set > %temp%\vcvars-after.txt"
+                    # VS 2017 or newer
+                    $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+                    $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvarsall.bat"
+                    & cmd.exe /c "set > %temp%\vcvars-before.txt && call `"$vcvarsPath`" ${{ platform }} && set > %temp%\vcvars-after.txt"
+                    $varsBefore = @{ }
+                    Get-Content "$env:temp\vcvars-before.txt" | Foreach-Object {
+                        if ($_ -match '^(.*?)=(.*)$') {
+                            $varsBefore[$($matches[1])] = "$($matches[2])"
+                        }
+                    }
+                    Get-Content "$env:temp\vcvars-after.txt" | Foreach-Object {
+                        if ($_ -match '^(.*?)=(.*)$') {
+                            if ($($matches[1]) -eq "PATH") {
+                                echo "##vso[task.setvariable variable=$($matches[1])]$extraPath;$($matches[2])"
+                            }
+                            elseif ($varsBefore[$($matches[1])] -ne "$($matches[2])") {
+                                echo "##vso[task.setvariable variable=$($matches[1])]$($matches[2])"
+                            }
+                        }
+                    }
+                }
             }
             elseif ($IsLinux) {
-                $newPath = "$HOME/bin:$newPath"
+                $extraPath = "$HOME/bin"
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     echo "##vso[task.setvariable variable=CC]gcc-$cxxCompilerVersion"
                     echo "##vso[task.setvariable variable=CXX]g++-$cxxCompilerVersion"
@@ -250,9 +280,10 @@ jobs:
                     $cudaVersion_Dash = $cudaVersion -replace '\.','-'
                     $cudaPackages = ("cuda-core cuda-cudart-dev $cudaPackagesRaw" -replace '\s+',' ' -replace ' ',"-$cudaVersion_Dash ").Trim()
                 }
+                echo "##vso[task.setvariable variable=PATH]$extraPath:${env:PATH}"
             }
             elseif ($IsMacOS) {
-                $newPath = "$HOME/bin:$newPath"
+                $extraPath = "$HOME/bin"
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     echo "##vso[task.setvariable variable=CXXFLAGS_OLD]$env:CXXFLAGS"
                     echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
@@ -260,6 +291,7 @@ jobs:
                     echo "##vso[task.setvariable variable=CXX]g++-$cxxCompilerVersion"
                 }
                 $defaultCmakeGenerator = 'Ninja'
+                echo "##vso[task.setvariable variable=PATH]$extraPath:${env:PATH}"
             }
             if ($cmakeGenerator -eq '') {
                 $cmakeGenerator = $defaultCmakeGenerator
@@ -286,7 +318,6 @@ jobs:
             $cmakeTestArgs = '${{ coalesce(target.cmakeTestArgs, parameters.cmakeTestArgs) }}' -replace '<cmakeTestArgs>','${{ parameters.cmakeTestArgs }}'
 
             # public variables accessible to custom job steps
-            echo "##vso[task.setvariable variable=PATH]$newPath"
             echo '##vso[task.setvariable variable=CIMAKESHIFT_CACHE]${{ coalesce(target.cache, parameters.cache) }}'
             echo '##vso[task.setvariable variable=CIMAKESHIFT_TAG]${{ coalesce(target.tag, parameters.tag) }}'
             echo '##vso[task.setvariable variable=CIMAKESHIFT_OS]${{ coalesce(target.os, parameters.os) }}'
@@ -314,14 +345,6 @@ jobs:
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CACHE_KEY_]$cacheKey"
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CLANG_FULL_VERSION_]$clangFullVersion"
           displayName: Set environment variables
-
-        - ${{ if or(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), 'true'), and(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), ''), coalesce(target.vcpkgRef, parameters.vcpkgRef))) }}:
-          - task: Cache@2
-            displayName: Cache dependencies
-            inputs:
-              key: '"$(CIMAKESHIFT_CACHE_KEY_)"'
-              path: '$(Build.BinariesDirectory)/dependencies'
-              cacheHitVar: 'dependencyCacheHit'
 
         - pwsh: |
             if ('${{ parameters.debug }}' -eq 'True') {
@@ -392,6 +415,14 @@ jobs:
                 & sudo apt-get install $packages
                 & ln -s /usr/bin/cmake $HOME/bin/cmake
                 & ln -s /usr/bin/ctest $HOME/bin/ctest
+                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
+                    & ln -s $(Get-Command $env:CC).Path $HOME/bin/gcc
+                    & ln -s $(Get-Command $env:CXX).Path $HOME/bin/g++
+                }
+                elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
+                    & ln -s $(Get-Command $env:CC).Path $HOME/bin/clang
+                    & ln -s $(Get-Command $env:CXX).Path $HOME/bin/clang++
+                }
             }
             elseif ($IsMacOS) {
                 $ninjaOS = 'mac'
@@ -411,43 +442,49 @@ jobs:
             }
           displayName: Install tools
 
+        - ${{ if or(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), 'true'), and(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), ''), coalesce(target.vcpkgRef, parameters.vcpkgRef))) }}:
+          - task: Cache@2
+            displayName: Cache dependencies
+            inputs:
+              key: '"$(CIMAKESHIFT_CACHE_KEY_)"'
+              path: '$(Build.BinariesDirectory)/dependencies'
+              cacheHitVar: 'dependencyCacheHit'
+
+        - ${{ if and(coalesce(target.vcpkgRef, parameters.vcpkgRef), coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo), coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef)) }}:
+          - pwsh: |
+              & git clone ${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }} '$(Build.BinariesDirectory)/dependencies/overlay-repo'
+              cd '$(Build.BinariesDirectory)/dependencies/overlay-repo'
+              & git checkout --quiet --force ${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}
+              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports'
+              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets'
+              echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_ARGS_]--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
+            displayName: Clone Vcpkg overlay repository
+            condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
+
+        - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
+          - pwsh: |
+              & git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/dependencies/vcpkg'
+              cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
+              & git checkout --quiet --force ${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}
+              if ($IsWindows) {
+                  & ./bootstrap-vcpkg.bat -disableMetrics
+              }
+              else { # Linux or MacOS
+                  # let Vcpkg's bootstrap script figure out which version of GCC to use
+                  $env:CC = ''
+                  $env:CXX = ''
+                  & chmod +x ./bootstrap-vcpkg.sh
+                  & ./bootstrap-vcpkg.sh -disableMetrics
+              }
+              echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_VCPKG_ARGS_]-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET)'
+            displayName: Bootstrap Vcpkg
+            condition: and(ne(variables.dependencyCacheHit, 'true'), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
+
         - pwsh: |
             if ('${{ parameters.debug }}' -eq 'True') {
                 Get-ChildItem env: | Format-List # for debugging
             }
-            if ($IsWindows) {
-                 # If Vcpkg isn't being used, we need to set the correct environment manually.
-                 # Cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell
-                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang' -or ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC' -and ('$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -eq '19_1' -or '$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -eq '19_2'))) {
-                     # VS 2017 or newer
-                     $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath
-                     $vcvarsPath = "$vsPath\VC\vcvarsall.bat"
-                     & cmd.exe /c "call `"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd`" /${{ platform }} && call `"$vcvarsPath`" && set > %temp%\vcvars.txt"
-                     $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-                     $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvarsall.bat"
-                     & cmd.exe /c "call `"$vcvarsPath`" ${{ platform }} && set > %temp%\vcvars.txt"
-                     Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
-                         if ($_ -match '^(.*?)=(.*)$') {
-                             echo "##vso[task.setvariable variable=$($matches[1])]$($matches[2])"
-                         }
-                     }
-                 }
-                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
-                     echo "##vso[task.setvariable variable=CC]cl.exe"
-                     echo "##vso[task.setvariable variable=CXX]cl.exe"
-                 }
-            }
-            elseif ($IsLinux) {
-                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
-                    & ln -s $(Get-Command $env:CC).Path $HOME/bin/gcc
-                    & ln -s $(Get-Command $env:CXX).Path $HOME/bin/g++
-                }
-                elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
-                    & ln -s $(Get-Command $env:CC).Path $HOME/bin/clang
-                    & ln -s $(Get-Command $env:CXX).Path $HOME/bin/clang++
-                }
-            }
-            elseif ($IsMacOS) {
+            if ($IsMacOS) {
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS_OLD"
                     echo '##vso[task.setvariable variable=CC]gcc-$(CIMAKESHIFT_CXX_COMPILER_VERSION)'
@@ -470,36 +507,8 @@ jobs:
             }
           displayName: Set environment variables
 
-        - ${{ if and(coalesce(target.vcpkgRef, parameters.vcpkgRef), coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo), coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef)) }}:
-          - pwsh: |
-              & git clone ${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }} '$(Build.BinariesDirectory)/dependencies/overlay-repo'
-              cd '$(Build.BinariesDirectory)/dependencies/overlay-repo'
-              & git checkout --quiet --force ${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}
-              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports'
-              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets'
-              echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_ARGS_]--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
-            displayName: Clone Vcpkg overlay repository
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
-
         - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
           - pwsh: |
-              & git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/dependencies/vcpkg'
-              cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
-              & git checkout --quiet --force ${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}
-              if ($IsWindows) {
-                  & ./bootstrap-vcpkg.bat
-              }
-              else { # Linux or MacOS
-                  # let Vcpkg's bootstrap script figure out which version of GCC to use
-                  $oldCC = $env:CC
-                  $oldCXX = $env:CXX
-                  $env:CC = ''
-                  $env:CXX = ''
-                  & chmod +x ./bootstrap-vcpkg.sh
-                  & ./bootstrap-vcpkg.sh
-                  $env:CC = $oldCC
-                  $env:CXX = $oldCXX
-              }
               & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
               Remove-Item -Recurse -Force './buildtrees'
               Remove-Item -Recurse -Force './downloads'
