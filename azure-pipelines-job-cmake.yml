@@ -127,7 +127,7 @@ jobs:
                 New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies'
             }
 
-            $revision='1' # Update this when making incompatible changes to the build pipeline definition.
+            $revision='2' # Update this when making incompatible changes to the build pipeline definition.
             if ($IsWindows) { $tripletOS = 'windows' }
             elseif ($IsLinux) { $tripletOS = 'linux' }
             elseif ($IsMacOS) { $tripletOS = 'osx' }
@@ -437,8 +437,6 @@ jobs:
                   & ./bootstrap-vcpkg.sh -disableMetrics
               }
               Remove-Item -Recurse -Force './.git'
-              Remove-Item -Recurse -Force './toolsrc'
-              Remove-Item -Recurse -Force './docs'
             displayName: Bootstrap Vcpkg
             condition: ne(variables.dependencyCacheHit, 'true')
 
