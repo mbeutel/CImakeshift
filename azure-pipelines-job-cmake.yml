@@ -67,7 +67,7 @@ parameters:
   vcpkgCache: '' # on by default if Vcpkg is used
 
   # Build options
-  cmakeListsTxtPath: '$(Build.SourcesDirectory)/CMakeLists.txt'
+  cmakeSourceDir: '$(Build.SourcesDirectory)'
   cmakeBuildConfigurations: [Debug, RelWithDebInfo]
   cmakeGenerator: ''
   cmakeConfig: true
@@ -331,7 +331,7 @@ jobs:
                 Get-ChildItem -Force -Recurse '$(Build.BinariesDirectory)/dependencies'
             }
             if ($IsWindows) {
-                $ninjaOS = 'windows'
+                $ninjaOS = 'win'
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     $clangVersion = "$env:CIMAKESHIFT_CXX_COMPILER_VERSION.0.0"
                     Invoke-WebRequest "http://releases.llvm.org/$clangVersion/LLVM-${clangVersion}-win64.exe" -OutFile "$HOME/LLVM-installer.exe"
@@ -394,7 +394,7 @@ jobs:
                 & ln -s /usr/bin/ctest $HOME/bin/ctest
             }
             elseif ($IsMacOS) {
-                $ninjaOS = 'macos'
+                $ninjaOS = 'mac'
                 & sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     & brew install gcc@$env:CIMAKESHIFT_CXX_COMPILER_VERSION
@@ -529,7 +529,7 @@ jobs:
               - pwsh: |
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $(CIMAKESHIFT_CMAKE_TOOLCHAIN_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeListsTxtPath }}"
+                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $(CIMAKESHIFT_CMAKE_TOOLCHAIN_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}"
                 displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
@@ -573,7 +573,7 @@ jobs:
               - pwsh: |
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $(CIMAKESHIFT_CMAKE_TOOLCHAIN_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeListsTxtPath }}"
+                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $(CIMAKESHIFT_CMAKE_TOOLCHAIN_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}"
                 displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
