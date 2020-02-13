@@ -153,6 +153,7 @@ jobs:
             }
 
             $revision='1' # Update this when making incompatible changes to the build pipeline definition.
+            $newPath = "${env:PATH}"
             if ($IsWindows) { $tripletOS = 'windows' }
             elseif ($IsLinux) { $tripletOS = 'linux' }
             elseif ($IsMacOS) { $tripletOS = 'osx' }
@@ -160,7 +161,9 @@ jobs:
             $vcpkgTriplet = '${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}' -replace '<os>',$tripletOS -replace '<platform>','${{ platform }}'
             $cudaPackagesRaw = ('${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}' -replace '<cudaPackages>','${{ join(' ', parameters.cudaPackages) }}' -replace '\s+',' ').Trim() + ' '
             $cmakeGenerator = '${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}'
+            New-Item -Type Directory -Force "$HOME/bin"
             if ($IsWindows) {
+                $newPath = "$HOME/bin;$newPath"
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
                     $msvcOrVSVersion_msvcVersion = @{
                         '16'   = '16'
@@ -197,7 +200,7 @@ jobs:
                     #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
                     #$clangClPath = Join-Path $vsPath 'VC\Tools\Llvm\bin\clang-cl.exe'
                     $llvmRoot = "${env:ProgramFiles}\LLVM\bin"
-                    echo "##vso[task.setvariable variable=PATH]$llvmRoot;${env:PATH}"
+                    $newPath = "$llvmRoot;$newPath"
                     $clangClPath = "$llvmRoot\clang-cl.exe"
                     $clangClCompatPath = $clangClPath -replace '\\','/'
                     $cmakeGenerator = $cmakeGenerator -replace 'MSBuild','Visual Studio 16 2019'
@@ -220,11 +223,9 @@ jobs:
                     echo "##vso[task.setvariable variable=CUDA_PATH]$cudaPath"
                     echo "##vso[task.setvariable variable=CUDA_PATH_V$cudaVersionRaw]$cudaPath"
                 }
-                #echo "##vso[task.setvariable variable=Path]$(Build.BinariesDirectory)/dependencies/cmake/bin;${env:Path}"
             }
             elseif ($IsLinux) {
-                New-Item -Type Directory -Force "$HOME/bin"
-                echo "##vso[task.setvariable variable=PATH]$HOME/bin:${env:PATH}"
+                $newPath = "$HOME/bin:$newPath"
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     echo "##vso[task.setvariable variable=CC]gcc-$cxxCompilerVersion"
                     echo "##vso[task.setvariable variable=CXX]g++-$cxxCompilerVersion"
@@ -251,6 +252,7 @@ jobs:
                 }
             }
             elseif ($IsMacOS) {
+                $newPath = "$HOME/bin:$newPath"
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     echo "##vso[task.setvariable variable=CXXFLAGS_OLD]$env:CXXFLAGS"
                     echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
@@ -284,6 +286,7 @@ jobs:
             $cmakeTestArgs = '${{ coalesce(target.cmakeTestArgs, parameters.cmakeTestArgs) }}' -replace '<cmakeTestArgs>','${{ parameters.cmakeTestArgs }}'
 
             # public variables accessible to custom job steps
+            echo "##vso[task.setvariable variable=PATH]$newPath"
             echo '##vso[task.setvariable variable=CIMAKESHIFT_CACHE]${{ coalesce(target.cache, parameters.cache) }}'
             echo '##vso[task.setvariable variable=CIMAKESHIFT_TAG]${{ coalesce(target.tag, parameters.tag) }}'
             echo '##vso[task.setvariable variable=CIMAKESHIFT_OS]${{ coalesce(target.os, parameters.os) }}'
@@ -328,6 +331,7 @@ jobs:
                 Get-ChildItem -Force -Recurse '$(Build.BinariesDirectory)/dependencies'
             }
             if ($IsWindows) {
+                $ninjaOS = 'windows'
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     $clangVersion = "$env:CIMAKESHIFT_CXX_COMPILER_VERSION.0.0"
                     Invoke-WebRequest "http://releases.llvm.org/$clangVersion/LLVM-${clangVersion}-win64.exe" -OutFile "$HOME/LLVM-installer.exe"
@@ -345,6 +349,7 @@ jobs:
                 }
             }
             elseif ($IsLinux) {
+                $ninjaOS = 'linux'
                 $packages = @('cmake')
                 Invoke-WebRequest -OutFile "$HOME/kitware-archive-latest.asc" https://apt.kitware.com/keys/kitware-archive-latest.asc
                 & sudo apt-key add "$HOME/kitware-archive-latest.asc"
@@ -389,6 +394,7 @@ jobs:
                 & ln -s /usr/bin/ctest $HOME/bin/ctest
             }
             elseif ($IsMacOS) {
+                $ninjaOS = 'macos'
                 & sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     & brew install gcc@$env:CIMAKESHIFT_CXX_COMPILER_VERSION
@@ -397,6 +403,9 @@ jobs:
                     & brew install gcc@9
                 }
             }
+            $ninjaVersion = '1.10.0'
+            Invoke-WebRequest "https://github.com/ninja-build/ninja/releases/download/v${ninjaVersion}/ninja-$ninjaOS.zip" -OutFile "$HOME/ninja-$ninjaOS.zip"
+            Expand-Archive -LiteralPath "$HOME/ninja-$ninjaOS.zip" -DestinationPath "$HOME/bin"
           displayName: Install tools
 
         - pwsh: |
