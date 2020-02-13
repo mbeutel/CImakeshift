@@ -406,6 +406,10 @@ jobs:
             $ninjaVersion = '1.10.0'
             Invoke-WebRequest "https://github.com/ninja-build/ninja/releases/download/v${ninjaVersion}/ninja-$ninjaOS.zip" -OutFile "$HOME/ninja-$ninjaOS.zip"
             Expand-Archive -LiteralPath "$HOME/ninja-$ninjaOS.zip" -DestinationPath "$HOME/bin"
+            if (-not $IsWindows) {
+                & chmod +x $HOME/bin/ninja
+            }
+            & $HOME/bin/ninja --help
           displayName: Install tools
 
         - pwsh: |
