@@ -226,7 +226,7 @@ jobs:
                     echo "##vso[task.setvariable variable=CUDA_PATH]$cudaPath"
                     echo "##vso[task.setvariable variable=CUDA_PATH_V$cudaVersionRaw]$cudaPath"
                 }
-                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang' -or ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC' -and ('$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -eq '19_1' -or '$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -eq '19_2'))) {
+                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang' -or '${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
                     # Set the correct VS environment manually, cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell.
                     # VS 2015
                     #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath
@@ -355,13 +355,13 @@ jobs:
             }
             if ($IsWindows) {
                 $ninjaOS = 'win'
-                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
+                if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
                     $clangVersion = '$(CIMAKESHIFT_CXX_COMPILER_VERSION).0.0'
                     Invoke-WebRequest "http://releases.llvm.org/$clangVersion/LLVM-${clangVersion}-win64.exe" -OutFile "$HOME/LLVM-installer.exe"
                     Start-Process -Wait "$HOME/LLVM-installer.exe" '/S'
                 }
-                if ('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
-                    $cudaVersion = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}' -replace '_','.'
+                if ('$(CIMAKESHIFT_CUDA_COMPILER)') {
+                    $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
                     $cudaVersion_URL = @{
                         '10.1' = 'http://developer.download.nvidia.com/compute/cuda/10.1/Prod/network_installers/cuda_10.1.105_win10_network.exe'
                         '10.2' = 'http://developer.download.nvidia.com/compute/cuda/10.2/Prod/network_installers/cuda_10.2.89_win10_network.exe'
@@ -377,11 +377,11 @@ jobs:
                 Invoke-WebRequest -OutFile "$HOME/kitware-archive-latest.asc" https://apt.kitware.com/keys/kitware-archive-latest.asc
                 & sudo apt-key add "$HOME/kitware-archive-latest.asc"
                 & sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
-                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
+                if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                     & sudo apt-add-repository ppa:ubuntu-toolchain-r/test
                     $packages += ('gcc-$(CIMAKESHIFT_CXX_COMPILER_VERSION)', 'g++-$(CIMAKESHIFT_CXX_COMPILER_VERSION)')
                 }
-                elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
+                elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
                     $clangVersion_Repository = @{
                         '4' = ''
                         '5' = 'llvm-toolchain-bionic-5.0'
@@ -396,8 +396,8 @@ jobs:
                     }
                     $packages += 'clang-$(CIMAKESHIFT_CLANG_FULL_VERSION_)'
                 }
-                if ('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
-                    $cudaVersion = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}' -replace '_','.'
+                if ('$(CIMAKESHIFT_CUDA_COMPILER)') {
+                    $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
                     $ubuntuVersion = 'ubuntu1804'
                     $cudaVersion_installer = @{
                         '10.1' = "cuda-repo-${ubuntuVersion}_10.1.105-1_amd64.deb"
@@ -415,11 +415,11 @@ jobs:
                 & sudo apt-get install $packages
                 & ln -s /usr/bin/cmake $HOME/bin/cmake
                 & ln -s /usr/bin/ctest $HOME/bin/ctest
-                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
+                if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                     & ln -s $(Get-Command $env:CC).Path $HOME/bin/gcc
                     & ln -s $(Get-Command $env:CXX).Path $HOME/bin/g++
                 }
-                elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
+                elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
                     & ln -s $(Get-Command $env:CC).Path $HOME/bin/clang
                     & ln -s $(Get-Command $env:CXX).Path $HOME/bin/clang++
                 }
@@ -427,10 +427,10 @@ jobs:
             elseif ($IsMacOS) {
                 $ninjaOS = 'mac'
                 & sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer
-                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
+                if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                     & brew install gcc@$(CIMAKESHIFT_CXX_COMPILER_VERSION)
                 }
-                if ('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}') {
+                if ('$(CIMAKESHIFT_VCPKG_REF)') {
                     & brew install gcc@9
                 }
             }
@@ -452,9 +452,9 @@ jobs:
 
         - ${{ if and(coalesce(target.vcpkgRef, parameters.vcpkgRef), coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo), coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef)) }}:
           - pwsh: |
-              & git clone ${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }} '$(Build.BinariesDirectory)/dependencies/overlay-repo'
+              & git clone $(CIMAKESHIFT_VCPKG_OVERLAY_REPO) '$(Build.BinariesDirectory)/dependencies/overlay-repo'
               cd '$(Build.BinariesDirectory)/dependencies/overlay-repo'
-              & git checkout --quiet --force ${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}
+              & git checkout --quiet --force $(CIMAKESHIFT_VCPKG_OVERLAY_REF)
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports'
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets'
               echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_ARGS_]--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
@@ -465,7 +465,7 @@ jobs:
           - pwsh: |
               & git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/dependencies/vcpkg'
               cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
-              & git checkout --quiet --force ${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}
+              & git checkout --quiet --force $(CIMAKESHIFT_VCPKG_REF)
               if ($IsWindows) {
                   & ./bootstrap-vcpkg.bat -disableMetrics
               }
@@ -485,12 +485,12 @@ jobs:
                 Get-ChildItem env: | Format-List # for debugging
             }
             if ($IsMacOS) {
-                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
+                if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                     echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS_OLD"
                     echo '##vso[task.setvariable variable=CC]gcc-$(CIMAKESHIFT_CXX_COMPILER_VERSION)'
                     echo '##vso[task.setvariable variable=CXX]g++-$(CIMAKESHIFT_CXX_COMPILER_VERSION)'
                 }
-                elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'AppleClang') {
+                elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang') {
                     $appleClangVersion_xcodeVersion = @{
                         '8_1'    = '8.3.3'
                         '9'      = '9.2'   # also 9.1, 9.0.1, 9.0
@@ -509,7 +509,9 @@ jobs:
 
         - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
           - pwsh: |
-              & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
+              cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
+              $overlayArgs = "$env:CIMAKESHIFT_VCPKG_OVERLAY_ARGS_" -split ' '
+              & ./vcpkg $overlayArgs --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
               Remove-Item -Recurse -Force './buildtrees'
               Remove-Item -Recurse -Force './downloads'
               Remove-Item -Recurse -Force './packages'
@@ -545,8 +547,9 @@ jobs:
               - pwsh: |
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
+                  $vcpkgArgs = "$env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_" -split ' '
                   $args = '$(CIMAKESHIFT_CMAKE_CONFIG_ARGS)' -split ' '
-                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_VCPKG_ARGS_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
+                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $vcpkgArgs -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
                 displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
@@ -590,8 +593,9 @@ jobs:
               - pwsh: |
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
+                  $vcpkgArgs = "$env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_" -split ' '
                   $args = '$(CIMAKESHIFT_CMAKE_CONFIG_ARGS)' -split ' '
-                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_VCPKG_ARGS_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
+                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $vcpkgArgs -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
                 displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
