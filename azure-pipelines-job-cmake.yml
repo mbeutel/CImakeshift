@@ -371,7 +371,7 @@ jobs:
                     if ($clangRepository) {
                         & sudo apt-add-repository "deb http://apt.llvm.org/bionic/ $clangRepository main"
                     }
-                    $packages += 'clang-$(CIMAKESHIFT_CLANG_FULL_VERSION_)"
+                    $packages += 'clang-$(CIMAKESHIFT_CLANG_FULL_VERSION_)'
                 }
                 if ('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
                     $cudaVersion = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}' -replace '_','.'
