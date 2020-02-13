@@ -409,7 +409,6 @@ jobs:
             if (-not $IsWindows) {
                 & chmod +x $HOME/bin/ninja
             }
-            & $HOME/bin/ninja --help
           displayName: Install tools
 
         - pwsh: |
