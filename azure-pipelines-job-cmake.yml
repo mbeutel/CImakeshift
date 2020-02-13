@@ -333,7 +333,7 @@ jobs:
             if ($IsWindows) {
                 $ninjaOS = 'win'
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
-                    $clangVersion = "$env:CIMAKESHIFT_CXX_COMPILER_VERSION.0.0"
+                    $clangVersion = '$(CIMAKESHIFT_CXX_COMPILER_VERSION).0.0'
                     Invoke-WebRequest "http://releases.llvm.org/$clangVersion/LLVM-${clangVersion}-win64.exe" -OutFile "$HOME/LLVM-installer.exe"
                     Start-Process -Wait "$HOME/LLVM-installer.exe" '/S'
                 }
@@ -344,8 +344,8 @@ jobs:
                         '10.2' = 'http://developer.download.nvidia.com/compute/cuda/10.2/Prod/network_installers/cuda_10.2.89_win10_network.exe'
                     }
                     Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
-                    Write-Host "[CImakeshift] Installing CUDA packages $env:CIMAKESHIFT_CUDA_PACKAGES"
-                    Start-Process -Wait "$HOME/cuda_installer_network.exe" (@('-s') + ($env:CIMAKESHIFT_CUDA_PACKAGES -split ' '))
+                    Write-Host '[CImakeshift] Installing CUDA packages $(CIMAKESHIFT_CUDA_PACKAGES)'
+                    Start-Process -Wait "$HOME/cuda_installer_network.exe" (@('-s') + ('$(CIMAKESHIFT_CUDA_PACKAGES)' -split ' '))
                 }
             }
             elseif ($IsLinux) {
@@ -356,7 +356,7 @@ jobs:
                 & sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     & sudo apt-add-repository ppa:ubuntu-toolchain-r/test
-                    $packages += ("gcc-$env:CIMAKESHIFT_CXX_COMPILER_VERSION", "g++-$env:CIMAKESHIFT_CXX_COMPILER_VERSION")
+                    $packages += ('gcc-$(CIMAKESHIFT_CXX_COMPILER_VERSION)', 'g++-$(CIMAKESHIFT_CXX_COMPILER_VERSION)')
                 }
                 elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
                     $clangVersion_Repository = @{
@@ -367,11 +367,11 @@ jobs:
                         '8' = 'llvm-toolchain-bionic-8'
                         '9' = 'llvm-toolchain-bionic-9'
                     }
-                    $clangRepository = $clangVersion_Repository[$env:CIMAKESHIFT_CXX_COMPILER_VERSION]
+                    $clangRepository = $clangVersion_Repository['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                     if ($clangRepository) {
                         & sudo apt-add-repository "deb http://apt.llvm.org/bionic/ $clangRepository main"
                     }
-                    $packages += "clang-$env:CIMAKESHIFT_CLANG_FULL_VERSION_"
+                    $packages += 'clang-$(CIMAKESHIFT_CLANG_FULL_VERSION_)"
                 }
                 if ('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
                     $cudaVersion = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}' -replace '_','.'
@@ -385,7 +385,7 @@ jobs:
                     & sudo apt-key add 7fa2af80.pub
                     Invoke-WebRequest "http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/$installer" -OutFile $installer
                     & sudo dpkg -i $installer
-                    $packages += $env:CIMAKESHIFT_CUDA_PACKAGES -split ' '
+                    $packages += '$(CIMAKESHIFT_CUDA_PACKAGES)' -split ' '
                 }
                 & sudo apt-get update
                 Write-Host "[CImakeshift] Installing packages $packages"
@@ -397,7 +397,7 @@ jobs:
                 $ninjaOS = 'mac'
                 & sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
-                    & brew install gcc@$env:CIMAKESHIFT_CXX_COMPILER_VERSION
+                    & brew install gcc@$(CIMAKESHIFT_CXX_COMPILER_VERSION)
                 }
                 if ('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}') {
                     & brew install gcc@9
@@ -418,7 +418,7 @@ jobs:
             if ($IsWindows) {
                  # If Vcpkg isn't being used, we need to set the correct environment manually.
                  # Cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell
-                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang' -or ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC' -and ($env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19_1' -or $env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19_2'))) {
+                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang' -or ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC' -and ('$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -eq '19_1' -or '$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -eq '19_2'))) {
                      # VS 2017 or newer
                      $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath
                      $vcvarsPath = "$vsPath\VC\vcvarsall.bat"
@@ -450,8 +450,8 @@ jobs:
             elseif ($IsMacOS) {
                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
                     echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS_OLD"
-                    echo "##vso[task.setvariable variable=CC]gcc-$env:CIMAKESHIFT_CXX_COMPILER_VERSION"
-                    echo "##vso[task.setvariable variable=CXX]g++-$env:CIMAKESHIFT_CXX_COMPILER_VERSION"
+                    echo '##vso[task.setvariable variable=CC]gcc-$(CIMAKESHIFT_CXX_COMPILER_VERSION)'
+                    echo '##vso[task.setvariable variable=CXX]g++-$(CIMAKESHIFT_CXX_COMPILER_VERSION)'
                 }
                 elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'AppleClang') {
                     $appleClangVersion_xcodeVersion = @{
@@ -462,7 +462,7 @@ jobs:
                         '10_0_1' = '10.3'  # also 10.2, 10.2.1
                         '11'     = '11.3'  # also 11.1, 11.2, 11.2.1
                     }
-                    $xcodeVersion = $appleClangVersion_xcodeVersion[$env:CIMAKESHIFT_CXX_COMPILER_VERSION]
+                    $xcodeVersion = $appleClangVersion_xcodeVersion['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                     & sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer
                     echo '##vso[task.setvariable variable=CC]clang'
                     echo '##vso[task.setvariable variable=CXX]clang++'
@@ -536,19 +536,21 @@ jobs:
               - pwsh: |
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $(CIMAKESHIFT_CMAKE_TOOLCHAIN_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}"
+                  $args = '$(CIMAKESHIFT_CMAKE_CONFIG_ARGS)' -split ' '
+                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_TOOLCHAIN_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
                 displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
               - pwsh: |
-                  & cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $(CIMAKESHIFT_CMAKE_BUILD_ARGS)
+                  $args = '$(CIMAKESHIFT_CMAKE_BUILD_ARGS)' -split ' '
+                  & cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $args
                 displayName: 'Build ${{ config }}'
 
             - ${{ if eq(coalesce(target.cmakeTest, parameters.cmakeTest), 'true') }}:
               - pwsh: |
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  $ctestArglist = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
-                  & ctest --verbose --test-action Test --build-config ${{ config }} $ctestArglist
+                  $args = '$(CIMAKESHIFT_CMAKE_TEST_ARGS)' -split ' '
+                  & ctest --verbose --test-action Test --build-config ${{ config }} $args
                 displayName: 'Run tests for ${{ config }}'
 
             - ${{ each step in parameters.postBuildSteps }}:
@@ -579,19 +581,21 @@ jobs:
               - pwsh: |
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $(CIMAKESHIFT_CMAKE_TOOLCHAIN_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}"
+                  $args = '$(CIMAKESHIFT_CMAKE_CONFIG_ARGS)' -split ' '
+                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_TOOLCHAIN_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
                 displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
               - pwsh: |
-                  & cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $(CIMAKESHIFT_CMAKE_BUILD_ARGS)
+                  $args = '$(CIMAKESHIFT_CMAKE_BUILD_ARGS)' -split ' '
+                  & cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $args
                 displayName: 'Build ${{ config }}'
 
             - ${{ if eq(coalesce(target.cmakeTest, parameters.cmakeTest), 'true') }}:
               - pwsh: |
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  $ctestArglist = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
-                  & ctest --verbose --test-action Test --build-config ${{ config }} $ctestArglist
+                  $args = '$(CIMAKESHIFT_CMAKE_TEST_ARGS)' -split ' '
+                  & ctest --verbose --test-action Test --build-config ${{ config }} $args
                 displayName: 'Run tests for ${{ config }}'
 
             - ${{ each step in parameters.postBuildSteps }}:
