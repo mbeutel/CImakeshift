@@ -563,7 +563,6 @@ jobs:
           - ${{ each config in target.cmakeBuildConfigurations }}:
 
             - ${{ if coalesce(parameters.preBuildSteps, target.preBuildSteps, parameters.postBuildSteps, target.postBuildSteps) }}:
-            - task:
               - pwsh: |
                   echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION]${{ config }}'
                 displayName: Set environment variables for build configuration
