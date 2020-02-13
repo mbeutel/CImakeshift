@@ -70,8 +70,11 @@ parameters:
   cmakeListsTxtPath: '$(Build.SourcesDirectory)/CMakeLists.txt'
   cmakeBuildConfigurations: [Debug, RelWithDebInfo]
   cmakeGenerator: ''
+  cmakeConfig: true
   cmakeConfigArgs: ''
+  cmakeBuild: true
   cmakeBuildArgs: ''
+  cmakeTest: true
   cmakeTestArgs: ''
 
   targets: []
@@ -93,8 +96,11 @@ parameters:
 #    target.vcpkgCache                # overrides parameters.vcpkgCache
 #    target.cudaPackages              # overrides parameters.cudaPackages; can refer to parameters.cudaPackages as '<cudaPackages>'
 #    target.cmakeGenerator            # overrides parameters.cmakeGenerator
+#    target.cmakeConfig               # overrides parameters.cmakeConfig
 #    target.cmakeConfigArgs           # overrides parameters.cmakeConfigArgs; can refer to parameters.cmakeConfigArgs as '<cmakeConfigArgs>'
+#    target.cmakeBuild                # overrides parameters.cmakeBuild
 #    target.cmakeBuildArgs            # overrides parameters.cmakeBuildArgs; can refer to parameters.cmakeBuildArgs as '<cmakeBuildArgs>'
+#    target.cmakeTest                 # overrides parameters.cmakeTest
 #    target.cmakeTestArgs             # overrides parameters.cmakeTestArgs; can refer to parameters.cmakeTestArgs as '<cmakeTestArgs>'
 
 jobs:
@@ -393,62 +399,30 @@ jobs:
             }
           displayName: Install tools
 
-        - ${{ if and(coalesce(target.vcpkgRef, parameters.vcpkgRef), coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo), coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef)) }}:
-          - pwsh: |
-              & git clone ${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }} '$(Build.BinariesDirectory)/dependencies/overlay-repo'
-              cd '$(Build.BinariesDirectory)/dependencies/overlay-repo'
-              & git checkout --quiet --force ${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}
-              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports'
-              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets'
-              echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_ARGS]--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
-            displayName: Clone Vcpkg overlay repository
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
-
-        - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
-          - task: run-vcpkg@0
-            displayName: Run Vcpkg to install dependencies
-            inputs:
-              vcpkgDirectory: '$(Build.BinariesDirectory)/dependencies/vcpkg'
-              vcpkgGitURL: '$(CIMAKESHIFT_VCPKG_REPO)'
-              vcpkgGitCommitId: '${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}'
-              vcpkgTriplet: '$(VCPKG_TRIPLET)'
-              vcpkgArguments: '$(CIMAKESHIFT_VCPKG_OVERLAY_ARGS) $(CIMAKESHIFT_VCPKG_ARGS) $(CIMAKESHIFT_VCPKG_PACKAGES)'
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
-
-        - ${{ each step in parameters.postSetupSteps }}:
-          - ${{ each pair in step }}:
-              ${{ pair.key }}: ${{ pair.value }}
-        - ${{ if target.postSetupSteps }}:
-          - ${{ each step in target.postSetupSteps }}:
-            - ${{ each pair in step }}:
-                ${{ pair.key }}: ${{ pair.value }}
-
         - pwsh: |
             if ('${{ parameters.debug }}' -eq 'True') {
                 Get-ChildItem env: | Format-List # for debugging
             }
             if ($IsWindows) {
-                 if ('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}' -eq '' -or "$env:CIMAKESHIFT_VCPKG_PACKAGES" -eq '' -or "$env:CIMAKESHIFT_NO_VCPKG_" -eq '') {
-                    # If Vcpkg isn't being used, we need to set the correct environment manually.
-                    # Cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell
-                    if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang' -or ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC' -and ($env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19_1' -or $env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19_2'))) {
-                        # VS 2017 or newer
-                        $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath
-                        $vcvarsPath = "$vsPath\VC\vcvarsall.bat"
-                        & cmd.exe /c "call `"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd`" /${{ platform }} && call `"$vcvarsPath`" && set > %temp%\vcvars.txt"
-                        $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-                        $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvarsall.bat"
-                        & cmd.exe /c "call `"$vcvarsPath`" ${{ platform }} && set > %temp%\vcvars.txt"
-                        Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
-                            if ($_ -match '^(.*?)=(.*)$') {
-                                echo "##vso[task.setvariable variable=$($matches[1])]$($matches[2])"
-                            }
-                        }
-                    }
-                    if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
-                        echo "##vso[task.setvariable variable=CC]cl.exe"
-                        echo "##vso[task.setvariable variable=CXX]cl.exe"
-                    }
+                 # If Vcpkg isn't being used, we need to set the correct environment manually.
+                 # Cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell
+                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang' -or ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC' -and ($env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19_1' -or $env:CIMAKESHIFT_CXX_COMPILER_VERSION -eq '19_2'))) {
+                     # VS 2017 or newer
+                     $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" -legacy -latest -property installationPath
+                     $vcvarsPath = "$vsPath\VC\vcvarsall.bat"
+                     & cmd.exe /c "call `"C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd`" /${{ platform }} && call `"$vcvarsPath`" && set > %temp%\vcvars.txt"
+                     $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+                     $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvarsall.bat"
+                     & cmd.exe /c "call `"$vcvarsPath`" ${{ platform }} && set > %temp%\vcvars.txt"
+                     Get-Content "$env:temp\vcvars.txt" | Foreach-Object {
+                         if ($_ -match '^(.*?)=(.*)$') {
+                             echo "##vso[task.setvariable variable=$($matches[1])]$($matches[2])"
+                         }
+                     }
+                 }
+                 if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
+                     echo "##vso[task.setvariable variable=CC]cl.exe"
+                     echo "##vso[task.setvariable variable=CXX]cl.exe"
                  }
             }
             elseif ($IsLinux) {
@@ -483,15 +457,45 @@ jobs:
                 }
             }
           displayName: Set environment variables
-          
+
+        - ${{ if and(coalesce(target.vcpkgRef, parameters.vcpkgRef), coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo), coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef)) }}:
+          - pwsh: |
+              & git clone ${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }} '$(Build.BinariesDirectory)/dependencies/overlay-repo'
+              cd '$(Build.BinariesDirectory)/dependencies/overlay-repo'
+              & git checkout --quiet --force ${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}
+              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports'
+              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets'
+              echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_ARGS_]--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
+            displayName: Clone Vcpkg overlay repository
+            condition: and(ne(variables.dependencyCacheHit, 'true'), ne('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}', ''), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
+
         - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
           - pwsh: |
-              Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/buildtrees'
-              Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/downloads'
-              Remove-Item -Recurse -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/packages'
-            displayName: Delete temporary files
+              & git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/dependencies/vcpkg'
+              cd '$(Build.BinariesDirectory)/dependencies/overlay-repo'
+              & git checkout --quiet --force ${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}
+              if ($IsWindows) {
+                   & ./bootstrap-vcpkg.bat
+              }
+              else { # Linux or MacOS
+                   & chmod +x ./bootstrap-vcpkg.sh
+                   & ./bootstrap-vcpkg.sh
+              }
+              & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
+              Remove-Item -Recurse -Force './buildtrees'
+              Remove-Item -Recurse -Force './downloads'
+              Remove-Item -Recurse -Force './packages'
+              echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_TOOLCHAIN_]-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake"'
+            displayName: Run Vcpkg to install dependencies
             condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
 
+        - ${{ each step in parameters.postSetupSteps }}:
+          - ${{ each pair in step }}:
+              ${{ pair.key }}: ${{ pair.value }}
+        - ${{ if target.postSetupSteps }}:
+          - ${{ each step in target.postSetupSteps }}:
+            - ${{ each pair in step }}:
+                ${{ pair.key }}: ${{ pair.value }}
 
         - ${{ if not(target.cmakeBuildConfigurations) }}:
           - ${{ each config in parameters.cmakeBuildConfigurations }}:
@@ -509,22 +513,24 @@ jobs:
                 - ${{ each pair in step }}:
                     ${{ pair.key }}: ${{ pair.value }}
 
-            - task: run-cmake@0
-              displayName: 'Build ${{ config }}'
-              inputs:
-                cmakeListsOrSettingsJson: 'CMakeListsTxtAdvanced'
-                cmakeListsTxtPath: '${{ parameters.cmakeListsTxtPath }}'
-                ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
-                  cmakeToolchainPath: '$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake'
-                buildDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
-                cmakeAppendedArgs: '-G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) -DCMAKE_BUILD_TYPE=${{ config }}'
-                buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CIMAKESHIFT_CMAKE_BUILD_ARGS)'
+            - ${{ if eq(coalesce(target.cmakeConfig, parameters.cmakeConfig), 'true') }}:
+              - pwsh: |
+                  New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
+                  cd '$(Build.BinariesDirectory)/build/${{ config }}'
+                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $(CIMAKESHIFT_CMAKE_TOOLCHAIN_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeListsTxtPath }}"
+                displayName: 'Configure ${{ config }}'
 
-            - pwsh: |
-                $ctestArglist = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
-                & ctest --verbose --test-action Test --build-config ${{ config }} $ctestArglist
-              displayName: 'Run tests for ${{ config }}'
-              workingDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
+            - ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
+              - pwsh: |
+                  & cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $(CIMAKESHIFT_CMAKE_BUILD_ARGS)
+                displayName: 'Build ${{ config }}'
+
+            - ${{ if eq(coalesce(target.cmakeTest, parameters.cmakeTest), 'true') }}:
+              - pwsh: |
+                  cd '$(Build.BinariesDirectory)/build/${{ config }}'
+                  $ctestArglist = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
+                  & ctest --verbose --test-action Test --build-config ${{ config }} $ctestArglist
+                displayName: 'Run tests for ${{ config }}'
 
             - ${{ each step in parameters.postBuildSteps }}:
               - ${{ each pair in step }}:
@@ -551,22 +557,24 @@ jobs:
                 - ${{ each pair in step }}:
                     ${{ pair.key }}: ${{ pair.value }}
 
-            - task: run-cmake@0
-              displayName: 'Build ${{ config }}'
-              inputs:
-                cmakeListsOrSettingsJson: 'CMakeListsTxtAdvanced'
-                cmakeListsTxtPath: '${{ parameters.cmakeListsTxtPath }}'
-                ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
-                  cmakeToolchainPath: '$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake'
-                buildDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
-                cmakeAppendedArgs: '-G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) -DCMAKE_BUILD_TYPE=${{ config }}'
-                buildWithCMakeArgs: '--parallel --verbose --config ${{ config }} $(CIMAKESHIFT_CMAKE_BUILD_ARGS)'
+            - ${{ if eq(coalesce(target.cmakeConfig, parameters.cmakeConfig), 'true') }}:
+              - pwsh: |
+                  New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
+                  cd '$(Build.BinariesDirectory)/build/${{ config }}'
+                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $(CIMAKESHIFT_CMAKE_TOOLCHAIN_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeListsTxtPath }}"
+                displayName: 'Configure ${{ config }}'
 
-            - pwsh: |
-                $ctestArglist = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
-                & ctest --verbose --test-action Test --build-config ${{ config }} $ctestArglist
-              displayName: 'Run tests for ${{ config }}'
-              workingDirectory: '$(Build.BinariesDirectory)/build/${{ config }}'
+            - ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
+              - pwsh: |
+                  & cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $(CIMAKESHIFT_CMAKE_BUILD_ARGS)
+                displayName: 'Build ${{ config }}'
+
+            - ${{ if eq(coalesce(target.cmakeTest, parameters.cmakeTest), 'true') }}:
+              - pwsh: |
+                  cd '$(Build.BinariesDirectory)/build/${{ config }}'
+                  $ctestArglist = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
+                  & ctest --verbose --test-action Test --build-config ${{ config }} $ctestArglist
+                displayName: 'Run tests for ${{ config }}'
 
             - ${{ each step in parameters.postBuildSteps }}:
               - ${{ each pair in step }}:
@@ -576,9 +584,10 @@ jobs:
                 - ${{ each pair in step }}:
                     ${{ pair.key }}: ${{ pair.value }}
 
-        - task: PublishTestResults@2
-          displayName: Publish test results
-          inputs:
-            testResultsFormat: 'cTest'
-            testResultsFiles: '$(Build.BinariesDirectory)/build/*/Testing/*/Test.xml'
-            testRunTitle: '$(Agent.JobName)'
+        - ${{ if eq(coalesce(target.cmakeTest, parameters.cmakeTest), 'true') }}:
+          task: PublishTestResults@2
+            displayName: Publish test results
+            inputs:
+              testResultsFormat: 'cTest'
+              testResultsFiles: '$(Build.BinariesDirectory)/build/*/Testing/*/Test.xml'
+              testRunTitle: '$(Agent.JobName)'
