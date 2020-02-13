@@ -280,7 +280,7 @@ jobs:
                     $cudaVersion_Dash = $cudaVersion -replace '\.','-'
                     $cudaPackages = ("cuda-core cuda-cudart-dev $cudaPackagesRaw" -replace '\s+',' ' -replace ' ',"-$cudaVersion_Dash ").Trim()
                 }
-                echo "##vso[task.setvariable variable=PATH]$extraPath:${env:PATH}"
+                echo "##vso[task.setvariable variable=PATH]${extraPath}:${env:PATH}"
             }
             elseif ($IsMacOS) {
                 $extraPath = "$HOME/bin"
@@ -291,7 +291,7 @@ jobs:
                     echo "##vso[task.setvariable variable=CXX]g++-$cxxCompilerVersion"
                 }
                 $defaultCmakeGenerator = 'Ninja'
-                echo "##vso[task.setvariable variable=PATH]$extraPath:${env:PATH}"
+                echo "##vso[task.setvariable variable=PATH]${extraPath}:${env:PATH}"
             }
             if ($cmakeGenerator -eq '') {
                 $cmakeGenerator = $defaultCmakeGenerator
