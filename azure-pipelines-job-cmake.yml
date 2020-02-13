@@ -472,7 +472,7 @@ jobs:
         - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
           - pwsh: |
               & git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/dependencies/vcpkg'
-              cd '$(Build.BinariesDirectory)/dependencies/overlay-repo'
+              cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
               & git checkout --quiet --force ${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}
               if ($IsWindows) {
                    & ./bootstrap-vcpkg.bat
