@@ -513,7 +513,7 @@ jobs:
               Remove-Item -Recurse -Force './buildtrees'
               Remove-Item -Recurse -Force './downloads'
               Remove-Item -Recurse -Force './packages'
-              echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_TOOLCHAIN_]-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake"'
+              echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_VCPKG_ARGS_]-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET)'
             displayName: Run Vcpkg to install dependencies
             condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''), eq(variables.CIMAKESHIFT_NO_VCPKG_, ''))
 
@@ -546,7 +546,7 @@ jobs:
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
                   $args = '$(CIMAKESHIFT_CMAKE_CONFIG_ARGS)' -split ' '
-                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_TOOLCHAIN_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
+                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_VCPKG_ARGS_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
                 displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
@@ -591,7 +591,7 @@ jobs:
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
                   $args = '$(CIMAKESHIFT_CMAKE_CONFIG_ARGS)' -split ' '
-                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_TOOLCHAIN_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
+                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_VCPKG_ARGS_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
                 displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
