@@ -292,8 +292,11 @@ jobs:
             echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_PACKAGES]$vcpkgPackages"
             echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATIONS]${{ join(target.cmakeBuildConfigurations, ';') }}'
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_GENERATOR]$cmakeGenerator"
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_CONFIG]${{ coalesce(target.cmakeConfig, parameters.cmakeConfig) }}"
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_CONFIG_ARGS]$cmakeCompilerFlag $cmakeCudaCompilerFlag $cmakeConfigArgs"
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD]${{ coalesce(target.cmakeBuild, parameters.cmakeBuild) }}"
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_ARGS]$cmakeBuildArgs"
+            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_TEST]${{ coalesce(target.cmakeTest, parameters.cmakeTest) }}"
             echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_TEST_ARGS]$cmakeTestArgs"
             echo '##vso[task.setvariable variable=VCPKG_ROOT]$(Build.BinariesDirectory)/dependencies/vcpkg'
             echo "##vso[task.setvariable variable=VCPKG_TRIPLET]$vcpkgTriplet"
