@@ -109,7 +109,7 @@ jobs:
   - ${{ each platform in target.platforms }}:
     #- ${{ each cxxCompilerVersion in coalesce(target.cxxCompilerVersions, parameters.cxxCompilerVersions) }}:
     - ${{ each cxxCompilerVersion in target.cxxCompilerVersions }}:
-      - job: '${{ coalesce(target.os, parameters.os) }}_${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}${{ cxxCompilerVersion }}_${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}_${{ coalesce(target.tag, parameters.tag) }}_${{ platform }}'
+      - job: '${{ coalesce(target.os, parameters.os) }}_${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}${{ cxxCompilerVersion }}_${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}_${{ join('_', coalesce(target.cmakeBuildConfigurations, parameters.cmakeBuildConfigurations)) }}_${{ coalesce(target.tag, parameters.tag) }}_${{ platform }}'
         pool:
           name: Azure Pipelines
           ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'Clang'), le(9, cxxCompilerVersion)), and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'MSVC'), or(eq(cxxCompilerVersion, '19_2'), eq(cxxCompilerVersion, '2019'))))) }}:
