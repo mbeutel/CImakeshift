@@ -20,7 +20,7 @@ jobs:
     vcpkgRef: 5deea3b975fe62990973d73a102de818d83ba20c
     vcpkgOverlayRepo: 'https://mp-force.ziti.uni-heidelberg.de/asc/infrastructure/vcpkg-ports.git'
     vcpkgOverlayRef: 10fe870259f4d716b83cc3792710b47d6b407b16
-    vcpkgPackages: ['cmakeshift', 'catch2']
+    vcpkgPackages: ['cmakeshift', 'gsl-lite']
 
     cmakeSourceDir: '$(Build.SourcesDirectory)/ci'
     cmakeConfigArgs: '-DBUILD_TESTING=ON'

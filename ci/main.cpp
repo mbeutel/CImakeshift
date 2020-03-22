@@ -1,3 +1,6 @@
 
-#define CATCH_CONFIG_MAIN
-#include <catch2/catch.hpp>
+#include <gsl-lite/gsl-lite.hpp>
+
+int main(void)
+{
+}
