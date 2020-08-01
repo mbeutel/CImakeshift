@@ -27,7 +27,7 @@ jobs:
 
     cmakeSourceDir: '$(Build.SourcesDirectory)/ci'
     cmakeConfigArgs: '-DBUILD_TESTING=ON'
-    cmakeTestArgs: '--exclude-regex cuda' # do not run CUDA tests
+    #cmakeTestArgs: '--exclude-regex cuda' # do not run CUDA tests
 
     targets:
 
