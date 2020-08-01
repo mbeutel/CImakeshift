@@ -332,6 +332,7 @@ jobs:
                     $cudaVersion_URL = @{
                         '10.1' = 'http://developer.download.nvidia.com/compute/cuda/10.1/Prod/network_installers/cuda_10.1.105_win10_network.exe'
                         '10.2' = 'http://developer.download.nvidia.com/compute/cuda/10.2/Prod/network_installers/cuda_10.2.89_win10_network.exe'
+                        '11.0' = 'http://developer.download.nvidia.com/compute/cuda/11.0.2/network_installers/cuda_11.0.2_win10_network.exe'
                     }
                     Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
                     Write-Host '[CImakeshift] Installing CUDA packages $(CIMAKESHIFT_CUDA_PACKAGES)'
@@ -369,8 +370,11 @@ jobs:
                     $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
                     $ubuntuVersion = 'ubuntu1804'
                     $cudaVersion_installer = @{
-                        '10.1' = "cuda-repo-${ubuntuVersion}_10.1.105-1_amd64.deb"
-                        '10.2' = "cuda-repo-${ubuntuVersion}_10.2.89-1_amd64.deb"
+                        #'10.1' = "cuda-repo-${ubuntuVersion}_10.1.105-1_amd64.deb"
+                        '10.1' = "cuda-10-1_10.1.243-1_amd64.deb"
+                        #'10.2' = "cuda-repo-${ubuntuVersion}_10.2.89-1_amd64.deb"
+                        '10.2' = "cuda-10-2_10.2.89-1_amd64.deb"
+                        '11.0' = "cuda-11-0_11.0.2-1_amd64.deb"
                     }
                     $installer = $cudaVersion_installer[$cudaVersion]
                     Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub" -OutFile 7fa2af80.pub
