@@ -133,7 +133,11 @@ jobs:
             elseif ($IsMacOS) { $tripletOS = 'osx' }
             $cxxCompilerVersion = '${{ cxxCompilerVersion }}'
             $vcpkgTriplet = '${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}' -replace '<os>',$tripletOS -replace '<platform>','${{ platform }}'
-            $cudaPackagesRaw = ('${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}' -replace '<cudaPackages>','${{ join(' ', parameters.cudaPackages) }}' -replace '\s+',' ').Trim() + ' '
+            #$cudaPackagesRaw = ('${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}' -replace '<cudaPackages>','${{ join(' ', parameters.cudaPackages) }}' -replace '\s+',' ').Trim() + ' '
+            $cudaPackagesRaw = ('${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}' -replace '<cudaPackages>','${{ join(' ', parameters.cudaPackages) }}' -replace '\s+',' ').Trim()
+            $cudaPackagesRawArray = $cudaPackagesRaw -split ' '
+            echo "cudaPackagesRaw: '$cudaPackagesRaw'"
+            echo "cudaPackagesRawArray: $cudaPackagesRawArray"
             $cmakeGenerator = '${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}'
             New-Item -Type Directory -Force "$HOME/bin"
             if ($IsWindows) {
@@ -178,7 +182,7 @@ jobs:
                     $cudaVersion = $cudaVersionRaw -replace '_','.'
                     $cudaPath = "$env:SystemDrive/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v$cudaVersion"
                     $cmakeCudaCompilerFlag = "-DCMAKE_CUDA_COMPILER=`"$cudaPath/bin/nvcc.exe`""
-                    $cudaPackages = @(@('nvcc') + $cudaPackagesRawArray | % { "$_-$cudaVersion" }) -join ' '
+                    $cudaPackages = @(@('nvcc') + $cudaPackagesRawArray | % { "${_}_$cudaVersion" }) -join ' '
                     echo "##vso[task.setvariable variable=CUDA_PATH]$cudaPath"
                     echo "##vso[task.setvariable variable=CUDA_PATH_V$cudaVersionRaw]$cudaPath"
                 }
@@ -230,7 +234,7 @@ jobs:
                     $cudaVersion = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}' -replace '_','.'
                     $cmakeCudaCompilerFlag = "-DCMAKE_CUDA_COMPILER=`"/usr/local/cuda-$cudaVersion/bin/nvcc`""
                     $cudaVersion_Dash = $cudaVersion -replace '\.','-'
-                    $cudaPackages = @(@('toolkit', 'cudart-dev') + $cudaPackagesRawArray | % { "cuda-$_-${cudaVersion_Dash}" }) -join ' '
+                    $cudaPackages = @(@('cuda', 'cudart-dev') + $cudaPackagesRawArray | % { "cuda-$_-${cudaVersion_Dash}" }) -join ' '
                 }
                 echo "##vso[task.setvariable variable=PATH]${extraPath}:${env:PATH}"
             }
@@ -369,18 +373,17 @@ jobs:
                 if ('$(CIMAKESHIFT_CUDA_COMPILER)') {
                     $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
                     $ubuntuVersion = 'ubuntu1804'
-                    $cudaVersion_installer = @{
-                        #'10.1' = "cuda-repo-${ubuntuVersion}_10.1.105-1_amd64.deb"
-                        '10.1' = "cuda-10-1_10.1.243-1_amd64.deb"
-                        #'10.2' = "cuda-repo-${ubuntuVersion}_10.2.89-1_amd64.deb"
-                        '10.2' = "cuda-10-2_10.2.89-1_amd64.deb"
-                        '11.0' = "cuda-11-0_11.0.2-1_amd64.deb"
-                    }
-                    $installer = $cudaVersion_installer[$cudaVersion]
+                    #$cudaVersion_packageVersion = @{
+                    #    '10.1' = '10-1_10.1.243-1'
+                    #    '10.2' = 'cuda-10-2_10.2.89-1'
+                    #    '11.0' = 'cuda-11-0_11.0.2-1'
+                    #}
+                    #$packageVersion = $cudaVersion_packageVersion[$cudaVersion]
+                    Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/cuda-$ubuntuVersion.pin" -OutFile cuda.pin
+                    & sudo mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
                     Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub" -OutFile 7fa2af80.pub
                     & sudo apt-key add 7fa2af80.pub
-                    Invoke-WebRequest "http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/$installer" -OutFile $installer
-                    & sudo dpkg -i $installer
+                    & sudo add-apt-repository 'deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/ /'
                     $packages += '$(CIMAKESHIFT_CUDA_PACKAGES)' -split ' '
                 }
                 & sudo apt-get update
