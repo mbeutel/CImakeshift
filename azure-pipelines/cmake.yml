@@ -319,12 +319,12 @@ jobs:
             if ($IsWindows) {
                 $ninjaOS = 'win'
                 if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
-                    $clangCompilerVersion_clangVersion = @{
-                        '9' = '9.0.0'
-                        '10' = '10.0.0'
+                    $clangCompilerVersion_URL = @{
+                        '9' = 'http://releases.llvm.org/9.0.0/LLVM-9.0.0-win64.exe'
+                        '10' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/LLVM-10.0.0-win64.exe'
                     }
-                    $clangVersion = $clangCompilerVersion_clangVersion['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
-                    Invoke-WebRequest "http://releases.llvm.org/$clangVersion/LLVM-${clangVersion}-win64.exe" -OutFile "$HOME/LLVM-installer.exe"
+                    $clangURL = $clangCompilerVersion_URL['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
+                    Invoke-WebRequest $clangURL -OutFile "$HOME/LLVM-installer.exe"
                     Start-Process -Wait "$HOME/LLVM-installer.exe" '/S'
                 }
                 if ('$(CIMAKESHIFT_CUDA_COMPILER)') {
