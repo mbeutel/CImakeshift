@@ -17,9 +17,9 @@ resources:
 jobs:
 - template: azure-pipelines/cmake.yml@CImakeshift
   parameters:
-    vcpkgRef: 5deea3b975fe62990973d73a102de818d83ba20c
+    vcpkgRef: 00e44369cb23f911821ee96888cbb4785810ba07
     vcpkgOverlayRepo: 'https://mp-force.ziti.uni-heidelberg.de/asc/infrastructure/vcpkg-ports.git'
-    vcpkgOverlayRef: 10fe870259f4d716b83cc3792710b47d6b407b16
+    vcpkgOverlayRef: 28b52673c26e29ccdce93ffa78413f26a0b11c8f
     vcpkgPackages: ['cmakeshift', 'gsl-lite']
 
     cmakeSourceDir: '$(Build.SourcesDirectory)/ci'
@@ -35,7 +35,7 @@ jobs:
 
     - os: Windows
       cxxCompiler: Clang
-      cxxCompilerVersions: [9]
+      cxxCompilerVersions: [9, 10]
       platforms: [x86, x64]
 
     - os: Windows
