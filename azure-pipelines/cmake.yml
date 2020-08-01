@@ -112,7 +112,7 @@ jobs:
       - job: '${{ coalesce(target.os, parameters.os) }}_${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}${{ cxxCompilerVersion }}_${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}_${{ join(''_'', coalesce(target.cmakeBuildConfigurations, parameters.cmakeBuildConfigurations)) }}_${{ coalesce(target.tag, parameters.tag) }}_${{ platform }}'
         pool:
           name: Azure Pipelines
-          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'Clang'), le(9, cxxCompilerVersion)), and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'MSVC'), or(eq(cxxCompilerVersion, '19_2'), eq(cxxCompilerVersion, '2019'))))) }}:
+          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'Clang'), le(10, cxxCompilerVersion)), and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'MSVC'), or(eq(cxxCompilerVersion, '19_2'), eq(cxxCompilerVersion, '2019'))))) }}:
             vmImage: 'windows-2019'
           ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(eq(cxxCompilerVersion, '19_1'), eq(cxxCompilerVersion, '2017'))) }}:
             vmImage: 'vs2017-win2016'
@@ -219,6 +219,7 @@ jobs:
                         '7' = '7'
                         '8' = '8'
                         '9' = '9'
+                        '10' = '10'
                     }
                     $clangFullVersion = $clangVersion_clangFullVersion[$cxxCompilerVersion]
                     echo "##vso[task.setvariable variable=CC]clang-$clangFullVersion"
@@ -351,11 +352,12 @@ jobs:
                 elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
                     $clangVersion_Repository = @{
                         '4' = ''
-                        '5' = 'llvm-toolchain-bionic-5.0'
-                        '6' = 'llvm-toolchain-bionic-6.0'
-                        '7' = 'llvm-toolchain-bionic-7'
-                        '8' = 'llvm-toolchain-bionic-8'
-                        '9' = 'llvm-toolchain-bionic-9'
+                        '5' = 'llvm-toolchain-5.0'
+                        '6' = 'llvm-toolchain-6.0'
+                        '7' = 'llvm-toolchain-7'
+                        '8' = 'llvm-toolchain-8'
+                        '9' = 'llvm-toolchain-9'
+                        '10' = 'llvm-toolchain-10'
                     }
                     $clangRepository = $clangVersion_Repository['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                     if ($clangRepository) {
