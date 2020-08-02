@@ -118,8 +118,10 @@ jobs:
             vmImage: 'vs2017-win2016'
           ${{ if eq(coalesce(target.os, parameters.os), 'Linux') }}:
             vmImage: 'ubuntu-18.04'
-          ${{ if eq(coalesce(target.os, parameters.os), 'MacOS') }}:
+          ${{ if and(eq(coalesce(target.os, parameters.os), 'MacOS'), eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'AppleClang'), or(eq(cxxCompilerVersion, '9_1'), eq(cxxCompilerVersion, '10'))) }}:
             vmImage: 'macOS-10.14'
+          ${{ if and(eq(coalesce(target.os, parameters.os), 'MacOS'), or(ne(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'AppleClang'), eq(cxxCompilerVersion, '10_0_1'), eq(cxxCompilerVersion, '11'), eq(cxxCompilerVersion, '11_0_3'))) }}:
+            vmImage: 'macOS-10.15'
 
         steps:
         - pwsh: |
@@ -454,7 +456,8 @@ jobs:
                         '9_1'    = '9.4.1'
                         '10'     = '10.1'  # also 10
                         '10_0_1' = '10.3'  # also 10.2, 10.2.1
-                        '11'     = '11.3'  # also 11.1, 11.2, 11.2.1
+                        '11'     = '11.3.1'  # also 11.1, 11.2, 11.2.1, 11.3
+                        '11_0_3' = '11.6'  # also 11.4, 11.4.1, 11.5
                     }
                     $xcodeVersion = $appleClangVersion_xcodeVersion['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                     & sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer
