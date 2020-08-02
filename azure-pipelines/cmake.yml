@@ -112,7 +112,7 @@ jobs:
       - job: '${{ coalesce(target.os, parameters.os) }}_${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}${{ cxxCompilerVersion }}_${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}_${{ join(''_'', coalesce(target.cmakeBuildConfigurations, parameters.cmakeBuildConfigurations)) }}_${{ coalesce(target.tag, parameters.tag) }}_${{ platform }}'
         pool:
           name: Azure Pipelines
-          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'Clang'), le(10, cxxCompilerVersion)), and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'MSVC'), or(eq(cxxCompilerVersion, '19_2'), eq(cxxCompilerVersion, '2019'))))) }}:
+          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'Clang'), le(9, cxxCompilerVersion)), and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'MSVC'), or(eq(cxxCompilerVersion, '19_2'), eq(cxxCompilerVersion, '2019'))))) }}:
             vmImage: 'windows-2019'
           ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(eq(cxxCompilerVersion, '19_1'), eq(cxxCompilerVersion, '2017'))) }}:
             vmImage: 'vs2017-win2016'
@@ -216,16 +216,12 @@ jobs:
                     echo "##vso[task.setvariable variable=CXX]g++-$cxxCompilerVersion"
                 }
                 elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
-                    $clangVersion_clangFullVersion = @{
-                        '4' = '4.0'
-                        '5' = '5.0'
-                        '6' = '6.0'
-                        '7' = '7'
-                        '8' = '8'
-                        '9' = '9'
-                        '10' = '10'
+                    if ($cxxCompilerVersion -le 6) {
+                        $clangFullVersion = "$cxxCompilerVersion.0"
                     }
-                    $clangFullVersion = $clangVersion_clangFullVersion[$cxxCompilerVersion]
+                    else {
+                        $clangFullVersion = "$cxxCompilerVersion"
+                    }
                     echo "##vso[task.setvariable variable=CC]clang-$clangFullVersion"
                     echo "##vso[task.setvariable variable=CXX]clang++-$clangFullVersion"
                 }
