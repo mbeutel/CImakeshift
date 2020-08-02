@@ -129,13 +129,12 @@ jobs:
                 New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies'
             }
 
-            $revision='4b1' # Update this when making incompatible changes to the build pipeline definition.
+            $revision='4' # Update this when making incompatible changes to the build pipeline definition.
             if ($IsWindows) { $tripletOS = 'windows' }
             elseif ($IsLinux) { $tripletOS = 'linux' }
             elseif ($IsMacOS) { $tripletOS = 'osx' }
             $cxxCompilerVersion = '${{ cxxCompilerVersion }}'
             $vcpkgTriplet = '${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}' -replace '<os>',$tripletOS -replace '<platform>','${{ platform }}'
-            #$cudaPackagesRaw = ('${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}' -replace '<cudaPackages>','${{ join(' ', parameters.cudaPackages) }}' -replace '\s+',' ').Trim() + ' '
             $cudaPackagesRaw = ('${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}' -replace '<cudaPackages>','${{ join(' ', parameters.cudaPackages) }}' -replace '\s+',' ').Trim()
             $cudaPackagesRawArray = $cudaPackagesRaw.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
             echo "cudaPackagesRaw: '$cudaPackagesRaw'"
@@ -465,10 +464,10 @@ jobs:
                 elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang') {
                     $appleClangVersion_xcodeVersion = @{
                         '9_1'    = '9.4.1'
-                        '10'     = '10.1'  # also 10
-                        '10_0_1' = '10.3'  # also 10.2, 10.2.1
+                        '10'     = '10.1'    # also 10
+                        '10_0_1' = '10.3'    # also 10.2, 10.2.1
                         '11'     = '11.3.1'  # also 11.1, 11.2, 11.2.1, 11.3
-                        '11_0_3' = '11.6'  # also 11.4, 11.4.1, 11.5
+                        '11_0_3' = '11.6'    # also 11.4, 11.4.1, 11.5
                     }
                     $xcodeVersion = $appleClangVersion_xcodeVersion['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                     & sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer
