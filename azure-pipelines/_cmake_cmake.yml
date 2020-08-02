@@ -9,7 +9,7 @@ steps:
 - ${{ each step in parameters.preBuildSteps }}:
   - ${{ each pair in step }}:
       ${{ pair.key }}: ${{ pair.value }}
-- ${{ if target.preBuildSteps }}:
+- ${{ if parameters.targetPreBuildSteps }}:
   - ${{ each step in parameters.targetPreBuildSteps }}:
     - ${{ each pair in step }}:
         ${{ pair.key }}: ${{ pair.value }}
@@ -38,7 +38,7 @@ steps:
 - ${{ each step in parameters.postBuildSteps }}:
   - ${{ each pair in step }}:
       ${{ pair.key }}: ${{ pair.value }}
-- ${{ if target.preBuildSteps }}:
+- ${{ if parameters.targetPostBuildSteps }}:
   - ${{ each step in parameters.targetPostBuildSteps }}:
     - ${{ each pair in step }}:
         ${{ pair.key }}: ${{ pair.value }}
