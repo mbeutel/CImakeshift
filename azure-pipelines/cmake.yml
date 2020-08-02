@@ -381,9 +381,8 @@ jobs:
                     #$packageVersion = $cudaVersion_packageVersion[$cudaVersion]
                     Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/cuda-$ubuntuVersion.pin" -OutFile cuda.pin
                     & sudo mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
-                    Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub" -OutFile 7fa2af80.pub
-                    & sudo apt-key add 7fa2af80.pub
-                    & sudo add-apt-repository 'deb http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/ /'
+                    & sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub"
+                    & sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/ /"
                     $packages += '$(CIMAKESHIFT_CUDA_PACKAGES)'.split('\s+', [System.StringSplitOptions]::RemoveEmptyEntries)
                 }
                 & sudo apt-get update
