@@ -135,7 +135,7 @@ jobs:
             $vcpkgTriplet = '${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}' -replace '<os>',$tripletOS -replace '<platform>','${{ platform }}'
             #$cudaPackagesRaw = ('${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}' -replace '<cudaPackages>','${{ join(' ', parameters.cudaPackages) }}' -replace '\s+',' ').Trim() + ' '
             $cudaPackagesRaw = ('${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}' -replace '<cudaPackages>','${{ join(' ', parameters.cudaPackages) }}' -replace '\s+',' ').Trim()
-            $cudaPackagesRawArray = $cudaPackagesRaw.split('\s+', [System.StringSplitOptions]::RemoveEmptyEntries)
+            $cudaPackagesRawArray = $cudaPackagesRaw.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
             echo "cudaPackagesRaw: '$cudaPackagesRaw'"
             echo "cudaPackagesRawArray: $cudaPackagesRawArray"
             $cmakeGenerator = '${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}'
@@ -340,7 +340,7 @@ jobs:
                     }
                     Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
                     Write-Host '[CImakeshift] Installing CUDA packages $(CIMAKESHIFT_CUDA_PACKAGES)'
-                    Start-Process -Wait "$HOME/cuda_installer_network.exe" (@('-s') + ('$(CIMAKESHIFT_CUDA_PACKAGES)'.split('\s+', [System.StringSplitOptions]::RemoveEmptyEntries)))
+                    Start-Process -Wait "$HOME/cuda_installer_network.exe" (@('-s') + ('$(CIMAKESHIFT_CUDA_PACKAGES)'.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)))
                 }
             }
             elseif ($IsLinux) {
@@ -384,12 +384,12 @@ jobs:
                     & sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub"
 
                     # desperate experimentation: always install the 10.2 repo package
-                    $installer = "cuda-repo-${ubuntuVersion}_10.2.89-1_amd64.deb"
-                    Invoke-WebRequest "http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/$installer" -OutFile $installer
-                    & sudo dpkg -i $installer
+                    #$installer = "cuda-repo-${ubuntuVersion}_10.2.89-1_amd64.deb"
+                    #Invoke-WebRequest "http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/$installer" -OutFile $installer
+                    #& sudo dpkg -i $installer
 
                     & sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/ /"
-                    $packages += '$(CIMAKESHIFT_CUDA_PACKAGES)'.split('\s+', [System.StringSplitOptions]::RemoveEmptyEntries)
+                    $packages += '$(CIMAKESHIFT_CUDA_PACKAGES)'.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
                 }
                 & sudo apt-get update
                 Write-Host "[CImakeshift] Installing packages $packages"
