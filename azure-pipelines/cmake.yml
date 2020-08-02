@@ -373,28 +373,14 @@ jobs:
                 if ('$(CIMAKESHIFT_CUDA_COMPILER)') {
                     $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
                     $ubuntuVersion = 'ubuntu1804'
-                    #$cudaVersion_packageVersion = @{
-                    #    '10.1' = '10-1_10.1.243-1'
-                    #    '10.2' = 'cuda-10-2_10.2.89-1'
-                    #    '11.0' = 'cuda-11-0_11.0.2-1'
-                    #}
-                    #$packageVersion = $cudaVersion_packageVersion[$cudaVersion]
                     Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/cuda-$ubuntuVersion.pin" -OutFile cuda.pin
                     & sudo mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
                     & sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub"
-
-                    # desperate experimentation: always install the 10.2 repo package
-                    #$installer = "cuda-repo-${ubuntuVersion}_10.2.89-1_amd64.deb"
-                    #Invoke-WebRequest "http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/$installer" -OutFile $installer
-                    #& sudo dpkg -i $installer
-
                     & sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/ /"
                     $packages += '$(CIMAKESHIFT_CUDA_PACKAGES)'.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
                 }
                 & sudo apt-get update
                 Write-Host "[CImakeshift] Installing packages $packages"
-                & sudo apt-cache policy
-                & sudo apt search cuda
                 & sudo apt-get install $packages
                 #& ln -s /usr/bin/cmake $HOME/bin/cmake
                 #& ln -s /usr/bin/ctest $HOME/bin/ctest
