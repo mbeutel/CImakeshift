@@ -382,13 +382,13 @@ jobs:
                     Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/cuda-$ubuntuVersion.pin" -OutFile cuda.pin
                     & sudo mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
                     & sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub"
-                    & sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/ /"
+                    & sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/ bionic"
                     $packages += '$(CIMAKESHIFT_CUDA_PACKAGES)'.split('\s+', [System.StringSplitOptions]::RemoveEmptyEntries)
                 }
                 & sudo apt-get update
                 Write-Host "[CImakeshift] Installing packages $packages"
-                & sudo apt-cache policy
-                & sudo apt search cuda
+                #& sudo apt-cache policy
+                #& sudo apt search cuda
                 & sudo apt-get install $packages
                 #& ln -s /usr/bin/cmake $HOME/bin/cmake
                 #& ln -s /usr/bin/ctest $HOME/bin/ctest
