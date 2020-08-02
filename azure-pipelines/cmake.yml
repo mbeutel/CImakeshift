@@ -431,7 +431,16 @@ jobs:
               }
               else { # Linux or MacOS
                   if ($IsMacOS) {
-                      & sudo xcode-select -s /Applications/Xcode_10.3.app/Contents/Developer # TODO: something like this is required for the Vcpkg build to work, but it won't work with the 'macOS-10.15' image which has only Xcode >= 11.0
+                      $osVersion = [version](sw_vers -productVersion)
+
+                      if ($osVersion -lt '10.15') {
+                          # workaround for GCC header issue on MacOS <10.15
+                          & sudo xcode-select -s /Applications/Xcode_10.3.app/Contents/Developer
+                      }
+                      else {
+                          # workaround for GCC header issue on MacOS 10.15, cf. https://github.com/microsoft/vcpkg/issues/9029
+                          $env:CXXFLAGS = "${env:CXXFLAGS} -D_CTERMID_H_"
+                      }
                   }
                   # let Vcpkg's bootstrap script figure out which version of GCC to use
                   $env:CC = ''
