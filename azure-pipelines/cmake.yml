@@ -382,13 +382,19 @@ jobs:
                     Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/cuda-$ubuntuVersion.pin" -OutFile cuda.pin
                     & sudo mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
                     & sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub"
-                    & sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/ bionic"
+
+                    # desperate experimentation: always install the 10.2 repo package
+                    $installer = "cuda-repo-${ubuntuVersion}_10.2.89-1_amd64.deb"
+                    Invoke-WebRequest "http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/$installer" -OutFile $installer
+                    & sudo dpkg -i $installer
+
+                    & sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/ /"
                     $packages += '$(CIMAKESHIFT_CUDA_PACKAGES)'.split('\s+', [System.StringSplitOptions]::RemoveEmptyEntries)
                 }
                 & sudo apt-get update
                 Write-Host "[CImakeshift] Installing packages $packages"
-                #& sudo apt-cache policy
-                #& sudo apt search cuda
+                & sudo apt-cache policy
+                & sudo apt search cuda
                 & sudo apt-get install $packages
                 #& ln -s /usr/bin/cmake $HOME/bin/cmake
                 #& ln -s /usr/bin/ctest $HOME/bin/ctest
