@@ -1,5 +1,5 @@
 # Azure Pipelines job template for CMake builds
-# Version 0.3.0
+# Version 0.3.1
 # Author: Moritz Beutel
 #
 #
@@ -19,19 +19,34 @@
 # Supported compiler versions:
 #
 # Windows:
-#   MSVC:                      19_1, 19_2
-#               (also known as 2017, 2019)
-#   Clang:                              9
-#   NVCC:                      10_1, 10_2
+#   MSVC:               19_1, 19_2
+#                       (also known as 2017, 2019)
+#   Clang:              9, 10
+#   NVCC:               10_1, 10_2, 11_0
 #
 # Linux:
-#   GCC:                    5, 6, 7, 8, 9
-#   Clang:               4, 5, 6, 7, 8, 9
-#   NVCC:                      10_1, 10_2
+#   GCC:                5, 6, 7, 8, 9, 10
+#   Clang:              4, 5, 6, 7, 8, 9, 10
+#   NVCC:               10_1, 10_2, 11_0
 #
 # MacOS:
-#   GCC:                    5, 6, 7, 8, 9
-#   AppleClang:       9_1, 10, 10_0_1, 11
+#   GCC:                5, 6, 7, 8, 9, 10
+#   AppleClang:         9_1, 10, 10_0_1, 11, 11_0_3
+
+
+# Useful CUDA packages:
+#
+#   cublas-dev      cuBLAS headers and libraries
+#   cufft-dev       cuFFT headers and libraries
+#   curand-dev      cuRAND headers and libraries
+#   cusolver-dev    cuSOLVER headers and libraries
+#   cusparse-dev    cuSPARSE headers and libraries
+#   nvgraph-dev     nvGRAPH headers and libraries
+#   npp-dev         NPP headers and libraries
+#   nvrtc-dev       NVRTC headers and libraries
+#
+# (cf. https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#install-cuda-software for Windows,
+# https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/ for Linux)
 
 
 parameters:
@@ -50,7 +65,7 @@ parameters:
   # CUDA options
   cudaCompiler: ''
   cudaCompilerVersion: ''
-  cudaPackages: [] # cf. https://docs.nvidia.com/cuda/cuda-installation-guide-microsoft-windows/index.html#install-cuda-software for Windows, https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/ for Linux
+  cudaPackages: []
 
   # Vcpkg repository
   vcpkgRepo: ''
