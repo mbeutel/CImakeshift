@@ -387,6 +387,8 @@ jobs:
                 }
                 & sudo apt-get update
                 Write-Host "[CImakeshift] Installing packages $packages"
+                & sudo apt-cache policy
+                & sudo apt search cuda
                 & sudo apt-get install $packages
                 #& ln -s /usr/bin/cmake $HOME/bin/cmake
                 #& ln -s /usr/bin/ctest $HOME/bin/ctest
