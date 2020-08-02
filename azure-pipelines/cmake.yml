@@ -216,7 +216,7 @@ jobs:
                     echo "##vso[task.setvariable variable=CXX]g++-$cxxCompilerVersion"
                 }
                 elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
-                    if ($cxxCompilerVersion -le 6) {
+                    if ([int]$cxxCompilerVersion -le 6) {
                         $clangFullVersion = "$cxxCompilerVersion.0"
                     }
                     else {
@@ -351,16 +351,10 @@ jobs:
                     $packages += ('gcc-$(CIMAKESHIFT_CXX_COMPILER_VERSION)', 'g++-$(CIMAKESHIFT_CXX_COMPILER_VERSION)')
                 }
                 elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
-                    $clangVersion_Repository = @{
-                        '4' = ''
-                        '5' = 'llvm-toolchain-5.0'
-                        '6' = 'llvm-toolchain-6.0'
-                        '7' = 'llvm-toolchain-7'
-                        '8' = 'llvm-toolchain-8'
-                        '9' = 'llvm-toolchain-9'
-                        '10' = 'llvm-toolchain-10'
+                    if ([int]'$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ge 5) {
+                        $clangRepository = 'llvm-toolchain-$(CIMAKESHIFT_CLANG_FULL_VERSION_)'
+                        & sudo apt-add-repository "deb http://apt.llvm.org/bionic/ $clangRepository main"
                     }
-                    $clangRepository = $clangVersion_Repository['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                     if ($clangRepository) {
                         & sudo apt-add-repository "deb http://apt.llvm.org/bionic/ $clangRepository main"
                     }
