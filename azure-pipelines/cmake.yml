@@ -92,6 +92,11 @@ parameters:
   cmakeTest: true
   cmakeTestArgs: ''
 
+  # Build events
+  postSetupSteps: []
+  preBuildSteps: []
+  postBuildSteps: []
+
   targets: []
 #    target.tag                       # overrides parameters.tag
 #    target.os: ''                    # overrides parameters.os
@@ -117,6 +122,9 @@ parameters:
 #    target.cmakeBuildArgs            # overrides parameters.cmakeBuildArgs; can refer to parameters.cmakeBuildArgs as '<cmakeBuildArgs>'
 #    target.cmakeTest                 # overrides parameters.cmakeTest
 #    target.cmakeTestArgs             # overrides parameters.cmakeTestArgs; can refer to parameters.cmakeTestArgs as '<cmakeTestArgs>'
+#    target.postSetupSteps            # adds to parameters.postSetupSteps
+#    target.preBuildSteps             # adds to parameters.preBuildSteps
+#    target.postBuildSteps            # adds to parameters.postBuildSteps
 
 jobs:
 - ${{ each target in parameters.targets }}:
@@ -513,48 +521,58 @@ jobs:
 
         - ${{ if not(target.cmakeBuildConfigurations) }}:
           - ${{ each config in parameters.cmakeBuildConfigurations }}:
+            - template: _cmake_cmake.yml
+              parameters:
+                config: '${{ config }}'
+                preBuildSteps: '${{ parameters.preBuildSteps }}'
+                targetPreBuildSteps: '${{ target.preBuildSteps }}'
+                postBuildSteps: '${{ parameters.postBuildSteps }}'
+                targetPostBuildSteps: '${{ target.postBuildSteps }}'
+                cmakeConfig: '${{ coalesce(target.cmakeConfig, parameters.cmakeConfig) }}'
+                cmakeBuild: '${{ coalesce(target.cmakeBuild, parameters.cmakeBuild) }}'
+                cmakeTest: '${{ coalesce(target.cmakeTest, parameters.cmakeTest) }}'
 
-            - ${{ if coalesce(parameters.preBuildSteps, target.preBuildSteps, parameters.postBuildSteps, target.postBuildSteps) }}:
-              - pwsh: |
-                  echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION]${{ config }}'
-                displayName: Set environment variables for build configuration
+            #- ${{ if coalesce(parameters.preBuildSteps, target.preBuildSteps, parameters.postBuildSteps, target.postBuildSteps) }}:
+            #  - pwsh: |
+            #      echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION]${{ config }}'
+            #    displayName: Set environment variables for build configuration
 
-            - ${{ each step in parameters.preBuildSteps }}:
-              - ${{ each pair in step }}:
-                  ${{ pair.key }}: ${{ pair.value }}
-            - ${{ if target.preBuildSteps }}:
-              - ${{ each step in target.preBuildSteps }}:
-                - ${{ each pair in step }}:
-                    ${{ pair.key }}: ${{ pair.value }}
+            #- ${{ each step in parameters.preBuildSteps }}:
+            #  - ${{ each pair in step }}:
+            #      ${{ pair.key }}: ${{ pair.value }}
+            #- ${{ if target.preBuildSteps }}:
+            #  - ${{ each step in target.preBuildSteps }}:
+            #    - ${{ each pair in step }}:
+            #        ${{ pair.key }}: ${{ pair.value }}
 
-            - ${{ if eq(coalesce(target.cmakeConfig, parameters.cmakeConfig), 'true') }}:
-              - pwsh: |
-                  New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
-                  cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  $args = '$(CIMAKESHIFT_CMAKE_CONFIG_ARGS)' -split ' '
-                  & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_VCPKG_ARGS_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
-                displayName: 'Configure ${{ config }}'
+            #- ${{ if eq(coalesce(target.cmakeConfig, parameters.cmakeConfig), 'true') }}:
+            #  - pwsh: |
+            #      New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
+            #      cd '$(Build.BinariesDirectory)/build/${{ config }}'
+            #      $args = '$(CIMAKESHIFT_CMAKE_CONFIG_ARGS)' -split ' '
+            #      & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_VCPKG_ARGS_) -DCMAKE_BUILD_TYPE=${{ config }} "${{ parameters.cmakeSourceDir }}" $args
+            #    displayName: 'Configure ${{ config }}'
 
-            - ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
-              - pwsh: |
-                  $args = '$(CIMAKESHIFT_CMAKE_BUILD_ARGS)' -split ' '
-                  & cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $args
-                displayName: 'Build ${{ config }}'
+            #- ${{ if eq(coalesce(target.cmakeBuild, parameters.cmakeBuild), 'true') }}:
+            #  - pwsh: |
+            #      $args = '$(CIMAKESHIFT_CMAKE_BUILD_ARGS)' -split ' '
+            #      & cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $args
+            #    displayName: 'Build ${{ config }}'
 
-            - ${{ if eq(coalesce(target.cmakeTest, parameters.cmakeTest), 'true') }}:
-              - pwsh: |
-                  cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  $args = '$(CIMAKESHIFT_CMAKE_TEST_ARGS)' -split ' '
-                  & ctest --verbose --test-action Test --build-config ${{ config }} $args
-                displayName: 'Run tests for ${{ config }}'
+            #- ${{ if eq(coalesce(target.cmakeTest, parameters.cmakeTest), 'true') }}:
+            #  - pwsh: |
+            #      cd '$(Build.BinariesDirectory)/build/${{ config }}'
+            #      $args = '$(CIMAKESHIFT_CMAKE_TEST_ARGS)' -split ' '
+            #      & ctest --verbose --test-action Test --build-config ${{ config }} $args
+            #    displayName: 'Run tests for ${{ config }}'
 
-            - ${{ each step in parameters.postBuildSteps }}:
-              - ${{ each pair in step }}:
-                  ${{ pair.key }}: ${{ pair.value }}
-            - ${{ if target.postBuildSteps }}:
-              - ${{ each step in target.postBuildSteps }}:
-                - ${{ each pair in step }}:
-                    ${{ pair.key }}: ${{ pair.value }}
+            #- ${{ each step in parameters.postBuildSteps }}:
+            #  - ${{ each pair in step }}:
+            #      ${{ pair.key }}: ${{ pair.value }}
+            #- ${{ if target.postBuildSteps }}:
+            #  - ${{ each step in target.postBuildSteps }}:
+            #    - ${{ each pair in step }}:
+            #        ${{ pair.key }}: ${{ pair.value }}
 
         - ${{ if target.cmakeBuildConfigurations }}:
           - ${{ each config in target.cmakeBuildConfigurations }}:
