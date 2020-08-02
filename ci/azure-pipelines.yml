@@ -1,6 +1,6 @@
 
-variables:
-  System.Debug: true
+#variables:
+#  System.Debug: true
 
 trigger:
 - master
@@ -31,80 +31,80 @@ jobs:
 
     targets:
 
-    #- os: Windows
-    #  cxxCompiler: MSVC
-    #  cxxCompilerVersions: [19_1, 19_2]
-    #  platforms: [x86, x64]
+    - os: Windows
+      cxxCompiler: MSVC
+      cxxCompilerVersions: [19_1, 19_2]
+      platforms: [x86, x64]
 
-    #- os: Windows
-    #  cxxCompiler: Clang
-    #  cxxCompilerVersions: [9, 10]
-    #  platforms: [x86, x64]
+    - os: Windows
+      cxxCompiler: Clang
+      cxxCompilerVersions: [9, 10]
+      platforms: [x86, x64]
 
-    #- os: Windows
-    #  cxxCompiler: MSVC
-    #  cxxCompilerVersions: [19_2]
-    #  cudaCompiler: NVCC
-    #  cudaCompilerVersion: 10_2
-    #  platforms: [x64]
-    #  cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
+    - os: Windows
+      cxxCompiler: MSVC
+      cxxCompilerVersions: [19_2]
+      cudaCompiler: NVCC
+      cudaCompilerVersion: 10_2
+      platforms: [x64]
+      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 
-    #- os: Windows
-    #  cxxCompiler: MSVC
-    #  cxxCompilerVersions: [19_2]
-    #  cudaCompiler: NVCC
-    #  cudaCompilerVersion: 11_0
-    #  platforms: [x64]
-    #  cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
+    - os: Windows
+      cxxCompiler: MSVC
+      cxxCompilerVersions: [19_2]
+      cudaCompiler: NVCC
+      cudaCompilerVersion: 11_0
+      platforms: [x64]
+      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 
-    #- os: Linux
-    #  cxxCompiler: GCC
-    #  cxxCompilerVersions: [5, 6, 7, 8, 9]
-    #  platforms: [x64]
+    - os: Linux
+      cxxCompiler: GCC
+      cxxCompilerVersions: [5, 6, 7, 8, 9]
+      platforms: [x64]
 
-    #- os: Linux
-    #  cxxCompiler: GCC
-    #  cxxCompilerVersions: [10]
-    #  platforms: [x64]
-    #  tag: 'sanitize'
-    #  vcpkgTriplet: <platform>-<os>-sanitize
-    #  cmakeBuildConfigurations: [Debug]
-    #  cmakeConfigArgs: '<cmakeConfigArgs> -DCMAKESHIFT_PRIVATE_COMPILE_SETTINGS=runtime-checks;debug-stdlib'
+    - os: Linux
+      cxxCompiler: GCC
+      cxxCompilerVersions: [10]
+      platforms: [x64]
+      tag: 'sanitize'
+      vcpkgTriplet: <platform>-<os>-sanitize
+      cmakeBuildConfigurations: [Debug]
+      cmakeConfigArgs: '<cmakeConfigArgs> -DCMAKESHIFT_PRIVATE_COMPILE_SETTINGS=runtime-checks;debug-stdlib'
 
-    #- os: Linux
-    #  cxxCompiler: Clang
-    #  cxxCompilerVersions: [4, 5, 6, 7, 8, 9]
-    #  platforms: [x64]
+    - os: Linux
+      cxxCompiler: Clang
+      cxxCompilerVersions: [4, 5, 6, 7, 8, 9]
+      platforms: [x64]
 
-    #- os: Linux
-    #  cxxCompiler: Clang
-    #  cxxCompilerVersions: [10]
-    #  platforms: [x64]
-    #  tag: 'sanitize'
-    #  vcpkgTriplet: <platform>-<os>-sanitize
-    #  cmakeBuildConfigurations: [Debug]
-    #  cmakeConfigArgs: '<cmakeConfigArgs> -DCMAKESHIFT_PRIVATE_COMPILE_SETTINGS=runtime-checks;debug-stdlib'
+    - os: Linux
+      cxxCompiler: Clang
+      cxxCompilerVersions: [10]
+      platforms: [x64]
+      tag: 'sanitize'
+      vcpkgTriplet: <platform>-<os>-sanitize
+      cmakeBuildConfigurations: [Debug]
+      cmakeConfigArgs: '<cmakeConfigArgs> -DCMAKESHIFT_PRIVATE_COMPILE_SETTINGS=runtime-checks;debug-stdlib'
 
-    #- os: Linux
-    #  cxxCompiler: GCC
-    #  cxxCompilerVersions: [8]
-    #  cudaCompiler: NVCC
-    #  cudaCompilerVersion: 10_2
-    #  platforms: [x64]
-    #  cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
+    - os: Linux
+      cxxCompiler: GCC
+      cxxCompilerVersions: [8]
+      cudaCompiler: NVCC
+      cudaCompilerVersion: 10_2
+      platforms: [x64]
+      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 
-    #- os: Linux
-    #  cxxCompiler: GCC
-    #  cxxCompilerVersions: [9]
-    #  cudaCompiler: NVCC
-    #  cudaCompilerVersion: 11_0
-    #  platforms: [x64]
-    #  cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
+    - os: Linux
+      cxxCompiler: GCC
+      cxxCompilerVersions: [9]
+      cudaCompiler: NVCC
+      cudaCompilerVersion: 11_0
+      platforms: [x64]
+      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 
-    #- os: MacOS
-    #  cxxCompiler: GCC
-    #  cxxCompilerVersions: [5, 6, 7, 8, 9, 10]
-    #  platforms: [x64]
+    - os: MacOS
+      cxxCompiler: GCC
+      cxxCompilerVersions: [5, 6, 7, 8, 9, 10]
+      platforms: [x64]
 
     - os: MacOS
       cxxCompiler: AppleClang
