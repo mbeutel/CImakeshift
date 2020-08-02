@@ -127,7 +127,7 @@ jobs:
                 New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies'
             }
 
-            $revision='2' # Update this when making incompatible changes to the build pipeline definition.
+            $revision='3' # Update this when making incompatible changes to the build pipeline definition.
             if ($IsWindows) { $tripletOS = 'windows' }
             elseif ($IsLinux) { $tripletOS = 'linux' }
             elseif ($IsMacOS) { $tripletOS = 'osx' }
@@ -385,7 +385,7 @@ jobs:
             }
             elseif ($IsMacOS) {
                 $ninjaOS = 'mac'
-                & sudo xcode-select -s /Applications/Xcode_10.1.app/Contents/Developer # TODO: something like this is required for the Vcpkg build to work, but it won't work with the 'macOS-10.15' image which has only Xcode >= 11.0
+                & sudo xcode-select -s /Applications/Xcode_10.3.app/Contents/Developer # TODO: something like this is required for the Vcpkg build to work, but it won't work with the 'macOS-10.15' image which has only Xcode >= 11.0
                 if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                     & brew install gcc@$(CIMAKESHIFT_CXX_COMPILER_VERSION)
                 }
