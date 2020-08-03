@@ -40,16 +40,10 @@ parameters:
 
 
 jobs:
-
 - ${{ each platform in parameters.platforms }}:
   - ${{ each cxxCompilerVersion in parameters.cxxCompilerVersions }}:
     - ${{ each cudaCompilerVersion in parameters.cudaCompilerVersions }}:
-
-
-      - job: '${{ parameters.os }}_${{ platform }}_${{ parameters.cxxCompiler }}${{ cxxCompilerVersion }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', parameters.cudaCompilerVersion), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format(''_{0}'', parameters.cudaCompiler)) }}_${{ join(''_'', parameters.cmakeBuildConfigurations) }}_${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', parameters.tag), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', ''_''), ''<_tagEnd_>'', '''') }}'
-
-
-
+      - job: '${{ parameters.os }}_${{ platform }}_${{ parameters.cxxCompiler }}${{ cxxCompilerVersion }}'
         pool:
           name: Azure Pipelines
           ${{ if and(eq(parameters.os, 'Windows'), or(eq(parameters.cxxCompiler, 'Clang'), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, '19_2'), eq(cxxCompilerVersion, '2019'))))) }}:
@@ -62,11 +56,6 @@ jobs:
             vmImage: 'macOS-10.14'
           ${{ if and(eq(parameters.os, 'MacOS'), or(ne(parameters.cxxCompiler, 'AppleClang'), eq(cxxCompilerVersion, '10_0_1'), eq(cxxCompilerVersion, '11'), eq(cxxCompilerVersion, '11_0_3'))) }}:
             vmImage: 'macOS-10.15'
-
-
-
-
-
         steps:
         - pwsh: |
             if ('${{ or(eq(parameters.vcpkgCache, 'true'), and(eq(parameters.vcpkgCache, ''), parameters.vcpkgRef)) }}' -eq 'true') {
