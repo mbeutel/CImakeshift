@@ -139,29 +139,40 @@ jobs:
       targetPostBuildSteps: ${{ target.postBuildSteps }}
       tag: '${{ coalesce(target.tag, parameters.tag) }}'
       os: '${{ coalesce(target.os, parameters.os) }}'
-      #platforms: ${{ coalesce(target.platforms, parameters.platforms) }}
       platforms:
       - ${{ if target.platforms }}:
         - ${{ target.platforms }}
       - ${{ if not(target.platforms) }}:
         - ${{ parameters.platforms }}
       cxxCompiler: '${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}'
-      cxxCompilerVersions: ${{ coalesce(target.cxxCompilerVersions, parameters.cxxCompilerVersions) }}
+      cxxCompilerVersions:
+      - ${{ if target.cxxCompilerVersions }}:
+        - ${{ target.cxxCompilerVersions }}
+      - ${{ if not(target.cxxCompilerVersions) }}:
+        - ${{ parameters.cxxCompilerVersions }}
       cudaCompiler: '${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}'
-      cudaCompilerVersions: ${{ coalesce(target.cudaCompilerVersions, parameters.cudaCompilerVersions) }}
+      cudaCompilerVersions:
+      - ${{ if target.cudaCompilerVersions }}:
+        - ${{ target.cudaCompilerVersions }}
+      - ${{ if not(target.cudaCompilerVersions) }}:
+        - ${{ parameters.cudaCompilerVersions }}
       vcpkgRepo: '${{ coalesce(target.vcpkgRepo, parameters.vcpkgRepo) }}'
       vcpkgRef: '${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}'
       vcpkgOverlayRepo: '${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }}'
       vcpkgOverlayRef: '${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}'
       vcpkgTriplet: '${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}'
       vcpkgCache: '${{ coalesce(target.vcpkgCache, parameters.vcpkgCache) }}'
-      cmakeBuildConfigurations: ${{ coalesce(target.cmakeBuildConfigurations, parameters.cmakeBuildConfigurations) }}
+      cmakeBuildConfigurations:
+      - ${{ if target.cmakeBuildConfigurations }}:
+        - ${{ target.cmakeBuildConfigurations }}
+      - ${{ if not(target.cmakeBuildConfigurations) }}:
+        - ${{ parameters.cmakeBuildConfigurations }}
       cmakeGenerator: '${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}'
       cmakeConfig: '${{ coalesce(target.cmakeConfig, parameters.cmakeConfig) }}'
       cmakeBuild: '${{ coalesce(target.cmakeBuild, parameters.cmakeBuild) }}'
       cmakeTest: '${{ coalesce(target.cmakeTest, parameters.cmakeTest) }}'
-      cudaPackages: '${{ replace(join('' '', coalesce(target.cudaPackages, ''<cudaPackages>'')), ''<cudaPackages>'', join('' '', parameters.cudaPackages)) }}'
-      vcpkgPackages: '${{ replace(join('' '', coalesce(target.vcpkgPackages, ''<vcpkgPackages>'')), ''<vcpkgPackages>'', join('' '', parameters.vcpkgPackages)) }}'
+      cudaPackages: '${{ replace(coalesce(join('' '', target.cudaPackages), ''<cudaPackages>''), ''<cudaPackages>'', join('' '', parameters.cudaPackages)) }}'
+      vcpkgPackages: '${{ replace(coalesce(join('' '', target.vcpkgPackages), ''<vcpkgPackages>''), ''<vcpkgPackages>'', join('' '', parameters.vcpkgPackages)) }}'
       vcpkgArgs: '${{ replace(coalesce(target.vcpkgArgs, ''<vcpkgArgs>''), ''<vcpkgArgs>'', parameters.vcpkgArgs) }}'
       cmakeConfigArgs: '${{ replace(coalesce(target.cmakeConfigArgs, ''<cmakeConfigArgs>''), ''<cmakeConfigArgs>'', parameters.cmakeConfigArgs) }}'
       cmakeBuildArgs: '${{ replace(coalesce(target.cmakeBuildArgs, ''<cmakeBuildArgs>''), ''<cmakeBuildArgs>'', parameters.cmakeBuildArgs) }}'
