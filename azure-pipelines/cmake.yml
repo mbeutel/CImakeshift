@@ -127,7 +127,7 @@ parameters:
 #    target.postBuildSteps            # adds to parameters.postBuildSteps
 
 jobs:
-- ${{ each target in targets }}:
+- ${{ each target in parameters.targets }}:
   - ${{ if target.platforms }}:
     - ${{ each platform in target.platforms }}:
       - ${{ if target.cxxCompilerVersions }}:
