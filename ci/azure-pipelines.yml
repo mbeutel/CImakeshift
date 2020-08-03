@@ -158,8 +158,6 @@ jobs:
   parameters:
     caption: Vcpkg manifests
     vcpkgRef: 00e44369cb23f911821ee96888cbb4785810ba07
-    vcpkgOverlayRepo: 'https://mp-force.ziti.uni-heidelberg.de/asc/infrastructure/vcpkg-ports.git'
-    vcpkgOverlayRef: 28b52673c26e29ccdce93ffa78413f26a0b11c8f
 
     cmakeSourceDir: '$(Build.SourcesDirectory)/ci/vcpkg-manifest'
     cmakeConfigArgs: '-DBUILD_TESTING=ON'
