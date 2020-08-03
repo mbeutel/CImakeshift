@@ -1,8 +1,7 @@
 {
-  "name": "CImakeshift-vcpkg-manifest",
+  "name": "cimakeshift-vcpkg-manifest",
   "version-string": "1.0.0",
   "dependencies": [
-    "cmakeshift",
     "fmt"
   ]
 }

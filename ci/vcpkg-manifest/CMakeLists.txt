@@ -12,9 +12,6 @@ project(CImakeshift-vcpkg-manifest
 # Define build options.
 option(BUILD_TESTING "Build tests" OFF)
 
-find_package(CMakeshift 3.8 REQUIRED)
-include(CMakeshift/TargetCompileSettings)
-
 # Define targets.
 if(BUILD_TESTING)
     enable_testing()
@@ -26,9 +23,6 @@ if(BUILD_TESTING)
     target_compile_features(test-CImakeshift-vcpkg-manifest
         PRIVATE
             cxx_std_17)
-    cmakeshift_target_compile_settings(test-CImakeshift-vcpkg-manifest
-        PRIVATE
-            default)
     target_link_libraries(test-CImakeshift-vcpkg-manifest
         PRIVATE
             fmt::fmt)

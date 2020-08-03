@@ -213,7 +213,12 @@ jobs:
               $cmakeConfigArgs = '${{ parameters.cmakeConfigArgs }}' -replace '<cmakeConfigArgs>','${{ parameters.cmakeConfigArgs }}'
               $cmakeBuildArgs = '${{ parameters.cmakeBuildArgs }}' -replace '<cmakeBuildArgs>','${{ parameters.cmakeBuildArgs }}'
               $cmakeTestArgs = '${{ parameters.cmakeTestArgs }}' -replace '<cmakeTestArgs>','${{ parameters.cmakeTestArgs }}'
-        
+
+              $vcpkgManifestFile = ''
+              if ('${{ parameters.vcpkgRef }}' -and Test-Path '${{ parameters.cmakeSourceDir }}/vcpkg.json') {
+                  $vcpkgManifestFile = ' ${{ parameters.cmakeSourceDir }}/vcpkg.json'
+              }
+
               # public variables accessible to custom job steps
               echo '##vso[task.setvariable variable=CIMAKESHIFT_CACHE]${{ parameters.cache }}'
               echo '##vso[task.setvariable variable=CIMAKESHIFT_CAPTION]${{ parameters.caption }}'
@@ -247,6 +252,7 @@ jobs:
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CACHE_KEY_]$cacheKey"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CLANG_FULL_VERSION_]$clangFullVersion"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_ARGS_]$vcpkgOverlayArgs"
+              echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_MANIFEST_FILE_]$vcpkgManifestFile"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_VCPKG_ARGS_]$cmakeVcpkgArgs"
             displayName: Set environment variables
 
@@ -345,7 +351,7 @@ jobs:
             - task: Cache@2
               displayName: Cache dependencies
               inputs:
-                key: '"$(CIMAKESHIFT_CACHE_KEY_)"'
+                key: '"$(CIMAKESHIFT_CACHE_KEY_)"$(CIMAKESHIFT_VCPKG_MANIFEST_FILE_)'
                 path: '$(Build.BinariesDirectory)/dependencies'
                 cacheHitVar: 'dependencyCacheHit'
 
@@ -423,9 +429,15 @@ jobs:
                 & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
                 if (Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json") {
                     # Vcpkg manifest mode
+                    New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/vcpkg_manifest_installed'
+                    if ($IsWindows) {
+                        New-Item -ItemType SymbolicLink -Path $env:CIMAKESHIFT_CMAKE_SOURCE_DIR -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/dependencies/vcpkg_manifest_installed'
+                    }
+                    else {
+                        & ln -s '$(Build.BinariesDirectory)/dependencies/vcpkg_manifest_installed' "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg_installed"
+                    }
                     cd $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
-                    New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/manifest-root'
-                    & '$(Build.BinariesDirectory)/dependencies/vcpkg/vcpkg' $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' '--manifest-root-dir="$(Build.BinariesDirectory)/dependencies/vcpkg/manifest-root"' install
+                    & '$(Build.BinariesDirectory)/dependencies/vcpkg/vcpkg' $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install
                     cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
                 }
                 Remove-Item -Recurse -Force './buildtrees'
@@ -444,48 +456,56 @@ jobs:
                   ${{ pair.key }}: ${{ pair.value }}
 
           - ${{ each config in parameters.cmakeBuildConfigurations }}:
-             - ${{ if coalesce(parameters.preBuildSteps, parameters.targetPreBuildSteps, parameters.postBuildSteps, parameters.targetPostBuildSteps) }}:
-               - pwsh: |
-                   echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION]${{ config }}'
-                 displayName: Set environment variables for build configuration
+            - ${{ if coalesce(parameters.preBuildSteps, parameters.targetPreBuildSteps, parameters.postBuildSteps, parameters.targetPostBuildSteps) }}:
+              - pwsh: |
+                  echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION]${{ config }}'
+                displayName: Set environment variables for build configuration
 
-             - ${{ each step in parameters.preBuildSteps }}:
-               - ${{ each pair in step }}:
-                   ${{ pair.key }}: ${{ pair.value }}
-             - ${{ if parameters.targetPreBuildSteps }}:
-               - ${{ each step in parameters.targetPreBuildSteps }}:
-                 - ${{ each pair in step }}:
-                     ${{ pair.key }}: ${{ pair.value }}
+            - ${{ each step in parameters.preBuildSteps }}:
+              - ${{ each pair in step }}:
+                  ${{ pair.key }}: ${{ pair.value }}
+            - ${{ if parameters.targetPreBuildSteps }}:
+              - ${{ each step in parameters.targetPreBuildSteps }}:
+                - ${{ each pair in step }}:
+                    ${{ pair.key }}: ${{ pair.value }}
 
-             - ${{ if eq(parameters.cmakeConfig, 'true') }}:
-               - pwsh: |
-                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
-                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                   $vcpkgArgs = $env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_ -split ' '
-                   $args = $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS -split ' '
-                   & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $vcpkgArgs $env:CIMAKESHIFT_CMAKE_SOURCE_DIR $args
-                 displayName: 'Configure ${{ config }}'
+            - ${{ if eq(parameters.cmakeConfig, 'true') }}:
+              - pwsh: |
+                  New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
+                  cd '$(Build.BinariesDirectory)/build/${{ config }}'
+                  if ('${{ parameters.vcpkgRef }}' -and Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json") {
+                      if ($IsWindows) {
+                          New-Item -ItemType SymbolicLink -Path . -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/dependencies/vcpkg_manifest_installed'
+                      }
+                      else {
+                          & ln -s '$(Build.BinariesDirectory)/dependencies/vcpkg_manifest_installed' './vcpkg_installed'
+                      }
+                  }
+                  $vcpkgArgs = $env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_ -split ' '
+                  $args = $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS -split ' '
+                  & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $vcpkgArgs $env:CIMAKESHIFT_CMAKE_SOURCE_DIR $args
+                displayName: 'Configure ${{ config }}'
 
-             - ${{ if eq(parameters.cmakeBuild, 'true') }}:
-               - pwsh: |
-                   $args = $env:CIMAKESHIFT_CMAKE_BUILD_ARGS -split ' '
-                   & cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $args
-                 displayName: 'Build ${{ config }}'
+            - ${{ if eq(parameters.cmakeBuild, 'true') }}:
+              - pwsh: |
+                  $args = $env:CIMAKESHIFT_CMAKE_BUILD_ARGS -split ' '
+                  & cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $args
+                displayName: 'Build ${{ config }}'
 
-             - ${{ if eq(parameters.cmakeTest, 'true') }}:
-               - pwsh: |
-                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                   $args = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
-                   & ctest --verbose --test-action Test --build-config ${{ config }} $args
-                 displayName: 'Run tests for ${{ config }}'
+            - ${{ if eq(parameters.cmakeTest, 'true') }}:
+              - pwsh: |
+                  cd '$(Build.BinariesDirectory)/build/${{ config }}'
+                  $args = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
+                  & ctest --verbose --test-action Test --build-config ${{ config }} $args
+                displayName: 'Run tests for ${{ config }}'
 
-             - ${{ each step in parameters.postBuildSteps }}:
-               - ${{ each pair in step }}:
-                   ${{ pair.key }}: ${{ pair.value }}
-             - ${{ if parameters.targetPostBuildSteps }}:
-               - ${{ each step in parameters.targetPostBuildSteps }}:
-                 - ${{ each pair in step }}:
-                     ${{ pair.key }}: ${{ pair.value }}
+            - ${{ each step in parameters.postBuildSteps }}:
+              - ${{ each pair in step }}:
+                  ${{ pair.key }}: ${{ pair.value }}
+            - ${{ if parameters.targetPostBuildSteps }}:
+              - ${{ each step in parameters.targetPostBuildSteps }}:
+                - ${{ each pair in step }}:
+                    ${{ pair.key }}: ${{ pair.value }}
 
           - ${{ if eq(parameters.cmakeTest, 'true') }}:
             - task: PublishTestResults@2
