@@ -205,7 +205,7 @@ jobs:
                   $vcpkgPackages,
                   '${{ parameters.caption }}',
                   '${{ parameters.tag }}'
-              ) -join ' '
+              ) -join ' | '
               if ('${{ parameters.vcpkgRef }}') {
                   $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake"'
                   $cmakeVcpkgArgs += " -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet"
@@ -216,7 +216,7 @@ jobs:
 
               $vcpkgManifestFile = ''
               if ('${{ parameters.vcpkgRef }}' -and (Test-Path '${{ parameters.cmakeSourceDir }}/vcpkg.json')) {
-                  $vcpkgManifestFile = ' ${{ parameters.cmakeSourceDir }}/vcpkg.json'
+                  $vcpkgManifestFile = '${{ parameters.cmakeSourceDir }}/vcpkg.json'
               }
 
               # public variables accessible to custom job steps
@@ -351,7 +351,7 @@ jobs:
             - task: Cache@2
               displayName: Cache dependencies
               inputs:
-                key: '"$(CIMAKESHIFT_CACHE_KEY_)"$(CIMAKESHIFT_VCPKG_MANIFEST_FILE_)'
+                key: '$(CIMAKESHIFT_VCPKG_MANIFEST_FILE_) | "$(CIMAKESHIFT_CACHE_KEY_)"'
                 path: '$(Build.BinariesDirectory)/dependencies'
                 cacheHitVar: 'dependencyCacheHit'
 
@@ -426,7 +426,9 @@ jobs:
           - ${{ if parameters.vcpkgRef }}:
             - pwsh: |
                 cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
-                & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
+                if ($env:CIMAKESHIFT_VCPKG_PACKAGES) {
+                    & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
+                }
                 if (Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json") {
                     # Vcpkg manifest mode
                     New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/vcpkg_manifest_installed'
@@ -445,7 +447,7 @@ jobs:
                 Remove-Item -Recurse -Force './packages'
                 #Remove-Item -Recurse -Force './ports' # ??
               displayName: Install Vcpkg packages
-              condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''))
+              condition: ne(variables.dependencyCacheHit, 'true')
 
           - ${{ each step in parameters.postSetupSteps }}:
             - ${{ each pair in step }}:
