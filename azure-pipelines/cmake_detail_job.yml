@@ -215,7 +215,7 @@ jobs:
               $cmakeTestArgs = '${{ parameters.cmakeTestArgs }}' -replace '<cmakeTestArgs>','${{ parameters.cmakeTestArgs }}'
 
               $vcpkgManifestFile = ''
-              if ('${{ parameters.vcpkgRef }}' -and Test-Path '${{ parameters.cmakeSourceDir }}/vcpkg.json') {
+              if ('${{ parameters.vcpkgRef }}' -and (Test-Path '${{ parameters.cmakeSourceDir }}/vcpkg.json')) {
                   $vcpkgManifestFile = ' ${{ parameters.cmakeSourceDir }}/vcpkg.json'
               }
 
@@ -473,7 +473,7 @@ jobs:
               - pwsh: |
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  if ('${{ parameters.vcpkgRef }}' -and Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json") {
+                  if ('${{ parameters.vcpkgRef }}' -and (Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json")) {
                       if ($IsWindows) {
                           New-Item -ItemType SymbolicLink -Path . -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/dependencies/vcpkg_manifest_installed'
                       }
