@@ -194,7 +194,7 @@ jobs:
                   $vcpkgOverlayArgs = '--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
               }
               $vcpkgPackages = '${{ parameters.vcpkgPackages }}'
-              $cacheKey = @(
+              $cacheKey = (@(
                   "revision-$revision",
                   '${{ parameters.cxxCompiler }}' + $cxxCompilerVersion,
                   '${{ parameters.cudaCompiler }}${{ cudaCompilerVersion }}',
@@ -205,7 +205,7 @@ jobs:
                   $vcpkgPackages,
                   '${{ parameters.caption }}',
                   '${{ parameters.tag }}'
-              ) -join ' | '
+              ) | Where-Object { $_ } | % { "`"$_`"" }) -join ' | '
               if ('${{ parameters.vcpkgRef }}') {
                   $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake"'
                   $cmakeVcpkgArgs += " -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet"
@@ -216,7 +216,7 @@ jobs:
 
               $vcpkgManifestFile = ''
               if ('${{ parameters.vcpkgRef }}' -and (Test-Path '${{ parameters.cmakeSourceDir }}/vcpkg.json')) {
-                  $vcpkgManifestFile = '${{ parameters.cmakeSourceDir }}/vcpkg.json'
+                  $vcpkgManifestFile = '${{ parameters.cmakeSourceDir }}/vcpkg.json | '
               }
 
               # public variables accessible to custom job steps
@@ -351,7 +351,7 @@ jobs:
             - task: Cache@2
               displayName: Cache dependencies
               inputs:
-                key: '$(CIMAKESHIFT_VCPKG_MANIFEST_FILE_) | "$(CIMAKESHIFT_CACHE_KEY_)"'
+                key: '$(CIMAKESHIFT_VCPKG_MANIFEST_FILE_)$(CIMAKESHIFT_CACHE_KEY_)'
                 path: '$(Build.BinariesDirectory)/dependencies'
                 cacheHitVar: 'dependencyCacheHit'
 
