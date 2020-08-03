@@ -198,10 +198,10 @@ jobs:
               $cacheKey = (@(
                   "revision: $revision",
                   "cxxCompiler: ${{ parameters.cxxCompiler }} $cxxCompilerVersion",
-                  ("cudaCompiler: ${{ parameters.cudaCompiler }} ${{ cudaCompilerVersion }}" -replace ':.*None',': None'),
+                  ("cudaCompiler: ${{ parameters.cudaCompiler }} ${{ cudaCompilerVersion }}" -replace ':.*None',': '),
                   "vcpkgTriplet: $vcpkgTriplet",
-                  "vcpkgRepo: $vcpkgRepo,${{ parameters.vcpkgRef }}",
-                  'vcpkgOverlayRepo: ${{ parameters.vcpkgOverlayRepo }},${{ parameters.vcpkgOverlayRef }}',
+                  "vcpkgRepo: $vcpkgRepo ${{ parameters.vcpkgRef }}",
+                  'vcpkgOverlayRepo: ${{ parameters.vcpkgOverlayRepo }} ${{ parameters.vcpkgOverlayRef }}',
                   "vcpkgArgs: $vcpkgArgs",
                   "vcpkgPackages: $vcpkgPackages"
               ) | Where-Object { $_ -and ($_ -replace '[A-Za-z]+:\s+','') } | % { "`"$_`"" }) -join ' | '
