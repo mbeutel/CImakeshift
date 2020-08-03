@@ -521,7 +521,7 @@ jobs:
 
         - ${{ if not(target.cmakeBuildConfigurations) }}:
           - ${{ each config in parameters.cmakeBuildConfigurations }}:
-            - template: _cmake_cmake.yml
+            - template: _cmake_run_cmake.yml
               parameters:
                 config: '${{ config }}'
                 preBuildSteps: '${{ parameters.preBuildSteps }}'

@@ -1,6 +1,6 @@
 
-#variables:
-#  System.Debug: true
+variables:
+  System.Debug: true
 
 trigger:
 - master

@@ -1,5 +1,13 @@
 # Internal template
 
+parameters:
+  config: ''
+  preBuildSteps: []
+  postBuildSteps: []
+  targetPreBuildSteps: []
+  targetPostBuildSteps: []
+
+
 steps:
 - ${{ if coalesce(parameters.preBuildSteps, parameters.targetPreBuildSteps, parameters.postBuildSteps, parameters.targetPostBuildSteps) }}:
   - pwsh: |
@@ -18,20 +26,20 @@ steps:
   - pwsh: |
       New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ parameters.config }}'
       cd '$(Build.BinariesDirectory)/build/${{ parameters.config }}'
-      $args = '$(CIMAKESHIFT_CMAKE_CONFIG_ARGS)' -split ' '
-      & cmake -G "$(CIMAKESHIFT_CMAKE_GENERATOR)" $(CIMAKESHIFT_CMAKE_VCPKG_ARGS_) -DCMAKE_BUILD_TYPE=${{ parameters.config }} "${{ parameters.cmakeSourceDir }}" $args
+      $args = $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS -split ' '
+      & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR $env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_ -DCMAKE_BUILD_TYPE=${{ parameters.config }} "${{ parameters.cmakeSourceDir }}" $args
     displayName: 'Configure ${{ parameters.config }}'
 
 - ${{ if eq(parameters.cmakeBuild, 'true') }}:
   - pwsh: |
-      $args = '$(CIMAKESHIFT_CMAKE_BUILD_ARGS)' -split ' '
+      $args = $env:CIMAKESHIFT_CMAKE_BUILD_ARGS -split ' '
       & cmake --build '$(Build.BinariesDirectory)/build/${{ parameters.config }}' --parallel --verbose --config ${{ parameters.config }} $args
     displayName: 'Build ${{ parameters.config }}'
 
 - ${{ if eq(parameters.cmakeTest, 'true') }}:
   - pwsh: |
       cd '$(Build.BinariesDirectory)/build/${{ parameters.config }}'
-      $args = '$(CIMAKESHIFT_CMAKE_TEST_ARGS)' -split ' '
+      $args = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
       & ctest --verbose --test-action Test --build-config ${{ parameters.config }} $args
     displayName: 'Run tests for ${{ parameters.config }}'
 
