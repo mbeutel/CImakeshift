@@ -81,6 +81,7 @@ parameters:
   vcpkgArgs: ''
   vcpkgPackages: []
   vcpkgCache: '' # on by default if Vcpkg is used
+  vcpkgCacheKey: ''
 
   # Build options
   cmakeSourceDir: '$(Build.SourcesDirectory)'
@@ -116,6 +117,7 @@ parameters:
 #    target.vcpkgArgs                 # overrides parameters.vcpkgArgs; can refer to parameters.vcpkgArgs as '<vcpkgArgs>'
 #    target.vcpkgPackages             # overrides parameters.vcpkgPackages; can refer to parameters.vcpkgPackages as '<vcpkgPackages>'
 #    target.vcpkgCache                # overrides parameters.vcpkgCache
+#    target.vcpkgCacheKey             # overrides parameters.vcpkgCacheKey; can refer to parameters.vcpkgCacheKey as '<vcpkgCacheKey>'
 #    target.cudaPackages              # overrides parameters.cudaPackages; can refer to parameters.cudaPackages as '<cudaPackages>'
 #    target.cmakeGenerator            # overrides parameters.cmakeGenerator
 #    target.cmakeConfig               # overrides parameters.cmakeConfig
@@ -165,6 +167,7 @@ jobs:
       vcpkgOverlayRef: '${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}'
       vcpkgTriplet: '${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}'
       vcpkgCache: '${{ coalesce(target.vcpkgCache, parameters.vcpkgCache) }}'
+      vcpkgCacheKey: '${{ coalesce(target.vcpkgCacheKey, parameters.vcpkgCacheKey) }}'
       cmakeBuildConfigurations:
       - ${{ if target.cmakeBuildConfigurations }}:
         - ${{ target.cmakeBuildConfigurations }}

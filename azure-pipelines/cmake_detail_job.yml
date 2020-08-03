@@ -25,6 +25,7 @@ parameters:
   vcpkgOverlayRef: ''
   vcpkgTriplet: ''
   vcpkgCache: ''
+  vcpkgCacheKey: ''
   cmakeBuildConfigurations: []
   cmakeGenerator: ''
   cmakeConfig: true
@@ -194,18 +195,20 @@ jobs:
                   $vcpkgOverlayArgs = '--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
               }
               $vcpkgPackages = '${{ parameters.vcpkgPackages }}'
+              $vcpkgPackagesStr = $vcpkgPackages -replace ' ',','
               $cacheKey = (@(
-                  "revision-$revision",
-                  '${{ parameters.cxxCompiler }}' + $cxxCompilerVersion,
-                  '${{ parameters.cudaCompiler }}${{ cudaCompilerVersion }}',
-                  $vcpkgTriplet,
-                  "$vcpkgRepo" + '${{ parameters.vcpkgRef }}',
-                  '${{ parameters.vcpkgOverlayRepo }}${{ parameters.vcpkgOverlayRef }}',
-                  $vcpkgArgs,
-                  $vcpkgPackages,
-                  '${{ parameters.caption }}',
-                  '${{ parameters.tag }}'
+                  "revision:$revision",
+                  "cxxCompiler:${{ parameters.cxxCompiler }} $cxxCompilerVersion",
+                  "cudaCompiler:${{ parameters.cudaCompiler }} ${{ cudaCompilerVersion }}" -replace ':.*None',':None',
+                  "vcpkgTriplet:$vcpkgTriplet",
+                  "vcpkgRepo:$vcpkgRepo,${{ parameters.vcpkgRef }}",
+                  'vcpkgOverlayRepo:${{ parameters.vcpkgOverlayRepo }},${{ parameters.vcpkgOverlayRef }}',
+                  "vcpkgArgs:$vcpkgArgs",
+                  "vcpkgPackages:$vcpkgPackagesStr"
               ) | Where-Object { $_ } | % { "`"$_`"" }) -join ' | '
+              if ('${{ parameters.cacheKey }}') {
+                  $cacheKey += ' | ${{ parameters.cacheKey }}'
+              }
               if ('${{ parameters.vcpkgRef }}') {
                   $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake"'
                   $cmakeVcpkgArgs += " -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet"
