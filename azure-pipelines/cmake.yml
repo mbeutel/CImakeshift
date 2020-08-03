@@ -293,7 +293,8 @@ jobs:
                 '${{ coalesce(target.tag, parameters.tag) }}'
             ) -join ' '
             if ('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}') {
-                $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=$(VCPKG_TRIPLET)'
+                $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake"'
+                $cmakeVcpkgArgs += " -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet"
             }
             $cmakeConfigArgs = '${{ coalesce(target.cmakeConfigArgs, parameters.cmakeConfigArgs) }}' -replace '<cmakeConfigArgs>','${{ parameters.cmakeConfigArgs }}'
             $cmakeBuildArgs = '${{ coalesce(target.cmakeBuildArgs, parameters.cmakeBuildArgs) }}' -replace '<cmakeBuildArgs>','${{ parameters.cmakeBuildArgs }}'
