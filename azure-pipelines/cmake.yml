@@ -56,7 +56,7 @@ parameters:
 
   # Platform options
   os: ''
-  #platforms: [] # currently unavailable
+  platforms: []
 
   # C++ options
   cxxCompiler: ''
