@@ -197,6 +197,7 @@ jobs:
               $vcpkgPackages = '${{ parameters.vcpkgPackages }}'
               $cacheKey = (@(
                   "revision: $revision",
+                  "platform: $(Agent.OS) $(Agent.OSArchitecture)",
                   "cxxCompiler: ${{ parameters.cxxCompiler }} $cxxCompilerVersion",
                   ("cudaCompiler: ${{ parameters.cudaCompiler }} ${{ cudaCompilerVersion }}" -replace ':.*None',': '),
                   "vcpkgTriplet: $vcpkgTriplet",
