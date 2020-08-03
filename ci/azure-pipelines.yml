@@ -64,8 +64,10 @@ jobs:
       cxxCompiler: MSVC
       cxxCompilerVersions: [19_2]
       cudaCompiler: NVCC
-      cudaCompilerVersion: 10_2
+      cudaCompilerVersions: [10_2]
       platforms: [x64]
+      vcpkgPackages: ['<vcpkgPackages>', 'catch2']
+      cudaPackages: ['cublas-dev']
       cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 
       postSetupSteps:
@@ -91,7 +93,7 @@ jobs:
       cxxCompiler: MSVC
       cxxCompilerVersions: [19_2]
       cudaCompiler: NVCC
-      cudaCompilerVersion: 11_0
+      cudaCompilerVersions: [11_0]
       platforms: [x64]
       cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 
@@ -127,15 +129,17 @@ jobs:
       cxxCompiler: GCC
       cxxCompilerVersions: [8]
       cudaCompiler: NVCC
-      cudaCompilerVersion: 10_2
+      cudaCompilerVersions: [10_2]
       platforms: [x64]
+      vcpkgPackages: ['catch2', 'cmakeshift', 'gsl-lite']
+      cudaPackages: ['<cudaPackages>', 'cublas-dev']
       cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 
     - os: Linux
       cxxCompiler: GCC
       cxxCompilerVersions: [9]
       cudaCompiler: NVCC
-      cudaCompilerVersion: 11_0
+      cudaCompilerVersions: [11_0]
       platforms: [x64]
       cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 

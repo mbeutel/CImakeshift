@@ -60,11 +60,11 @@ parameters:
 
   # C++ options
   cxxCompiler: ''
-  #cxxCompilerVersions: [] # currently unavailable
+  cxxCompilerVersions: []
 
   # CUDA options
   cudaCompiler: ''
-  cudaCompilerVersion: ''
+  cudaCompilerVersions: [None]
   cudaPackages: []
 
   # Vcpkg repository
@@ -99,12 +99,12 @@ parameters:
 
   targets: []
 #    target.tag                       # overrides parameters.tag
-#    target.os: ''                    # overrides parameters.os
-#    target.platforms: []             # overrides parameters.platforms
+#    target.os                        # overrides parameters.os
+#    target.platforms                 # overrides parameters.platforms
 #    target.cxxCompiler               # overrides parameters.cxxCompiler
 #    target.cxxCompilerVersions       # overrides parameters.cxxCompilerVersions
 #    target.cudaCompiler              # overrides parameters.cudaCompiler
-#    target.cudaCompilerVersion       # overrides parameters.cudaCompilerVersion
+#    target.cudaCompilerVersions      # overrides parameters.cudaCompilerVersions
 #    target.cmakeBuildConfigurations  # overrides parameters.cmakeBuildConfigurations
 #    target.vcpkgRepo                 # overrides parameters.vcpkgRepo
 #    target.vcpkgRef                  # overrides parameters.vcpkgRef
@@ -127,430 +127,85 @@ parameters:
 #    target.postBuildSteps            # adds to parameters.postBuildSteps
 
 jobs:
-- ${{ each target in parameters.targets }}:
-  #- ${{ each platform in coalesce(target.platforms, parameters.platforms) }}:
+- ${{ if target.platforms }}:
   - ${{ each platform in target.platforms }}:
-    #- ${{ each cxxCompilerVersion in coalesce(target.cxxCompilerVersions, parameters.cxxCompilerVersions) }}:
-    - ${{ each cxxCompilerVersion in target.cxxCompilerVersions }}:
-      - job: '${{ coalesce(target.os, parameters.os) }}_${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}${{ cxxCompilerVersion }}_${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}_${{ join(''_'', coalesce(target.cmakeBuildConfigurations, parameters.cmakeBuildConfigurations)) }}_${{ coalesce(target.tag, parameters.tag) }}_${{ platform }}'
-        pool:
-          name: Azure Pipelines
-          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'Clang'), le(9, cxxCompilerVersion)), and(eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'MSVC'), or(eq(cxxCompilerVersion, '19_2'), eq(cxxCompilerVersion, '2019'))))) }}:
-            vmImage: 'windows-2019'
-          ${{ if and(eq(coalesce(target.os, parameters.os), 'Windows'), or(eq(cxxCompilerVersion, '19_1'), eq(cxxCompilerVersion, '2017'))) }}:
-            vmImage: 'vs2017-win2016'
-          ${{ if eq(coalesce(target.os, parameters.os), 'Linux') }}:
-            vmImage: 'ubuntu-18.04'
-          ${{ if and(eq(coalesce(target.os, parameters.os), 'MacOS'), eq(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'AppleClang'), or(eq(cxxCompilerVersion, '9_1'), eq(cxxCompilerVersion, '10'))) }}:
-            vmImage: 'macOS-10.14'
-          ${{ if and(eq(coalesce(target.os, parameters.os), 'MacOS'), or(ne(coalesce(target.cxxCompiler, parameters.cxxCompiler), 'AppleClang'), eq(cxxCompilerVersion, '10_0_1'), eq(cxxCompilerVersion, '11'), eq(cxxCompilerVersion, '11_0_3'))) }}:
-            vmImage: 'macOS-10.15'
-
-        steps:
-        - pwsh: |
-            if ('${{ or(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), 'true'), and(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), ''), coalesce(target.vcpkgRef, parameters.vcpkgRef))) }}' -eq 'true') {
-                New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies'
-            }
-
-            $revision='4' # Update this when making incompatible changes to the build pipeline definition.
-            if ($IsWindows) { $tripletOS = 'windows' }
-            elseif ($IsLinux) { $tripletOS = 'linux' }
-            elseif ($IsMacOS) { $tripletOS = 'osx' }
-            $cxxCompilerVersion = '${{ cxxCompilerVersion }}'
-            $vcpkgTriplet = '${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}' -replace '<os>',$tripletOS -replace '<platform>','${{ platform }}'
-            $cudaPackagesRaw = ('${{ join(' ', coalesce(target.cudaPackages, parameters.cudaPackages)) }}' -replace '<cudaPackages>','${{ join(' ', parameters.cudaPackages) }}' -replace '\s+',' ').Trim()
-            $cudaPackagesRawArray = $cudaPackagesRaw.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
-            echo "cudaPackagesRaw: '$cudaPackagesRaw'"
-            echo "cudaPackagesRawArray: $cudaPackagesRawArray"
-            $cmakeGenerator = '${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}'
-            New-Item -Type Directory -Force "$HOME/bin"
-            if ($IsWindows) {
-                $extraPath = "$HOME/bin"
-                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
-                    echo "##vso[task.setvariable variable=CC]cl.exe"
-                    echo "##vso[task.setvariable variable=CXX]cl.exe"
-                    $msvcOrVSVersion_msvcVersion = @{
-                        '19_1' = '19_1'
-                        '2017' = '19_1'
-                        '19_2' = '19_2'
-                        '2019' = '19_2'
-                    }
-                    $cxxCompilerVersion = $msvcOrVSVersion_msvcVersion[$cxxCompilerVersion]
-                    $msvcVersion_msbuildGenerator = @{
-                        '19_1' = 'Visual Studio 15 2017'
-                        '19_2' = 'Visual Studio 16 2019'
-                    }
-                    $msbuildGenerator = $msvcVersion_msbuildGenerator[$cxxCompilerVersion]
-                    $defaultCmakeGenerator = 'Ninja'
-                }
-                elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
-                    #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-                    #$clangClPath = Join-Path $vsPath 'VC\Tools\Llvm\bin\clang-cl.exe'
-                    $llvmRoot = "${env:ProgramFiles}\LLVM\bin"
-                    $extraPath = "$llvmRoot;$extraPath"
-                    $clangClPath = "$llvmRoot\clang-cl.exe"
-                    $clangClCompatPath = $clangClPath -replace '\\','/'
-                    $cmakeGenerator = $cmakeGenerator -replace 'MSBuild','Visual Studio 16 2019'
-                    $cmakeCompilerFlag = "-DCMAKE_C_COMPILER=`"$clangClCompatPath`" -DCMAKE_CXX_COMPILER=`"$clangClCompatPath`""
-                    if ('${{ platform }}' -eq 'x86') {
-                        # Workaround for https://gitlab.kitware.com/cmake/cmake/issues/16259
-                        echo '##vso[task.setvariable variable=CFLAGS]-m32'
-                        echo '##vso[task.setvariable variable=CXXFLAGS]-m32'
-                    }
-                    $msbuildGenerator = 'Ninja'
-                    $defaultCmakeGenerator = 'Ninja'
-                }
-                $cmakeGenerator = $cmakeGenerator -replace 'MSBuild',$msbuildGenerator
-                if('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
-                    $cudaVersionRaw = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}'
-                    $cudaVersion = $cudaVersionRaw -replace '_','.'
-                    $cudaPath = "$env:SystemDrive/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v$cudaVersion"
-                    $cmakeCudaCompilerFlag = "-DCMAKE_CUDA_COMPILER=`"$cudaPath/bin/nvcc.exe`""
-                    $cudaPackages = @(@('nvcc', 'cudart') + $cudaPackagesRawArray | % { "${_}_$cudaVersion" }) -join ' '
-                    echo "##vso[task.setvariable variable=CUDA_PATH]$cudaPath"
-                    echo "##vso[task.setvariable variable=CUDA_PATH_V$cudaVersionRaw]$cudaPath"
-                }
-                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang' -or '${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'MSVC') {
-                    # Set the correct VS environment manually, cf. https://help.appveyor.com/discussions/questions/18777-how-to-use-vcvars64bat-from-powershell.
-                    $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-                    $vcvarsPath = "$vsPath\VC\Auxiliary\Build\vcvarsall.bat"
-                    & cmd.exe /c "set > %temp%\vcvars-before.txt && call `"$vcvarsPath`" ${{ platform }} && set > %temp%\vcvars-after.txt"
-                    $varsBefore = @{ }
-                    Get-Content "$env:temp\vcvars-before.txt" | Foreach-Object {
-                        if ($_ -match '^(.*?)=(.*)$') {
-                            $varsBefore[$($matches[1])] = "$($matches[2])"
-                        }
-                    }
-                    Get-Content "$env:temp\vcvars-after.txt" | Foreach-Object {
-                        if ($_ -match '^(.*?)=(.*)$') {
-                            if ($($matches[1]) -eq "PATH") {
-                                echo "##vso[task.setvariable variable=$($matches[1])]$extraPath;$($matches[2])"
-                            }
-                            elseif ($varsBefore[$($matches[1])] -ne "$($matches[2])") {
-                                echo "##vso[task.setvariable variable=$($matches[1])]$($matches[2])"
-                            }
-                        }
-                    }
-                }
-            }
-            elseif ($IsLinux) {
-                $extraPath = "$HOME/bin"
-                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
-                    echo "##vso[task.setvariable variable=CC]gcc-$cxxCompilerVersion"
-                    echo "##vso[task.setvariable variable=CXX]g++-$cxxCompilerVersion"
-                }
-                elseif ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'Clang') {
-                    if ([int]$cxxCompilerVersion -le 6) {
-                        $clangFullVersion = "$cxxCompilerVersion.0"
-                    }
-                    else {
-                        $clangFullVersion = "$cxxCompilerVersion"
-                    }
-                    echo "##vso[task.setvariable variable=CC]clang-$clangFullVersion"
-                    echo "##vso[task.setvariable variable=CXX]clang++-$clangFullVersion"
-                }
-                $defaultCmakeGenerator = 'Ninja'
-                if('${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}') {
-                    $cudaVersion = '${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}' -replace '_','.'
-                    $cmakeCudaCompilerFlag = "-DCMAKE_CUDA_COMPILER=`"/usr/local/cuda-$cudaVersion/bin/nvcc`""
-                    $cudaVersion_Dash = $cudaVersion -replace '\.','-'
-                    $cudaPackages = @(@('nvcc', 'cudart-dev') + $cudaPackagesRawArray | % { "cuda-$_-${cudaVersion_Dash}" }) -join ' '
-                }
-                echo "##vso[task.setvariable variable=PATH]${extraPath}:${env:PATH}"
-            }
-            elseif ($IsMacOS) {
-                $extraPath = "$HOME/bin"
-                if ('${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' -eq 'GCC') {
-                    echo "##vso[task.setvariable variable=CXXFLAGS_OLD]$env:CXXFLAGS"
-                    echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS -fvisibility=hidden -fvisibility-inlines-hidden"
-                    echo "##vso[task.setvariable variable=CC]gcc-$cxxCompilerVersion"
-                    echo "##vso[task.setvariable variable=CXX]g++-$cxxCompilerVersion"
-                }
-                $defaultCmakeGenerator = 'Ninja'
-                echo "##vso[task.setvariable variable=PATH]${extraPath}:${env:PATH}"
-            }
-            if ($cmakeGenerator -eq '') {
-                $cmakeGenerator = $defaultCmakeGenerator
-            }
-            $vcpkgRepo = '${{ coalesce(target.vcpkgRepo, parameters.vcpkgRepo) }}'
-            if ($vcpkgRepo -eq '' -and '${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}') {
-                $vcpkgRepo = 'https://github.com/microsoft/vcpkg.git'
-            }
-            $vcpkgArgs = '${{ coalesce(target.vcpkgArgs, parameters.vcpkgArgs) }}' -replace '<vcpkgArgs>','${{ parameters.vcpkgArgs }}'
-            if ('${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}') {
-                $vcpkgOverlayArgs = '--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
-            }
-            $vcpkgPackages = '${{ join(' ', coalesce(target.vcpkgPackages, parameters.vcpkgPackages)) }}' -replace '<vcpkgPackages>','${{ join(' ', parameters.vcpkgPackages) }}'
-            $cacheKey = @(
-                "revision-$revision",
-                '${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}' + $cxxCompilerVersion,
-                '${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}',
-                $vcpkgTriplet,
-                "$vcpkgRepo" + '${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}',
-                '${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }}${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}',
-                $vcpkgArgs,
-                $vcpkgPackages,
-                '${{ coalesce(target.tag, parameters.tag) }}'
-            ) -join ' '
-            if ('${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}') {
-                $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake"'
-                $cmakeVcpkgArgs += " -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet"
-            }
-            $cmakeConfigArgs = '${{ coalesce(target.cmakeConfigArgs, parameters.cmakeConfigArgs) }}' -replace '<cmakeConfigArgs>','${{ parameters.cmakeConfigArgs }}'
-            $cmakeBuildArgs = '${{ coalesce(target.cmakeBuildArgs, parameters.cmakeBuildArgs) }}' -replace '<cmakeBuildArgs>','${{ parameters.cmakeBuildArgs }}'
-            $cmakeTestArgs = '${{ coalesce(target.cmakeTestArgs, parameters.cmakeTestArgs) }}' -replace '<cmakeTestArgs>','${{ parameters.cmakeTestArgs }}'
-
-            # public variables accessible to custom job steps
-            echo '##vso[task.setvariable variable=CIMAKESHIFT_CACHE]${{ coalesce(target.cache, parameters.cache) }}'
-            echo '##vso[task.setvariable variable=CIMAKESHIFT_TAG]${{ coalesce(target.tag, parameters.tag) }}'
-            echo '##vso[task.setvariable variable=CIMAKESHIFT_OS]${{ coalesce(target.os, parameters.os) }}'
-            echo '##vso[task.setvariable variable=CIMAKESHIFT_PLATFORM]${{ platform }}'
-            echo '##vso[task.setvariable variable=CIMAKESHIFT_CXX_COMPILER]${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}'
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_CXX_COMPILER_VERSION]$cxxCompilerVersion"
-            echo '##vso[task.setvariable variable=CIMAKESHIFT_CUDA_COMPILER]${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}'
-            echo '##vso[task.setvariable variable=CIMAKESHIFT_CUDA_COMPILER_VERSION]${{ coalesce(target.cudaCompilerVersion, parameters.cudaCompilerVersion) }}'
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_CUDA_PACKAGES]$cudaPackages"
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_REPO]$vcpkgRepo"
-            echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_REF]${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}'
-            echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_REPO]${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }}'
-            echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_REF]${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}'
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_ARGS]$vcpkgArgs"
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_PACKAGES]$vcpkgPackages"
-            echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATIONS]${{ join(target.cmakeBuildConfigurations, ';') }}'
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_GENERATOR]$cmakeGenerator"
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_SOURCE_DIR]${{ parameters.cmakeSourceDir }}"
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_CONFIG]${{ coalesce(target.cmakeConfig, parameters.cmakeConfig) }}"
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_CONFIG_ARGS]$cmakeCompilerFlag $cmakeCudaCompilerFlag $cmakeConfigArgs"
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD]${{ coalesce(target.cmakeBuild, parameters.cmakeBuild) }}"
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_ARGS]$cmakeBuildArgs"
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_TEST]${{ coalesce(target.cmakeTest, parameters.cmakeTest) }}"
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_TEST_ARGS]$cmakeTestArgs"
-            echo '##vso[task.setvariable variable=VCPKG_ROOT]$(Build.BinariesDirectory)/dependencies/vcpkg'
-            echo "##vso[task.setvariable variable=VCPKG_TRIPLET]$vcpkgTriplet"
-
-            # private variables
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_CACHE_KEY_]$cacheKey"
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_CLANG_FULL_VERSION_]$clangFullVersion"
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_ARGS_]$vcpkgOverlayArgs"
-            echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_VCPKG_ARGS_]$cmakeVcpkgArgs"
-          displayName: Set environment variables
-
-        - pwsh: |
-            if ('${{ parameters.debug }}' -eq 'True') {
-                Get-ChildItem env: | Format-List
-                if ('${{ or(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), 'true'), and(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), ''), coalesce(target.vcpkgRef, parameters.vcpkgRef))) }}' -eq 'True') {
-                    Get-ChildItem -Force -Recurse '$(Build.BinariesDirectory)/dependencies'
-                }
-            }
-            if ($IsWindows) {
-                $ninjaOS = 'win'
-                if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
-                    $clangCompilerVersion_URL = @{
-                        '9' = 'http://releases.llvm.org/9.0.0/LLVM-9.0.0-win64.exe'
-                        '10' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/LLVM-10.0.0-win64.exe'
-                    }
-                    $clangURL = $clangCompilerVersion_URL['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
-                    Invoke-WebRequest $clangURL -OutFile "$HOME/LLVM-installer.exe"
-                    Start-Process -Wait "$HOME/LLVM-installer.exe" '/S'
-                }
-                if ('$(CIMAKESHIFT_CUDA_COMPILER)') {
-                    $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
-                    $cudaVersion_URL = @{
-                        '10.1' = 'http://developer.download.nvidia.com/compute/cuda/10.1/Prod/network_installers/cuda_10.1.105_win10_network.exe'
-                        '10.2' = 'http://developer.download.nvidia.com/compute/cuda/10.2/Prod/network_installers/cuda_10.2.89_win10_network.exe'
-                        '11.0' = 'http://developer.download.nvidia.com/compute/cuda/11.0.2/network_installers/cuda_11.0.2_win10_network.exe'
-                    }
-                    Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
-                    Write-Host '[CImakeshift] Installing CUDA packages $(CIMAKESHIFT_CUDA_PACKAGES)'
-                    Start-Process -Wait "$HOME/cuda_installer_network.exe" (@('-s') + ('$(CIMAKESHIFT_CUDA_PACKAGES)'.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)))
-                }
-            }
-            elseif ($IsLinux) {
-                $ninjaOS = 'linux'
-                $packages = @()
-                #$packages += 'cmake'
-                #Invoke-WebRequest -OutFile "$HOME/kitware-archive-latest.asc" https://apt.kitware.com/keys/kitware-archive-latest.asc
-                #& sudo apt-key add "$HOME/kitware-archive-latest.asc"
-                #& sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
-                if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
-                    & sudo apt-add-repository ppa:ubuntu-toolchain-r/test
-                    $packages += ('gcc-$(CIMAKESHIFT_CXX_COMPILER_VERSION)', 'g++-$(CIMAKESHIFT_CXX_COMPILER_VERSION)')
-                }
-                elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
-                    if ([int]'$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ge 5) {
-                        $clangRepository = 'llvm-toolchain-$(CIMAKESHIFT_CLANG_FULL_VERSION_)'
-                        & sudo apt-add-repository "deb http://apt.llvm.org/bionic/ $clangRepository main"
-                    }
-                    if ($clangRepository) {
-                        & sudo apt-add-repository "deb http://apt.llvm.org/bionic/ $clangRepository main"
-                    }
-                    $packages += 'clang-$(CIMAKESHIFT_CLANG_FULL_VERSION_)'
-                }
-                if ('$(CIMAKESHIFT_CUDA_COMPILER)') {
-                    $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
-                    $ubuntuVersion = 'ubuntu1804'
-                    Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/cuda-$ubuntuVersion.pin" -OutFile cuda.pin
-                    & sudo mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
-                    & sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub"
-                    & sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/ /"
-                    $packages += '$(CIMAKESHIFT_CUDA_PACKAGES)'.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
-                }
-                & sudo apt-get update
-                Write-Host "[CImakeshift] Installing packages $packages"
-                & sudo apt-get install $packages
-                #& ln -s /usr/bin/cmake $HOME/bin/cmake
-                #& ln -s /usr/bin/ctest $HOME/bin/ctest
-                if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
-                    & ln -s $(Get-Command $env:CC).Path $HOME/bin/gcc
-                    & ln -s $(Get-Command $env:CXX).Path $HOME/bin/g++
-                }
-                elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
-                    & ln -s $(Get-Command $env:CC).Path $HOME/bin/clang
-                    & ln -s $(Get-Command $env:CXX).Path $HOME/bin/clang++
-                }
-            }
-            elseif ($IsMacOS) {
-                $ninjaOS = 'mac'
-                if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
-                    & brew install gcc@$(CIMAKESHIFT_CXX_COMPILER_VERSION)
-                }
-                if ('$(CIMAKESHIFT_VCPKG_REF)') {
-                    & brew install gcc@9
-                }
-            }
-            $ninjaVersion = '1.10.0'
-            Invoke-WebRequest "https://github.com/ninja-build/ninja/releases/download/v${ninjaVersion}/ninja-$ninjaOS.zip" -OutFile "$HOME/ninja-$ninjaOS.zip"
-            Expand-Archive -LiteralPath "$HOME/ninja-$ninjaOS.zip" -DestinationPath "$HOME/bin"
-            if (-not $IsWindows) {
-                & chmod +x $HOME/bin/ninja
-            }
-          displayName: Install tools
-
-        - ${{ if or(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), 'true'), and(eq(coalesce(target.vcpkgCache, parameters.vcpkgCache), ''), coalesce(target.vcpkgRef, parameters.vcpkgRef))) }}:
-          - task: Cache@2
-            displayName: Cache dependencies
-            inputs:
-              key: '"$(CIMAKESHIFT_CACHE_KEY_)"'
-              path: '$(Build.BinariesDirectory)/dependencies'
-              cacheHitVar: 'dependencyCacheHit'
-
-        - ${{ if and(coalesce(target.vcpkgRef, parameters.vcpkgRef), coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo), coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef)) }}:
-          - pwsh: |
-              & git clone $(CIMAKESHIFT_VCPKG_OVERLAY_REPO) '$(Build.BinariesDirectory)/dependencies/overlay-repo'
-              cd '$(Build.BinariesDirectory)/dependencies/overlay-repo'
-              & git checkout --quiet --force $(CIMAKESHIFT_VCPKG_OVERLAY_REF)
-              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports'
-              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets'
-              Remove-Item -Recurse -Force './.git'
-            displayName: Clone Vcpkg overlay repository
-            condition: ne(variables.dependencyCacheHit, 'true')
-
-        - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
-          - pwsh: |
-              & git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/dependencies/vcpkg'
-              cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
-              & git checkout --quiet --force $(CIMAKESHIFT_VCPKG_REF)
-              if ($IsWindows) {
-                  & ./bootstrap-vcpkg.bat
-              }
-              else { # Linux or MacOS
-                  if ($IsMacOS) {
-                      $osVersion = [version](sw_vers -productVersion)
-
-                      if ($osVersion -lt '10.15') {
-                          # workaround for GCC header issue on MacOS <10.15
-                          & sudo xcode-select -s /Applications/Xcode_10.3.app/Contents/Developer
-                      }
-                      else {
-                          # workaround for GCC header issue on MacOS 10.15, cf. https://github.com/microsoft/vcpkg/issues/9029
-                          $env:CXXFLAGS = "${env:CXXFLAGS} -D_CTERMID_H_"
-                      }
-                  }
-                  # let Vcpkg's bootstrap script figure out which version of GCC to use
-                  $env:CC = ''
-                  $env:CXX = ''
-                  & chmod +x ./bootstrap-vcpkg.sh
-                  & ./bootstrap-vcpkg.sh
-              }
-              Remove-Item -Recurse -Force './.git'
-            displayName: Bootstrap Vcpkg
-            condition: ne(variables.dependencyCacheHit, 'true')
-
-        - pwsh: |
-            if ('${{ parameters.debug }}' -eq 'True') {
-                Get-ChildItem env: | Format-List # for debugging
-            }
-            if ($IsMacOS) {
-                if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
-                    echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS_OLD"
-                    echo '##vso[task.setvariable variable=CC]gcc-$(CIMAKESHIFT_CXX_COMPILER_VERSION)'
-                    echo '##vso[task.setvariable variable=CXX]g++-$(CIMAKESHIFT_CXX_COMPILER_VERSION)'
-                }
-                elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang') {
-                    $appleClangVersion_xcodeVersion = @{
-                        '9_1'    = '9.4.1'
-                        '10'     = '10.1'    # also 10
-                        '10_0_1' = '10.3'    # also 10.2, 10.2.1
-                        '11'     = '11.3.1'  # also 11.1, 11.2, 11.2.1, 11.3
-                        '11_0_3' = '11.6'    # also 11.4, 11.4.1, 11.5
-                    }
-                    $xcodeVersion = $appleClangVersion_xcodeVersion['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
-                    & sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer
-                    echo '##vso[task.setvariable variable=CC]clang'
-                    echo '##vso[task.setvariable variable=CXX]clang++'
-                }
-            }
-          displayName: Set environment variables
-
-        - ${{ if coalesce(target.vcpkgRef, parameters.vcpkgRef) }}:
-          - pwsh: |
-              cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
-              & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
-              Remove-Item -Recurse -Force './buildtrees'
-              Remove-Item -Recurse -Force './downloads'
-              Remove-Item -Recurse -Force './packages'
-              #Remove-Item -Recurse -Force './ports' # ??
-            displayName: Install Vcpkg packages
-            condition: and(ne(variables.dependencyCacheHit, 'true'), ne(variables.CIMAKESHIFT_VCPKG_PACKAGES, ''))
-
-        - ${{ each step in parameters.postSetupSteps }}:
-          - ${{ each pair in step }}:
-              ${{ pair.key }}: ${{ pair.value }}
-        - ${{ if target.postSetupSteps }}:
-          - ${{ each step in target.postSetupSteps }}:
-            - ${{ each pair in step }}:
-                ${{ pair.key }}: ${{ pair.value }}
-
-        - ${{ if not(target.cmakeBuildConfigurations) }}:
-          - ${{ each config in parameters.cmakeBuildConfigurations }}:
-            - template: cmake_detail_run_cmake.yml
+    - ${{ if target.cxxCompilerVersions }}:
+      - ${{ each cxxCompilerVersion in target.cxxCompilerVersions }}:
+        - ${{ if target.cudaCompilerVersions }}:
+          - ${{ each cudaCompilerVersion in target.cudaCompilerVersions }}:
+            - template: cmake_detail_job.yml
               parameters:
-                config: '${{ config }}'
+                cmakeSourceDir: '${{ parameters.cmakeSourceDir }}'
+                postSetupSteps: ${{ parameters.postSetupSteps }}
                 preBuildSteps: ${{ parameters.preBuildSteps }}
-                targetPreBuildSteps: ${{ target.preBuildSteps }}
                 postBuildSteps: ${{ parameters.postBuildSteps }}
+                targetPostSetupSteps: ${{ target.postSetupSteps }}
+                targetPreBuildSteps: ${{ target.preBuildSteps }}
                 targetPostBuildSteps: ${{ target.postBuildSteps }}
+                cudaPackages: ${{ parameters.cudaPackages }}
+                targetCudaPackages: ${{ target.cudaPackages }}
+                vcpkgPackages: ${{ parameters.vcpkgPackages }}
+                targetVcpkgPackages: ${{ target.vcpkgPackages }}
+                tag: '${{ coalesce(target.tag, parameters.tag) }}'
+                os: '${{ coalesce(target.os, parameters.os) }}'
+                cxxCompiler: '${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}'
+                cudaCompiler: '${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}'
+                vcpkgRepo: '${{ coalesce(target.vcpkgRepo, parameters.vcpkgRepo) }}'
+                vcpkgRef: '${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}'
+                vcpkgOverlayRepo: '${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }}'
+                vcpkgOverlayRef: '${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}'
+                vcpkgTriplet: '${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}'
+                vcpkgCache: '${{ coalesce(target.vcpkgCache, parameters.vcpkgCache) }}'
+                cmakeBuildConfigurations: ${{ coalesce(target.cmakeBuildConfigurations, parameters.cmakeBuildConfigurations) }}
+                cmakeGenerator: '${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}'
                 cmakeConfig: '${{ coalesce(target.cmakeConfig, parameters.cmakeConfig) }}'
                 cmakeBuild: '${{ coalesce(target.cmakeBuild, parameters.cmakeBuild) }}'
                 cmakeTest: '${{ coalesce(target.cmakeTest, parameters.cmakeTest) }}'
-
-        - ${{ if target.cmakeBuildConfigurations }}:
-          - ${{ each config in target.cmakeBuildConfigurations }}:
-            - template: cmake_detail_run_cmake.yml
+                platform: '${{ platform }}'
+                cxxCompilerVersion: '${{ cxxCompilerVersion }}'
+                cudaCompilerVersion: '${{ cudaCompilerVersion }}'
+                cudaPackages: '${{ replace(join('' '', coalesce(target.cudaPackages, ''<cudaPackages>'')), '<cudaPackages>'', join('' '', parameters.cudaPackages)) }}'
+                vcpkgPackages: '${{ replace(join('' '', coalesce(target.vcpkgPackages, ''<vcpkgPackages>'')), '<vcpkgPackages>'', join('' '', parameters.vcpkgPackages)) }}'
+                vcpkgArgs: '${{ replace(coalesce(target.vcpkgArgs, ''<vcpkgArgs>''), ''<vcpkgArgs>'', parameters.vcpkgArgs) }}'
+                cmakeConfigArgs: '${{ replace(coalesce(target.cmakeConfigArgs, ''<cmakeConfigArgs>''), ''<cmakeConfigArgs>'', parameters.cmakeConfigArgs) }}'
+                cmakeBuildArgs: '${{ replace(coalesce(target.cmakeBuildArgs, ''<cmakeBuildArgs>''), ''<cmakeBuildArgs>'', parameters.cmakeBuildArgs) }}'
+                cmakeTestArgs: '${{ replace(coalesce(target.cmakeTestArgs, ''<cmakeTestArgs>''), ''<cmakeTestArgs>'', parameters.cmakeTestArgs) }}'
+        - ${{ if not(target.cudaCompilerVersions) }}:
+          - ${{ each cudaCompilerVersion in parameters.cudaCompilerVersions }}:
+            - template: cmake_detail_job.yml
               parameters:
-                config: '${{ config }}'
+                cmakeSourceDir: '${{ parameters.cmakeSourceDir }}'
+                postSetupSteps: ${{ parameters.postSetupSteps }}
                 preBuildSteps: ${{ parameters.preBuildSteps }}
-                targetPreBuildSteps: ${{ target.preBuildSteps }}
                 postBuildSteps: ${{ parameters.postBuildSteps }}
+                targetPostSetupSteps: ${{ target.postSetupSteps }}
+                targetPreBuildSteps: ${{ target.preBuildSteps }}
                 targetPostBuildSteps: ${{ target.postBuildSteps }}
+                cudaPackages: ${{ parameters.cudaPackages }}
+                targetCudaPackages: ${{ target.cudaPackages }}
+                vcpkgPackages: ${{ parameters.vcpkgPackages }}
+                targetVcpkgPackages: ${{ target.vcpkgPackages }}
+                tag: '${{ coalesce(target.tag, parameters.tag) }}'
+                os: '${{ coalesce(target.os, parameters.os) }}'
+                cxxCompiler: '${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}'
+                cudaCompiler: '${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}'
+                vcpkgRepo: '${{ coalesce(target.vcpkgRepo, parameters.vcpkgRepo) }}'
+                vcpkgRef: '${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}'
+                vcpkgOverlayRepo: '${{ coalesce(target.vcpkgOverlayRepo, parameters.vcpkgOverlayRepo) }}'
+                vcpkgOverlayRef: '${{ coalesce(target.vcpkgOverlayRef, parameters.vcpkgOverlayRef) }}'
+                vcpkgTriplet: '${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}'
+                vcpkgCache: '${{ coalesce(target.vcpkgCache, parameters.vcpkgCache) }}'
+                cmakeBuildConfigurations: ${{ coalesce(target.cmakeBuildConfigurations, parameters.cmakeBuildConfigurations) }}
+                cmakeGenerator: '${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}'
                 cmakeConfig: '${{ coalesce(target.cmakeConfig, parameters.cmakeConfig) }}'
                 cmakeBuild: '${{ coalesce(target.cmakeBuild, parameters.cmakeBuild) }}'
                 cmakeTest: '${{ coalesce(target.cmakeTest, parameters.cmakeTest) }}'
-
-        - ${{ if eq(coalesce(target.cmakeTest, parameters.cmakeTest), 'true') }}:
-          - task: PublishTestResults@2
-            displayName: Publish test results
-            inputs:
-              testResultsFormat: 'cTest'
-              testResultsFiles: '$(Build.BinariesDirectory)/build/*/Testing/*/Test.xml'
-              testRunTitle: '$(Agent.JobName)'
+                platform: '${{ platform }}'
+                cxxCompilerVersion: '${{ cxxCompilerVersion }}'
+                cudaCompilerVersion: '${{ cudaCompilerVersion }}'
+                cudaPackages: '${{ replace(join('' '', coalesce(target.cudaPackages, ''<cudaPackages>'')), '<cudaPackages>'', join('' '', parameters.cudaPackages)) }}'
+                vcpkgPackages: '${{ replace(join('' '', coalesce(target.vcpkgPackages, ''<vcpkgPackages>'')), '<vcpkgPackages>'', join('' '', parameters.vcpkgPackages)) }}'
+                vcpkgArgs: '${{ replace(coalesce(target.vcpkgArgs, ''<vcpkgArgs>''), ''<vcpkgArgs>'', parameters.vcpkgArgs) }}'
+                cmakeConfigArgs: '${{ replace(coalesce(target.cmakeConfigArgs, ''<cmakeConfigArgs>''), ''<cmakeConfigArgs>'', parameters.cmakeConfigArgs) }}'
+                cmakeBuildArgs: '${{ replace(coalesce(target.cmakeBuildArgs, ''<cmakeBuildArgs>''), ''<cmakeBuildArgs>'', parameters.cmakeBuildArgs) }}'
+                cmakeTestArgs: '${{ replace(coalesce(target.cmakeTestArgs, ''<cmakeTestArgs>''), ''<cmakeTestArgs>'', parameters.cmakeTestArgs) }}'
