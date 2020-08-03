@@ -197,15 +197,15 @@ jobs:
               $vcpkgPackages = '${{ parameters.vcpkgPackages }}'
               $vcpkgPackagesStr = $vcpkgPackages -replace ' ',','
               $cacheKey = (@(
-                  "revision:$revision",
-                  "cxxCompiler:${{ parameters.cxxCompiler }} $cxxCompilerVersion",
-                  ("cudaCompiler:${{ parameters.cudaCompiler }} ${{ cudaCompilerVersion }}" -replace ':.*None',':None'),
-                  "vcpkgTriplet:$vcpkgTriplet",
-                  "vcpkgRepo:$vcpkgRepo,${{ parameters.vcpkgRef }}",
-                  'vcpkgOverlayRepo:${{ parameters.vcpkgOverlayRepo }},${{ parameters.vcpkgOverlayRef }}',
-                  "vcpkgArgs:$vcpkgArgs",
-                  "vcpkgPackages:$vcpkgPackagesStr"
-              ) | Where-Object { $_ } | % { "`"$_`"" }) -join ' | '
+                  "revision: $revision",
+                  "cxxCompiler: ${{ parameters.cxxCompiler }}$cxxCompilerVersion",
+                  ("cudaCompiler: ${{ parameters.cudaCompiler }}${{ cudaCompilerVersion }}" -replace ':.*None',':None'),
+                  "vcpkgTriplet: $vcpkgTriplet",
+                  "vcpkgRepo: $vcpkgRepo,${{ parameters.vcpkgRef }}",
+                  'vcpkgOverlayRepo: ${{ parameters.vcpkgOverlayRepo }},${{ parameters.vcpkgOverlayRef }}',
+                  "vcpkgArgs: $vcpkgArgs",
+                  "vcpkgPackages: $vcpkgPackagesStr"
+              ) | Where-Object { $_ -and ($_ -replace '[A-Za-z]+:','') } | % { "`"$_`"" }) -join ' | '
               if ('${{ parameters.cacheKey }}') {
                   $cacheKey += ' | ${{ parameters.cacheKey }}'
               }
