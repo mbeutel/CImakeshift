@@ -29,6 +29,25 @@ jobs:
     cmakeConfigArgs: '-DBUILD_TESTING=ON'
     #cmakeTestArgs: '--exclude-regex cuda' # do not run CUDA tests
 
+    postSetupSteps:
+    - pwsh: |
+        Write-Host 'Custom post-setup step (global)'
+        Write-Host "C++ compiler: $env:CIMAKESHIFT_CXX_COMPILER, version: $env:CIMAKESHIFT_CXX_COMPILER_VERSION"
+        Write-Host "CUDA compiler: $env:CIMAKESHIFT_CUDA_COMPILER, version: $env:CIMAKESHIFT_CUDA_COMPILER_VERSION"
+      displayName: 'Custom post-setup step (global)'
+
+    preBuildSteps:
+    - pwsh: |
+        Write-Host 'Custom pre-build step (global)'
+        Write-Host "CMake build configuration: $env:CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION"
+      displayName: 'Custom pre-build step (global)'
+
+    postBuildSteps:
+    - pwsh: |
+        Write-Host 'Custom post-build step (global)'
+        Write-Host "CMake build configuration: $env:CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION"
+      displayName: 'Custom post-build step (global)'
+
     targets:
 
     - os: Windows
@@ -48,6 +67,25 @@ jobs:
       cudaCompilerVersion: 10_2
       platforms: [x64]
       cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
+
+      postSetupSteps:
+      - pwsh: |
+          Write-Host 'Custom post-setup step (target)'
+          Write-Host "C++ compiler: $env:CIMAKESHIFT_CXX_COMPILER, version: $env:CIMAKESHIFT_CXX_COMPILER_VERSION"
+          Write-Host "CUDA compiler: $env:CIMAKESHIFT_CUDA_COMPILER, version: $env:CIMAKESHIFT_CUDA_COMPILER_VERSION"
+        displayName: 'Custom post-setup step (target)'
+
+      preBuildSteps:
+      - pwsh: |
+          Write-Host 'Custom pre-build step (target)'
+          Write-Host "CMake build configuration: $env:CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION"
+        displayName: 'Custom pre-build step (target)'
+
+      postBuildSteps:
+      - pwsh: |
+          Write-Host 'Custom post-build step (target)'
+          Write-Host "CMake build configuration: $env:CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION"
+        displayName: 'Custom post-build step (target)'
 
     - os: Windows
       cxxCompiler: MSVC

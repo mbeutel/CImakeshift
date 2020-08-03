@@ -526,10 +526,10 @@ jobs:
             - template: cmake_detail_run_cmake.yml
               parameters:
                 config: '${{ config }}'
-                preBuildSteps: '${{ parameters.preBuildSteps }}'
-                targetPreBuildSteps: '${{ target.preBuildSteps }}'
-                postBuildSteps: '${{ parameters.postBuildSteps }}'
-                targetPostBuildSteps: '${{ target.postBuildSteps }}'
+                preBuildSteps: ${{ parameters.preBuildSteps }}
+                targetPreBuildSteps: ${{ target.preBuildSteps }}
+                postBuildSteps: ${{ parameters.postBuildSteps }}
+                targetPostBuildSteps: ${{ target.postBuildSteps }}
                 cmakeConfig: '${{ coalesce(target.cmakeConfig, parameters.cmakeConfig) }}'
                 cmakeBuild: '${{ coalesce(target.cmakeBuild, parameters.cmakeBuild) }}'
                 cmakeTest: '${{ coalesce(target.cmakeTest, parameters.cmakeTest) }}'
@@ -539,10 +539,10 @@ jobs:
             - template: cmake_detail_run_cmake.yml
               parameters:
                 config: '${{ config }}'
-                preBuildSteps: '${{ parameters.preBuildSteps }}'
-                targetPreBuildSteps: '${{ target.preBuildSteps }}'
-                postBuildSteps: '${{ parameters.postBuildSteps }}'
-                targetPostBuildSteps: '${{ target.postBuildSteps }}'
+                preBuildSteps: ${{ parameters.preBuildSteps }}
+                targetPreBuildSteps: ${{ target.preBuildSteps }}
+                postBuildSteps: ${{ parameters.postBuildSteps }}
+                targetPostBuildSteps: ${{ target.postBuildSteps }}
                 cmakeConfig: '${{ coalesce(target.cmakeConfig, parameters.cmakeConfig) }}'
                 cmakeBuild: '${{ coalesce(target.cmakeBuild, parameters.cmakeBuild) }}'
                 cmakeTest: '${{ coalesce(target.cmakeTest, parameters.cmakeTest) }}'
