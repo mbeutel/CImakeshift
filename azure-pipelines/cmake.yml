@@ -142,10 +142,6 @@ jobs:
                 targetPostSetupSteps: ${{ target.postSetupSteps }}
                 targetPreBuildSteps: ${{ target.preBuildSteps }}
                 targetPostBuildSteps: ${{ target.postBuildSteps }}
-                cudaPackages: ${{ parameters.cudaPackages }}
-                targetCudaPackages: ${{ target.cudaPackages }}
-                vcpkgPackages: ${{ parameters.vcpkgPackages }}
-                targetVcpkgPackages: ${{ target.vcpkgPackages }}
                 tag: '${{ coalesce(target.tag, parameters.tag) }}'
                 os: '${{ coalesce(target.os, parameters.os) }}'
                 cxxCompiler: '${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}'
@@ -181,10 +177,6 @@ jobs:
                 targetPostSetupSteps: ${{ target.postSetupSteps }}
                 targetPreBuildSteps: ${{ target.preBuildSteps }}
                 targetPostBuildSteps: ${{ target.postBuildSteps }}
-                cudaPackages: ${{ parameters.cudaPackages }}
-                targetCudaPackages: ${{ target.cudaPackages }}
-                vcpkgPackages: ${{ parameters.vcpkgPackages }}
-                targetVcpkgPackages: ${{ target.vcpkgPackages }}
                 tag: '${{ coalesce(target.tag, parameters.tag) }}'
                 os: '${{ coalesce(target.os, parameters.os) }}'
                 cxxCompiler: '${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}'
