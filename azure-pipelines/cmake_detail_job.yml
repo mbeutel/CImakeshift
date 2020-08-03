@@ -199,7 +199,7 @@ jobs:
               $cacheKey = (@(
                   "revision:$revision",
                   "cxxCompiler:${{ parameters.cxxCompiler }} $cxxCompilerVersion",
-                  "cudaCompiler:${{ parameters.cudaCompiler }} ${{ cudaCompilerVersion }}" -replace ':.*None',':None',
+                  ("cudaCompiler:${{ parameters.cudaCompiler }} ${{ cudaCompilerVersion }}" -replace ':.*None',':None'),
                   "vcpkgTriplet:$vcpkgTriplet",
                   "vcpkgRepo:$vcpkgRepo,${{ parameters.vcpkgRef }}",
                   'vcpkgOverlayRepo:${{ parameters.vcpkgOverlayRepo }},${{ parameters.vcpkgOverlayRef }}',
