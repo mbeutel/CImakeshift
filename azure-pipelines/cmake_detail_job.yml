@@ -418,6 +418,13 @@ jobs:
             - pwsh: |
                 cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
                 & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
+                if (TestPath "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json") {
+                    # Vcpkg manifest mode
+                    cd $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
+                    New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/vcpkg/manifest-root'
+                    & '$(Build.BinariesDirectory)/dependencies/vcpkg/vcpkg' $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' '--manifest-root-dir="$(Build.BinariesDirectory)/dependencies/vcpkg/manifest-root"' install
+                    cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
+                }
                 Remove-Item -Recurse -Force './buildtrees'
                 Remove-Item -Recurse -Force './downloads'
                 Remove-Item -Recurse -Force './packages'

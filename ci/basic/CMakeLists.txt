@@ -6,7 +6,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 # Define the project.
-project(CImakeshift
+project(CImakeshift-basic
     LANGUAGES CXX)
 
 # Define build options.
@@ -22,35 +22,35 @@ if(BUILD_TESTING)
 
     find_package(gsl-lite 0.36 REQUIRED)
 
-    add_executable(test-CImakeshift
+    add_executable(test-CImakeshift-basic
         "main.cpp")
-    target_compile_features(test-CImakeshift
+    target_compile_features(test-CImakeshift-basic
         PRIVATE
             cxx_std_14)
-    cmakeshift_target_compile_settings(test-CImakeshift
+    cmakeshift_target_compile_settings(test-CImakeshift-basic
         PRIVATE
             default)
-    target_link_libraries(test-CImakeshift
+    target_link_libraries(test-CImakeshift-basic
         PRIVATE
             gsl::gsl-lite-v1)
-    add_test(NAME test-CImakeshift COMMAND test-CImakeshift)
-    set_property(TEST test-CImakeshift PROPERTY FAIL_REGULAR_EXPRESSION "Sanitizer")
+    add_test(NAME test-CImakeshift-basic COMMAND test-CImakeshift-basic)
+    set_property(TEST test-CImakeshift-basic PROPERTY FAIL_REGULAR_EXPRESSION "Sanitizer")
 
     if(BUILD_TESTING_CUDA)
         enable_language(CUDA)
 
-        add_executable(test-CImakeshift-CUDA
+        add_executable(test-CImakeshift-basic-CUDA
             "main.cu")
-        target_compile_features(test-CImakeshift-CUDA
+        target_compile_features(test-CImakeshift-basic-CUDA
             PRIVATE
                 cxx_std_14)
-        cmakeshift_target_compile_settings(test-CImakeshift-CUDA
+        cmakeshift_target_compile_settings(test-CImakeshift-basic-CUDA
             PRIVATE
                 default)
-        target_link_libraries(test-CImakeshift-CUDA
+        target_link_libraries(test-CImakeshift-basic-CUDA
             PRIVATE
                 gsl::gsl-lite-v1)
-        add_test(NAME test-CImakeshift-CUDA COMMAND test-CImakeshift-CUDA)
-        set_property(TEST test-CImakeshift-CUDA PROPERTY FAIL_REGULAR_EXPRESSION "Sanitizer")
+        add_test(NAME test-CImakeshift-basic-CUDA COMMAND test-CImakeshift-basic-CUDA)
+        set_property(TEST test-CImakeshift-basic-CUDA PROPERTY FAIL_REGULAR_EXPRESSION "Sanitizer")
     endif()
 endif()
