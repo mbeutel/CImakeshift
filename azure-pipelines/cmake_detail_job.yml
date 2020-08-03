@@ -42,7 +42,7 @@ parameters:
 
 
 jobs:
-- job: '${{ parameters.os }}_${{ parameters.platform }}_${{ parameters.cxxCompiler }}${{ parameters.cxxCompilerVersion }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', parameters.cudaCompilerVersion), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format('_{0}', parameters.cudaCompiler)) }}_${{ join(''_'', parameters.cmakeBuildConfigurations) }}_${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', parameters.tag), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', ''_''), ''<_tagEnd_>'', '''') }}'
+- job: '${{ parameters.os }}_${{ parameters.platform }}_${{ parameters.cxxCompiler }}${{ parameters.cxxCompilerVersion }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', parameters.cudaCompilerVersion), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format(''_{0}'', parameters.cudaCompiler)) }}_${{ join(''_'', parameters.cmakeBuildConfigurations) }}_${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', parameters.tag), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', ''_''), ''<_tagEnd_>'', '''') }}'
   pool:
     name: Azure Pipelines
     ${{ if and(eq(parameters.os, 'Windows'), or(eq(parameters.cxxCompiler, 'Clang'), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(parameters.cxxCompilerVersion, '19_2'), eq(parameters.cxxCompilerVersion, '2019'))))) }}:
