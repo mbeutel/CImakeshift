@@ -139,7 +139,12 @@ jobs:
       targetPostBuildSteps: ${{ target.postBuildSteps }}
       tag: '${{ coalesce(target.tag, parameters.tag) }}'
       os: '${{ coalesce(target.os, parameters.os) }}'
-      platforms: ${{ coalesce(target.platforms, parameters.platforms) }}
+      #platforms: ${{ coalesce(target.platforms, parameters.platforms) }}
+      platforms:
+      - ${{ if target.platforms }}:
+        - ${{ target.platforms }}
+      - ${{ if not(target.platforms) }}:
+        - ${{ parameters.platforms }}
       cxxCompiler: '${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}'
       cxxCompilerVersions: ${{ coalesce(target.cxxCompilerVersions, parameters.cxxCompilerVersions) }}
       cudaCompiler: '${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}'

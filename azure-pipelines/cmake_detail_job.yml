@@ -44,7 +44,7 @@ jobs:
   - ${{ each platform in parameters.platforms }}:
     - ${{ each cxxCompilerVersion in parameters.cxxCompilerVersions }}:
       - ${{ each cudaCompilerVersion in parameters.cudaCompilerVersions }}:
-        - job: '${{ parameters.os }}_${{ format(''{0}'', platform) }}'
+        - job: '${{ parameters.os }}_${{ platform }}'
           pool:
             name: Azure Pipelines
             ${{ if and(eq(parameters.os, 'Windows'), or(eq(parameters.cxxCompiler, 'Clang'), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, '19_2'), eq(cxxCompilerVersion, '2019'))))) }}:
