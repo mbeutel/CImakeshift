@@ -67,7 +67,7 @@ jobs:
       cudaCompilerVersions: [10_2]
       platforms: [x64]
       vcpkgPackages: ['<vcpkgPackages>', 'catch2']
-      cudaPackages: ['cublas-dev']
+      cudaPackages: ['nvrtc-dev']
       cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 
       postSetupSteps:
@@ -132,7 +132,7 @@ jobs:
       cudaCompilerVersions: [10_2]
       platforms: [x64]
       vcpkgPackages: ['catch2', 'cmakeshift', 'gsl-lite']
-      cudaPackages: ['<cudaPackages>', 'cublas-dev']
+      cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
       cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 
     - os: Linux
