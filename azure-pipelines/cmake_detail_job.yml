@@ -11,6 +11,7 @@ parameters:
   targetPostBuildSteps: []
 
   # Coalesced parameters
+  caption: ''
   tag: ''
   os: ''
   platforms: []
@@ -44,8 +45,8 @@ jobs:
   - ${{ each platform in parameters.platforms }}:
     - ${{ each cxxCompilerVersion in parameters.cxxCompilerVersions }}:
       - ${{ each cudaCompilerVersion in parameters.cudaCompilerVersions }}:
-        - job: '${{ parameters.os }}_${{ platform }}_${{ parameters.cxxCompiler }}${{ cxxCompilerVersion }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', cudaCompilerVersion), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format(''_{0}'', parameters.cudaCompiler)) }}_${{ join(''_'', parameters.cmakeBuildConfigurations) }}${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', replace(replace(parameters.tag, ''.'', ''_''), '' '', ''_'')), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', ''_''), ''<_tagEnd_>'', '''') }}'
-          displayName: '${{ parameters.os }} ${{ platform }}, ${{ parameters.cxxCompiler }} ${{ replace(cxxCompilerVersion, ''_'', ''.'') }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', cudaCompilerVersion), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format('', {0} '', parameters.cudaCompiler)) }} ${{ join(''+'', parameters.cmakeBuildConfigurations) }}${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', parameters.tag), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', '' ''), ''<_tagEnd_>'', '''') }}'
+        - job: '${{ replace(replace(replace(format(''<_captionBegin_>{0}<_captionEnd_>'', replace(replace(parameters.caption, ''.'', ''_''), '' '', ''_'')), ''<_captionBegin_><_captionEnd_>'', ''''), ''<_captionBegin_>'', ''''), ''<_captionEnd_>'', ''_'') }}${{ parameters.os }}_${{ platform }}_${{ parameters.cxxCompiler }}${{ cxxCompilerVersion }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', cudaCompilerVersion), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format(''_{0}'', parameters.cudaCompiler)) }}_${{ join(''_'', parameters.cmakeBuildConfigurations) }}${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', replace(replace(parameters.tag, ''.'', ''_''), '' '', ''_'')), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', ''_''), ''<_tagEnd_>'', '''') }}'
+          displayName: '${{ replace(replace(replace(format(''<_captionBegin_>{0}<_captionEnd_>'', parameters.caption), ''<_captionBegin_><_captionEnd_>'', ''''), ''<_captionBegin_>'', ''''), ''<_captionEnd_>'', '': '') }}${{ parameters.os }} ${{ platform }}, ${{ parameters.cxxCompiler }} ${{ replace(cxxCompilerVersion, ''_'', ''.'') }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', cudaCompilerVersion), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format('', {0} '', parameters.cudaCompiler)) }} ${{ join(''+'', parameters.cmakeBuildConfigurations) }}${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', parameters.tag), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', '', ''), ''<_tagEnd_>'', '''') }}'
           pool:
             name: Azure Pipelines
             ${{ if and(eq(parameters.os, 'Windows'), or(eq(parameters.cxxCompiler, 'Clang'), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, '19_2'), eq(cxxCompilerVersion, '2019'))))) }}:
@@ -202,6 +203,7 @@ jobs:
                   '${{ parameters.vcpkgOverlayRepo }}${{ parameters.vcpkgOverlayRef }}',
                   $vcpkgArgs,
                   $vcpkgPackages,
+                  '${{ parameters.caption }}',
                   '${{ parameters.tag }}'
               ) -join ' '
               if ('${{ parameters.vcpkgRef }}') {
@@ -214,6 +216,7 @@ jobs:
         
               # public variables accessible to custom job steps
               echo '##vso[task.setvariable variable=CIMAKESHIFT_CACHE]${{ parameters.cache }}'
+              echo '##vso[task.setvariable variable=CIMAKESHIFT_CAPTION]${{ parameters.caption }}'
               echo '##vso[task.setvariable variable=CIMAKESHIFT_TAG]${{ parameters.tag }}'
               echo '##vso[task.setvariable variable=CIMAKESHIFT_OS]${{ parameters.os }}'
               echo '##vso[task.setvariable variable=CIMAKESHIFT_PLATFORM]${{ platform }}'

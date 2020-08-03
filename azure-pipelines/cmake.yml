@@ -51,7 +51,8 @@
 
 parameters:
 
-  # Display tag for identification of the job
+  # Caption and tag for identification of the job
+  caption: ''
   tag: ''
 
   # Platform options
@@ -98,6 +99,7 @@ parameters:
   postBuildSteps: []
 
   targets: []
+#    target.caption                   # overrides parameters.caption
 #    target.tag                       # overrides parameters.tag
 #    target.os                        # overrides parameters.os
 #    target.platforms                 # overrides parameters.platforms
@@ -137,6 +139,7 @@ jobs:
       targetPostSetupSteps: ${{ target.postSetupSteps }}
       targetPreBuildSteps: ${{ target.preBuildSteps }}
       targetPostBuildSteps: ${{ target.postBuildSteps }}
+      caption: '${{ coalesce(target.caption, parameters.caption) }}'
       tag: '${{ coalesce(target.tag, parameters.tag) }}'
       os: '${{ coalesce(target.os, parameters.os) }}'
       platforms:
