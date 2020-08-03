@@ -1,4 +1,4 @@
-# Internal template
+# Internal template: run CMake tasks (config, build, test)
 
 parameters:
   config: ''
@@ -27,7 +27,7 @@ steps:
       New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ parameters.config }}'
       cd '$(Build.BinariesDirectory)/build/${{ parameters.config }}'
       $args = $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS -split ' '
-      & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR $env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_ -DCMAKE_BUILD_TYPE=${{ parameters.config }} "${{ parameters.cmakeSourceDir }}" $args
+      & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR $env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_ -DCMAKE_BUILD_TYPE=${{ parameters.config }} $env:CIMAKESHIFT_CMAKE_SOURCE_DIR $args
     displayName: 'Configure ${{ parameters.config }}'
 
 - ${{ if eq(parameters.cmakeBuild, 'true') }}:
