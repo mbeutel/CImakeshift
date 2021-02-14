@@ -100,7 +100,7 @@ jobs:
                       $defaultCmakeGenerator = 'Ninja'
                   }
                   elseif ('${{ parameters.cxxCompiler }}' -eq 'Clang') {
-                      if ('${{ parameters.cxxCompilerVersion }}' -eq 'VS2019') {
+                      if ('${{ cxxCompilerVersion }}' -eq 'VS2019') {
                           $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
                           $llvmRoot = Join-Path $vsPath 'VC\Tools\Llvm\bin'
                       }
@@ -303,8 +303,8 @@ jobs:
               elseif ($IsLinux) {
                   $ninjaOS = 'linux'
                   $packages = @()
-                  $osVersion = [version](lsb_release -r -s)
-                  if ($osVersion -eq '18.04') {
+                  $osVersionRaw = lsb_release -r -s
+                  if ($osVersionRaw -eq '18.04') {
                       $osVersionName = 'bionic'
                   }
                   else {
@@ -324,16 +324,15 @@ jobs:
                           & sudo apt-add-repository "deb http://apt.llvm.org/$osVersionName/ $clangRepository main"
                       }
                       elseif ([int]'$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ge 11) {
-                          $clangRepository = 'llvm-toolchain-$osVersion-$(CIMAKESHIFT_CLANG_FULL_VERSION_)'
+                          $clangRepository = "llvm-toolchain-$osVersionName-$(CIMAKESHIFT_CLANG_FULL_VERSION_)"
                           & sudo apt-add-repository "deb http://apt.llvm.org/$osVersionName/ $clangRepository main"
                       }
                       $packages += 'clang-$(CIMAKESHIFT_CLANG_FULL_VERSION_)'
                   }
                   if ('$(CIMAKESHIFT_CUDA_COMPILER)' -and '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -ne 'None') {
                       $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
-                      $osVersionFlat = $osVersion -replace [regex]::escape('.'),''
+                      $osVersionFlat = $osVersionRaw -replace [regex]::escape('.'),''
                       $ubuntuVersion = "ubuntu$osVersionFlat"
-                      echo "Ubuntu version: $ubuntuVersion"
                       Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/cuda-$ubuntuVersion.pin" -OutFile cuda.pin
                       & sudo mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
                       & sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub"
@@ -355,13 +354,16 @@ jobs:
                   }
               }
               elseif ($IsMacOS) {
+                  $osVersion = [version](sw_vers -productVersion)
                   $ninjaOS = 'mac'
                   if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                       & brew install gcc@$(CIMAKESHIFT_CXX_COMPILER_VERSION)
                   }
                   #if ('$(CIMAKESHIFT_VCPKG_REF)' -and '$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang' -and [System.Version]('$(CIMAKESHIFT_CXX_COMPILER_VERSION).0' -replace '_','.') -lt [System.Version]'10.0.1') {
                   if ($osVersion -lt '10.15') {
-                      & brew install gcc@8
+                      # https://stackoverflow.com/a/52530212
+                      sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
+                      # & brew install gcc@9
                   }
                   #if ('$(CIMAKESHIFT_VCPKG_REF)' -and '$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC' -and '$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -lt '10') {
                   #    & brew install gcc@10
@@ -408,27 +410,27 @@ jobs:
         
                         if ($osVersion -lt '10.15') {
                             # workaround for GCC header issue on MacOS < 10.15
-                            & sudo xcode-select -s /Applications/Xcode_10.3.app/Contents/Developer
-                            $env:CC = 'gcc-8'
-                            $env:CXX = 'g++-8'
+                            #& sudo xcode-select -s /Applications/Xcode_10.3.app/Contents/Developer
+                            #$env:CC = 'gcc-8'
+                            #$env:CXX = 'g++-8'
                         }
-                        else {
-                            # let Vcpkg's bootstrap script figure out which version of GCC to use
-                            $env:CC = ''
-                            $env:CXX = ''
-                        }
+                        #else {
+                        #    # let Vcpkg's bootstrap script figure out which version of GCC to use
+                        #    $env:CC = ''
+                        #    $env:CXX = ''
+                        #}
                         #else {
                         #    # workaround for GCC header issue on MacOS 10.15, cf. https://github.com/microsoft/vcpkg/issues/9029
                         #    $env:CXXFLAGS = "${env:CXXFLAGS} -D_CTERMID_H_"
                         #}
                         # workaround for GCC header issue on MacOS 10.15, cf. https://github.com/microsoft/vcpkg/issues/9029
-                        $env:CXXFLAGS = "${env:CXXFLAGS} -D_CTERMID_H_"
+                        #$env:CXXFLAGS = "${env:CXXFLAGS} -D_CTERMID_H_"
                     }
-                    else {
+                    #else {
                         # let Vcpkg's bootstrap script figure out which version of GCC to use
                         $env:CC = ''
                         $env:CXX = ''
-                    }
+                    #}
                     & chmod +x ./bootstrap-vcpkg.sh
                     & ./bootstrap-vcpkg.sh
                 }
