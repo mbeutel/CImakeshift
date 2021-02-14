@@ -54,7 +54,9 @@ jobs:
               vmImage: 'windows-2019'
             ${{ if and(eq(parameters.os, 'Windows'), or(eq(cxxCompilerVersion, '19_1'), eq(cxxCompilerVersion, '2017'))) }}:
               vmImage: 'vs2017-win2016'
-            ${{ if eq(parameters.os, 'Linux') }}:
+            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(cxxCompiler, 'GCC'), le(cxxCompilerVersion, '6')), and(eq(cxxCompiler, 'Clang'), le(cxxCompilerVersion, '5')))) }}:
+              vmImage: 'ubuntu-18.04'
+            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(cxxCompiler, 'GCC'), gt(cxxCompilerVersion, '6')), and(eq(cxxCompiler, 'Clang'), gt(cxxCompilerVersion, '5')))) }}:
               vmImage: 'ubuntu-20.04'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '9_1'), eq(cxxCompilerVersion, '10'))) }}:
               vmImage: 'macOS-10.14'
@@ -98,14 +100,15 @@ jobs:
                       $defaultCmakeGenerator = 'Ninja'
                   }
                   elseif ('${{ parameters.cxxCompiler }}' -eq 'Clang') {
-                      if ('${{ parameters.cxxCompilerVersion }}' -eq 'default') {
+                      if ('${{ parameters.cxxCompilerVersion }}' -eq 'VS2019') {
                           $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-                          $clangClPath = Join-Path $vsPath 'VC\Tools\Llvm\bin\clang-cl.exe'
-                      } else {
-                          $llvmRoot = "${env:ProgramFiles}\LLVM\bin"
-                          $extraPath = "$llvmRoot;$extraPath"
-                          $clangClPath = "$llvmRoot\clang-cl.exe"
+                          $llvmRoot = Join-Path $vsPath 'VC\Tools\Llvm\bin'
                       }
+                      else {
+                          $llvmRoot = "${env:ProgramFiles}\LLVM\bin"
+                      }
+                      $extraPath = "$llvmRoot;$extraPath"
+                      $clangClPath = "$llvmRoot\clang-cl.exe"
                       $clangClCompatPath = $clangClPath -replace '\\','/'
                       $cmakeGenerator = $cmakeGenerator -replace 'MSBuild','Visual Studio 16 2019'
                       $cmakeCompilerFlag = "-DCMAKE_C_COMPILER=`"$clangClCompatPath`" -DCMAKE_CXX_COMPILER=`"$clangClCompatPath`""
@@ -272,7 +275,7 @@ jobs:
               if ($IsWindows) {
                   $ninjaOS = 'win'
                   if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
-                    if ('$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ne 'default') {
+                    if ('$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ne 'VS2019') {
                           $clangCompilerVersion_URL = @{
                               '9' = 'http://releases.llvm.org/9.0.0/LLVM-9.0.0-win64.exe'
                               '10' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/LLVM-10.0.0-win64.exe'
@@ -346,7 +349,8 @@ jobs:
                   if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                       & brew install gcc@$(CIMAKESHIFT_CXX_COMPILER_VERSION)
                   }
-                  if ('$(CIMAKESHIFT_VCPKG_REF)' -and '$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang' -and [System.Version]('$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -replace '_','.') -lt [System.Version]'10.0.1') {
+                  #if ('$(CIMAKESHIFT_VCPKG_REF)' -and '$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang' -and [System.Version]('$(CIMAKESHIFT_CXX_COMPILER_VERSION).0' -replace '_','.') -lt [System.Version]'10.0.1') {
+                  if ($osVersion -lt '10.15') {
                       & brew install gcc@8
                   }
                   #if ('$(CIMAKESHIFT_VCPKG_REF)' -and '$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC' -and '$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -lt '10') {
@@ -395,7 +399,13 @@ jobs:
                         if ($osVersion -lt '10.15') {
                             # workaround for GCC header issue on MacOS < 10.15
                             & sudo xcode-select -s /Applications/Xcode_10.3.app/Contents/Developer
+                            $env:CC = 'gcc-8'
+                            $env:CXX = 'g++-8'
                         }
+                        else {
+                            # let Vcpkg's bootstrap script figure out which version of GCC to use
+                            $env:CC = ''
+                            $env:CXX = ''
                         #else {
                         #    # workaround for GCC header issue on MacOS 10.15, cf. https://github.com/microsoft/vcpkg/issues/9029
                         #    $env:CXXFLAGS = "${env:CXXFLAGS} -D_CTERMID_H_"
@@ -403,9 +413,11 @@ jobs:
                         # workaround for GCC header issue on MacOS 10.15, cf. https://github.com/microsoft/vcpkg/issues/9029
                         $env:CXXFLAGS = "${env:CXXFLAGS} -D_CTERMID_H_"
                     }
-                    # let Vcpkg's bootstrap script figure out which version of GCC to use
-                    $env:CC = ''
-                    $env:CXX = ''
+                    else {
+                        # let Vcpkg's bootstrap script figure out which version of GCC to use
+                        $env:CC = ''
+                        $env:CXX = ''
+                    }
                     & chmod +x ./bootstrap-vcpkg.sh
                     & ./bootstrap-vcpkg.sh
                 }

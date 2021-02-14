@@ -1,6 +1,6 @@
 
-#variables:
-#  System.Debug: true
+variables:
+  System.Debug: true
 
 trigger:
 - master
@@ -65,7 +65,7 @@ jobs:
       cxxCompiler: MSVC
       cxxCompilerVersions: [19_2]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [10_2, 11_0, 11_1, 11_2]
+      cudaCompilerVersions: [11_0, 11_1, 11_2]
       platforms: [x64]
       vcpkgPackages: ['<vcpkgPackages>', 'catch2']
       cudaPackages: ['nvrtc-dev']
@@ -122,7 +122,7 @@ jobs:
       cxxCompiler: GCC
       cxxCompilerVersions: [8]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [10_2]
+      cudaCompilerVersions: [11_0]
       platforms: [x64]
       vcpkgPackages: ['catch2', 'cmakeshift', 'gsl-lite']
       cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
@@ -132,7 +132,7 @@ jobs:
       cxxCompiler: GCC
       cxxCompilerVersions: [9]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [11_0, 11_1, 11_2]
+      cudaCompilerVersions: [11_1, 11_2]
       platforms: [x64]
       cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
       cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
@@ -150,7 +150,7 @@ jobs:
 - template: azure-pipelines/cmake.yml@CImakeshift
   parameters:
     caption: Vcpkg manifests
-    vcpkgRef: 00e44369cb23f911821ee96888cbb4785810ba07
+    vcpkgRef: f79c681fc2b42f9c7c5024459b5a867d56ac6123
 
     cmakeSourceDir: '$(Build.SourcesDirectory)/ci/vcpkg-manifest'
     cmakeConfigArgs: '-DBUILD_TESTING=ON'
