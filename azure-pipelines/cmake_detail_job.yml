@@ -517,7 +517,8 @@ jobs:
               - pwsh: |
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
                   $args = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
-                  if (-not (& ctest --verbose --test-action Test --build-config ${{ config }} $args)) {
+                  & ctest --verbose --test-action Test --build-config ${{ config }} $args
+                  if (-not $?) {
                       if (Test-Path 'Testing/Temporary') {
                           foreach ($file in Get-ChildItem "Testing/Temporary/MemoryChecker.*.log") {
                               Get-Content $file
