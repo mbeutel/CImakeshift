@@ -50,17 +50,17 @@ jobs:
           displayName: '${{ replace(replace(replace(format(''<_captionBegin_>{0}<_captionEnd_>'', parameters.caption), ''<_captionBegin_><_captionEnd_>'', ''''), ''<_captionBegin_>'', ''''), ''<_captionEnd_>'', '': '') }}${{ parameters.os }} ${{ platform }}, ${{ parameters.cxxCompiler }} ${{ replace(cxxCompilerVersion, ''_'', ''.'') }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', replace(cudaCompilerVersion, ''_'', ''.'')), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format('', {0} '', parameters.cudaCompiler)) }}, ${{ join(''+'', parameters.cmakeBuildConfigurations) }}${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', parameters.tag), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', '', ''), ''<_tagEnd_>'', '''') }}'
           pool:
             name: Azure Pipelines
-            ${{ if and(eq(parameters.os, 'Windows'), or(eq(parameters.cxxCompiler, 'Clang'), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, '19_2'), eq(cxxCompilerVersion, '2019'))))) }}:
+            ${{ if and(eq(parameters.os, 'Windows'), or(eq(parameters.cxxCompiler, 'Clang'), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, '19_2'), eq(cxxCompilerVersion, 'VS2019'))))) }}:
               vmImage: 'windows-2019'
-            ${{ if and(eq(parameters.os, 'Windows'), or(eq(cxxCompilerVersion, '19_1'), eq(cxxCompilerVersion, '2017'))) }}:
+            ${{ if and(eq(parameters.os, 'Windows'), or(eq(cxxCompilerVersion, '19_1'), eq(cxxCompilerVersion, 'VS2017'))) }}:
               vmImage: 'vs2017-win2016'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), ge(6, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), ge(5, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-18.04'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(6, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(5, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-20.04'
-            ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '9_1'), eq(cxxCompilerVersion, '10'))) }}:
+            ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '9_1'), eq(cxxCompilerVersion, '9_1_0'), eq(cxxCompilerVersion, '10'), eq(cxxCompilerVersion, '10_0'), eq(cxxCompilerVersion, '10_0_0'))) }}:
               vmImage: 'macOS-10.14'
-            ${{ if and(eq(parameters.os, 'MacOS'), or(ne(parameters.cxxCompiler, 'AppleClang'), eq(cxxCompilerVersion, '10_0_1'), eq(cxxCompilerVersion, '11'), eq(cxxCompilerVersion, '11_0_3'), eq(cxxCompilerVersion, '12_0_0'), eq(cxxCompilerVersion, '12_0_5'))) }}:
+            ${{ if and(eq(parameters.os, 'MacOS'), or(ne(parameters.cxxCompiler, 'AppleClang'), eq(cxxCompilerVersion, '10_0_1'), eq(cxxCompilerVersion, '11'), eq(cxxCompilerVersion, '11_0'), eq(cxxCompilerVersion, '11_0_0'), eq(cxxCompilerVersion, '11_0_3'), eq(cxxCompilerVersion, '12'), eq(cxxCompilerVersion, '12_0'), eq(cxxCompilerVersion, '12_0_0'), eq(cxxCompilerVersion, '12_0_5'))) }}:
               vmImage: 'macOS-10.15'
           steps:
           - pwsh: |
@@ -86,10 +86,10 @@ jobs:
                       echo "##vso[task.setvariable variable=CC]cl.exe"
                       echo "##vso[task.setvariable variable=CXX]cl.exe"
                       $msvcOrVSVersion_msvcVersion = @{
-                          '19_1' = '19_1'
-                          '2017' = '19_1'
-                          '19_2' = '19_2'
-                          '2019' = '19_2'
+                          '19_1'   = '19_1'
+                          'VS2017' = '19_1'
+                          '19_2'   = '19_2'
+                          'VS2019' = '19_2'
                       }
                       $cxxCompilerVersion = $msvcOrVSVersion_msvcVersion[$cxxCompilerVersion]
                       $msvcVersion_msbuildGenerator = @{
@@ -294,8 +294,6 @@ jobs:
                   if ('$(CIMAKESHIFT_CUDA_COMPILER)' -and '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -ne 'None') {
                       $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
                       $cudaVersion_URL = @{
-                          '10.1' = 'http://developer.download.nvidia.com/compute/cuda/10.1/Prod/network_installers/cuda_10.1.105_win10_network.exe'
-                          '10.2' = 'http://developer.download.nvidia.com/compute/cuda/10.2/Prod/network_installers/cuda_10.2.89_win10_network.exe'
                           '11.0' = 'http://developer.download.nvidia.com/compute/cuda/11.0.2/network_installers/cuda_11.0.2_win10_network.exe'
                           '11.1' = 'http://developer.download.nvidia.com/compute/cuda/11.1.1/network_installers/cuda_11.1.1_win10_network.exe'
                           '11.2' = 'http://developer.download.nvidia.com/compute/cuda/11.2.1/network_installers/cuda_11.2.1_win10_network.exe'
@@ -367,7 +365,6 @@ jobs:
                   if ($osVersion -lt '10.15') {
                       # https://stackoverflow.com/a/52530212
                       sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
-                      # & brew install gcc@9
                   }
               }
               $ninjaVersion = '1.10.2'
@@ -428,11 +425,18 @@ jobs:
                   elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang') {
                       $appleClangVersion_xcodeVersion = @{
                           '9_1'    = '9.4.1'
+                          '9_1_0'  = '9.4.1'
                           '10'     = '10.1'    # also 10
+                          '10_0'   = '10.1'
+                          '10_0_0' = '10.1'
                           '10_0_1' = '10.3'    # also 10.2, 10.2.1
                           '11'     = '11.3.1'  # also 11.1, 11.2, 11.2.1, 11.3
+                          '11_0'   = '11.3.1'
+                          '11_0_0' = '11.3.1'
                           '11_0_3' = '11.6'    # also 11.4, 11.4.1, 11.5
-                          '12_0_0' = '12.4'    # also 12.0, 12.1, 12.2, 12.3
+                          '12'     = '12.4'    # also 12.0, 12.1, 12.2, 12.3
+                          '12_0'   = '12.4'
+                          '12_0_0' = '12.4'
                           #'12_0_5' = '12.5'  # currently in beta
                       }
                       $xcodeVersion = $appleClangVersion_xcodeVersion['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
@@ -517,7 +521,7 @@ jobs:
               - pwsh: |
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
                   $args = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
-                  & ctest --verbose --test-action Test --build-config ${{ config }} $args
+                  & ctest --verbose --output-on-failure --test-action Test --build-config ${{ config }} $args
                   if (-not $?) {
                       if (Test-Path 'Testing/Temporary') {
                           foreach ($file in Get-ChildItem "Testing/Temporary/MemoryChecker.*.log") {
