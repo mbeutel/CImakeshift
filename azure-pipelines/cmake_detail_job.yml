@@ -331,7 +331,8 @@ jobs:
                   }
                   if ('$(CIMAKESHIFT_CUDA_COMPILER)' -and '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -ne 'None') {
                       $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
-                      $ubuntuVersion = 'ubuntu$($osVersion -replace '\.','')'
+                      $osVersionFlat = $osVersion -replace [regex]::escape('.'),''
+                      $ubuntuVersion = "ubuntu$osVersionFlat"
                       echo "Ubuntu version: $ubuntuVersion"
                       Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/cuda-$ubuntuVersion.pin" -OutFile cuda.pin
                       & sudo mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
