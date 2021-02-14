@@ -54,9 +54,9 @@ jobs:
               vmImage: 'windows-2019'
             ${{ if and(eq(parameters.os, 'Windows'), or(eq(cxxCompilerVersion, '19_1'), eq(cxxCompilerVersion, '2017'))) }}:
               vmImage: 'vs2017-win2016'
-            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), le(cxxCompilerVersion, '6')), and(eq(parameters.cxxCompiler, 'Clang'), le(cxxCompilerVersion, '5')))) }}:
+            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), ge(6, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), ge(5, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-18.04'
-            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), gt(cxxCompilerVersion, '6')), and(eq(parameters.cxxCompiler, 'Clang'), gt(cxxCompilerVersion, '5')))) }}:
+            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(6, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(5, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-20.04'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '9_1'), eq(cxxCompilerVersion, '10'))) }}:
               vmImage: 'macOS-10.14'
@@ -116,6 +116,11 @@ jobs:
                           # Workaround for https://gitlab.kitware.com/cmake/cmake/issues/16259
                           echo '##vso[task.setvariable variable=CFLAGS]-m32'
                           echo '##vso[task.setvariable variable=CXXFLAGS]-m32'
+                      }
+                      elseif ('${{ platform }}' -eq 'x64') {
+                          # Workaround for issue similar to https://github.com/microsoft/vscode-cmake-tools/issues/1398
+                          echo '##vso[task.setvariable variable=CFLAGS]-m64'
+                          echo '##vso[task.setvariable variable=CXXFLAGS]-m64'
                       }
                       $msbuildGenerator = 'Ninja'
                       $defaultCmakeGenerator = 'Ninja'
