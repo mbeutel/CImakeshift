@@ -58,7 +58,7 @@ jobs:
               vmImage: 'ubuntu-18.04'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '9_1'), eq(cxxCompilerVersion, '10'))) }}:
               vmImage: 'macOS-10.14'
-            ${{ if and(eq(parameters.os, 'MacOS'), or(ne(parameters.cxxCompiler, 'AppleClang'), eq(cxxCompilerVersion, '10_0_1'), eq(cxxCompilerVersion, '11'), eq(cxxCompilerVersion, '11_0_3'))) }}:
+            ${{ if and(eq(parameters.os, 'MacOS'), or(ne(parameters.cxxCompiler, 'AppleClang'), eq(cxxCompilerVersion, '10_0_1'), eq(cxxCompilerVersion, '11'), eq(cxxCompilerVersion, '11_0_3'), eq(cxxCompilerVersion, '12_0_0'), eq(cxxCompilerVersion, '12_0_5'))) }}:
               vmImage: 'macOS-10.15'
           steps:
           - pwsh: |
@@ -272,6 +272,7 @@ jobs:
                       $clangCompilerVersion_URL = @{
                           '9' = 'http://releases.llvm.org/9.0.0/LLVM-9.0.0-win64.exe'
                           '10' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/LLVM-10.0.0-win64.exe'
+                          '11' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/LLVM-11.0.1-win64.exe'
                       }
                       $clangURL = $clangCompilerVersion_URL['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                       Invoke-WebRequest $clangURL -OutFile "$HOME/LLVM-installer.exe"
@@ -283,6 +284,8 @@ jobs:
                           '10.1' = 'http://developer.download.nvidia.com/compute/cuda/10.1/Prod/network_installers/cuda_10.1.105_win10_network.exe'
                           '10.2' = 'http://developer.download.nvidia.com/compute/cuda/10.2/Prod/network_installers/cuda_10.2.89_win10_network.exe'
                           '11.0' = 'http://developer.download.nvidia.com/compute/cuda/11.0.2/network_installers/cuda_11.0.2_win10_network.exe'
+                          '11.1' = 'http://developer.download.nvidia.com/compute/cuda/11.1.1/network_installers/cuda_11.1.1_win10_network.exe'
+                          '11.2' = 'http://developer.download.nvidia.com/compute/cuda/11.2.1/network_installers/cuda_11.2.1_win10_network.exe'
                       }
                       Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
                       Write-Host '[CImakeshift] Installing CUDA packages $(CIMAKESHIFT_CUDA_PACKAGES)'
@@ -338,11 +341,14 @@ jobs:
                   if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                       & brew install gcc@$(CIMAKESHIFT_CXX_COMPILER_VERSION)
                   }
-                  if ('$(CIMAKESHIFT_VCPKG_REF)') {
-                      & brew install gcc@9
+                  if ('$(CIMAKESHIFT_VCPKG_REF)' -and '$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang' -and [System.Version]('$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -replace '_','.') -lt [System.Version]'10.0.1') {
+                      & brew install gcc@8
                   }
+                  #if ('$(CIMAKESHIFT_VCPKG_REF)' -and '$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC' -and '$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -lt '10') {
+                  #    & brew install gcc@10
+                  #}
               }
-              $ninjaVersion = '1.10.0'
+              $ninjaVersion = '1.10.2'
               Invoke-WebRequest "https://github.com/ninja-build/ninja/releases/download/v${ninjaVersion}/ninja-$ninjaOS.zip" -OutFile "$HOME/ninja-$ninjaOS.zip"
               Expand-Archive -LiteralPath "$HOME/ninja-$ninjaOS.zip" -DestinationPath "$HOME/bin"
               if (-not $IsWindows) {
@@ -382,7 +388,7 @@ jobs:
                         $osVersion = [version](sw_vers -productVersion)
         
                         if ($osVersion -lt '10.15') {
-                            # workaround for GCC header issue on MacOS <10.15
+                            # workaround for GCC header issue on MacOS < 10.15
                             & sudo xcode-select -s /Applications/Xcode_10.3.app/Contents/Developer
                         }
                         else {
@@ -417,6 +423,8 @@ jobs:
                           '10_0_1' = '10.3'    # also 10.2, 10.2.1
                           '11'     = '11.3.1'  # also 11.1, 11.2, 11.2.1, 11.3
                           '11_0_3' = '11.6'    # also 11.4, 11.4.1, 11.5
+                          '12_0_0' = '12.4'    # also 12.0, 12.1, 12.2, 12.3
+                          #'12_0_5' = '12.5'  # currently in beta
                       }
                       $xcodeVersion = $appleClangVersion_xcodeVersion['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                       & sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer
@@ -448,7 +456,6 @@ jobs:
                 Remove-Item -Recurse -Force './buildtrees'
                 Remove-Item -Recurse -Force './downloads'
                 Remove-Item -Recurse -Force './packages'
-                #Remove-Item -Recurse -Force './ports' # ??
               displayName: Install Vcpkg packages
               condition: ne(variables.dependencyCacheHit, 'true')
 
