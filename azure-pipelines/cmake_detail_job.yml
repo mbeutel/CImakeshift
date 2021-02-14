@@ -364,15 +364,11 @@ jobs:
                   if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                       & brew install gcc@$(CIMAKESHIFT_CXX_COMPILER_VERSION)
                   }
-                  #if ('$(CIMAKESHIFT_VCPKG_REF)' -and '$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang' -and [System.Version]('$(CIMAKESHIFT_CXX_COMPILER_VERSION).0' -replace '_','.') -lt [System.Version]'10.0.1') {
                   if ($osVersion -lt '10.15') {
                       # https://stackoverflow.com/a/52530212
                       sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
                       # & brew install gcc@9
                   }
-                  #if ('$(CIMAKESHIFT_VCPKG_REF)' -and '$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC' -and '$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -lt '10') {
-                  #    & brew install gcc@10
-                  #}
               }
               $ninjaVersion = '1.10.2'
               Invoke-WebRequest "https://github.com/ninja-build/ninja/releases/download/v${ninjaVersion}/ninja-$ninjaOS.zip" -OutFile "$HOME/ninja-$ninjaOS.zip"
@@ -410,32 +406,8 @@ jobs:
                     & ./bootstrap-vcpkg.bat
                 }
                 else {  # Linux or MacOS
-                    if ($IsMacOS) {
-                        $osVersion = [version](sw_vers -productVersion)
-        
-                        if ($osVersion -lt '10.15') {
-                            # workaround for GCC header issue on MacOS < 10.15
-                            #& sudo xcode-select -s /Applications/Xcode_10.3.app/Contents/Developer
-                            #$env:CC = 'gcc-8'
-                            #$env:CXX = 'g++-8'
-                        }
-                        #else {
-                        #    # let Vcpkg's bootstrap script figure out which version of GCC to use
-                        #    $env:CC = ''
-                        #    $env:CXX = ''
-                        #}
-                        #else {
-                        #    # workaround for GCC header issue on MacOS 10.15, cf. https://github.com/microsoft/vcpkg/issues/9029
-                        #    $env:CXXFLAGS = "${env:CXXFLAGS} -D_CTERMID_H_"
-                        #}
-                        # workaround for GCC header issue on MacOS 10.15, cf. https://github.com/microsoft/vcpkg/issues/9029
-                        #$env:CXXFLAGS = "${env:CXXFLAGS} -D_CTERMID_H_"
-                    }
-                    #else {
-                        # let Vcpkg's bootstrap script figure out which version of GCC to use
-                        $env:CC = ''
-                        $env:CXX = ''
-                    #}
+                    $env:CC = ''
+                    $env:CXX = ''
                     & chmod +x ./bootstrap-vcpkg.sh
                     & ./bootstrap-vcpkg.sh
                 }
@@ -545,7 +517,14 @@ jobs:
               - pwsh: |
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
                   $args = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
-                  & ctest --verbose --test-action Test --build-config ${{ config }} $args
+                  if (-not (& ctest --verbose --test-action Test --build-config ${{ config }} $args)) {
+                      if (Test-Path 'Testing/Temporary') {
+                          foreach ($file in Get-ChildItem "Testing/Temporary/MemoryChecker.*.log") {
+                              Get-Content $file
+                          }
+                      }
+                      exit 1
+                  }
                 displayName: 'Run tests for ${{ config }}'
 
             - ${{ each step in parameters.postBuildSteps }}:
