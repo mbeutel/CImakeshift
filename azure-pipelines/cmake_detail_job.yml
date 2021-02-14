@@ -303,27 +303,36 @@ jobs:
               elseif ($IsLinux) {
                   $ninjaOS = 'linux'
                   $packages = @()
+                  $osVersion = [version](lsb_release -r -s)
+                  if ($osVersion -eq '18.04') {
+                      $osVersionName = 'bionic'
+                  }
+                  else {
+                      $osVersionName = 'focal'
+                  }
                   #$packages += 'cmake'
                   #Invoke-WebRequest -OutFile "$HOME/kitware-archive-latest.asc" https://apt.kitware.com/keys/kitware-archive-latest.asc
                   #& sudo apt-key add "$HOME/kitware-archive-latest.asc"
-                  #& sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+                  #& sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $osVersionName main"
                   if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                       & sudo apt-add-repository ppa:ubuntu-toolchain-r/test
                       $packages += ('gcc-$(CIMAKESHIFT_CXX_COMPILER_VERSION)', 'g++-$(CIMAKESHIFT_CXX_COMPILER_VERSION)')
                   }
                   elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
-                      if ([int]'$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ge 5) {
+                      if ([int]'$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ge 5 -and [int]'$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -lt 11) {
                           $clangRepository = 'llvm-toolchain-$(CIMAKESHIFT_CLANG_FULL_VERSION_)'
-                          & sudo apt-add-repository "deb http://apt.llvm.org/bionic/ $clangRepository main"
+                          & sudo apt-add-repository "deb http://apt.llvm.org/$osVersionName/ $clangRepository main"
                       }
-                      if ($clangRepository) {
-                          & sudo apt-add-repository "deb http://apt.llvm.org/bionic/ $clangRepository main"
+                      elseif ([int]'$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ge 11) {
+                          $clangRepository = 'llvm-toolchain-$osVersion-$(CIMAKESHIFT_CLANG_FULL_VERSION_)'
+                          & sudo apt-add-repository "deb http://apt.llvm.org/$osVersionName/ $clangRepository main"
                       }
                       $packages += 'clang-$(CIMAKESHIFT_CLANG_FULL_VERSION_)'
                   }
                   if ('$(CIMAKESHIFT_CUDA_COMPILER)' -and '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -ne 'None') {
                       $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
-                      $ubuntuVersion = 'ubuntu2004'
+                      $ubuntuVersion = 'ubuntu$($osVersion -replace '\.','')'
+                      echo "Ubuntu version: $ubuntuVersion"
                       Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/cuda-$ubuntuVersion.pin" -OutFile cuda.pin
                       & sudo mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
                       & sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub"
@@ -392,7 +401,7 @@ jobs:
                 if ($IsWindows) {
                     & ./bootstrap-vcpkg.bat
                 }
-                else { # Linux or MacOS
+                else {  # Linux or MacOS
                     if ($IsMacOS) {
                         $osVersion = [version](sw_vers -productVersion)
         
@@ -406,6 +415,7 @@ jobs:
                             # let Vcpkg's bootstrap script figure out which version of GCC to use
                             $env:CC = ''
                             $env:CXX = ''
+                        }
                         #else {
                         #    # workaround for GCC header issue on MacOS 10.15, cf. https://github.com/microsoft/vcpkg/issues/9029
                         #    $env:CXXFLAGS = "${env:CXXFLAGS} -D_CTERMID_H_"

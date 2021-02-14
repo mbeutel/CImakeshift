@@ -58,7 +58,7 @@ jobs:
 
     - os: Windows
       cxxCompiler: Clang
-      cxxCompilerVersions: [10, 11, default]
+      cxxCompilerVersions: [10, 11, VS2019]
       platforms: [x86, x64]
 
     - os: Windows
@@ -164,7 +164,7 @@ jobs:
 
     - os: Windows
       cxxCompiler: Clang
-      cxxCompilerVersions: [11]
+      cxxCompilerVersions: [11, VS2019]
       platforms: [x64]
 
     - os: Linux
