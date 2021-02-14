@@ -54,9 +54,9 @@ jobs:
               vmImage: 'windows-2019'
             ${{ if and(eq(parameters.os, 'Windows'), or(eq(cxxCompilerVersion, '19_1'), eq(cxxCompilerVersion, '2017'))) }}:
               vmImage: 'vs2017-win2016'
-            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(cxxCompiler, 'GCC'), le(cxxCompilerVersion, '6')), and(eq(cxxCompiler, 'Clang'), le(cxxCompilerVersion, '5')))) }}:
+            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), le(cxxCompilerVersion, '6')), and(eq(parameters.cxxCompiler, 'Clang'), le(cxxCompilerVersion, '5')))) }}:
               vmImage: 'ubuntu-18.04'
-            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(cxxCompiler, 'GCC'), gt(cxxCompilerVersion, '6')), and(eq(cxxCompiler, 'Clang'), gt(cxxCompilerVersion, '5')))) }}:
+            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), gt(cxxCompilerVersion, '6')), and(eq(parameters.cxxCompiler, 'Clang'), gt(cxxCompilerVersion, '5')))) }}:
               vmImage: 'ubuntu-20.04'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '9_1'), eq(cxxCompilerVersion, '10'))) }}:
               vmImage: 'macOS-10.14'
