@@ -250,6 +250,7 @@ jobs:
               echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_REF]${{ parameters.vcpkgOverlayRef }}'
               echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_ARGS]$vcpkgArgs"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_PACKAGES]$vcpkgPackages"
+              echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_TOOLCHAIN_FILE]$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake'
               echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATIONS]${{ join(parameters.cmakeBuildConfigurations, ';') }}'
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_GENERATOR]$cmakeGenerator"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_SOURCE_DIR]${{ parameters.cmakeSourceDir }}"
@@ -466,9 +467,9 @@ jobs:
                     & '$(Build.BinariesDirectory)/dependencies/vcpkg/vcpkg' $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install
                     cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
                 }
-                Remove-Item -Recurse -Force './buildtrees'
-                Remove-Item -Recurse -Force './downloads'
-                Remove-Item -Recurse -Force './packages'
+                Remove-Item -Recurse -Force './buildtrees' -ErrorAction Ignore
+                Remove-Item -Recurse -Force './downloads' -ErrorAction Ignore
+                Remove-Item -Recurse -Force './packages' -ErrorAction Ignore
               displayName: Install Vcpkg packages
               condition: ne(variables.dependencyCacheHit, 'true')
 
