@@ -55,7 +55,7 @@ jobs:
             ${{ if and(eq(parameters.os, 'Windows'), or(eq(cxxCompilerVersion, '19_1'), eq(cxxCompilerVersion, '2017'))) }}:
               vmImage: 'vs2017-win2016'
             ${{ if eq(parameters.os, 'Linux') }}:
-              vmImage: 'ubuntu-18.04'
+              vmImage: 'ubuntu-20.04'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '9_1'), eq(cxxCompilerVersion, '10'))) }}:
               vmImage: 'macOS-10.14'
             ${{ if and(eq(parameters.os, 'MacOS'), or(ne(parameters.cxxCompiler, 'AppleClang'), eq(cxxCompilerVersion, '10_0_1'), eq(cxxCompilerVersion, '11'), eq(cxxCompilerVersion, '11_0_3'), eq(cxxCompilerVersion, '12_0_0'), eq(cxxCompilerVersion, '12_0_5'))) }}:
@@ -98,11 +98,14 @@ jobs:
                       $defaultCmakeGenerator = 'Ninja'
                   }
                   elseif ('${{ parameters.cxxCompiler }}' -eq 'Clang') {
-                      #$vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-                      #$clangClPath = Join-Path $vsPath 'VC\Tools\Llvm\bin\clang-cl.exe'
-                      $llvmRoot = "${env:ProgramFiles}\LLVM\bin"
-                      $extraPath = "$llvmRoot;$extraPath"
-                      $clangClPath = "$llvmRoot\clang-cl.exe"
+                      if ('${{ parameters.cxxCompilerVersion }}' -eq 'default') {
+                          $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+                          $clangClPath = Join-Path $vsPath 'VC\Tools\Llvm\bin\clang-cl.exe'
+                      } else {
+                          $llvmRoot = "${env:ProgramFiles}\LLVM\bin"
+                          $extraPath = "$llvmRoot;$extraPath"
+                          $clangClPath = "$llvmRoot\clang-cl.exe"
+                      }
                       $clangClCompatPath = $clangClPath -replace '\\','/'
                       $cmakeGenerator = $cmakeGenerator -replace 'MSBuild','Visual Studio 16 2019'
                       $cmakeCompilerFlag = "-DCMAKE_C_COMPILER=`"$clangClCompatPath`" -DCMAKE_CXX_COMPILER=`"$clangClCompatPath`""
@@ -269,14 +272,16 @@ jobs:
               if ($IsWindows) {
                   $ninjaOS = 'win'
                   if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
-                      $clangCompilerVersion_URL = @{
-                          '9' = 'http://releases.llvm.org/9.0.0/LLVM-9.0.0-win64.exe'
-                          '10' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/LLVM-10.0.0-win64.exe'
-                          '11' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/LLVM-11.0.1-win64.exe'
+                    if ('$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ne 'default') {
+                          $clangCompilerVersion_URL = @{
+                              '9' = 'http://releases.llvm.org/9.0.0/LLVM-9.0.0-win64.exe'
+                              '10' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/LLVM-10.0.0-win64.exe'
+                              '11' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/LLVM-11.0.1-win64.exe'
+                          }
+                          $clangURL = $clangCompilerVersion_URL['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
+                          Invoke-WebRequest $clangURL -OutFile "$HOME/LLVM-installer.exe"
+                          Start-Process -Wait "$HOME/LLVM-installer.exe" '/S'
                       }
-                      $clangURL = $clangCompilerVersion_URL['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
-                      Invoke-WebRequest $clangURL -OutFile "$HOME/LLVM-installer.exe"
-                      Start-Process -Wait "$HOME/LLVM-installer.exe" '/S'
                   }
                   if ('$(CIMAKESHIFT_CUDA_COMPILER)' -and '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -ne 'None') {
                       $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
@@ -315,7 +320,7 @@ jobs:
                   }
                   if ('$(CIMAKESHIFT_CUDA_COMPILER)' -and '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -ne 'None') {
                       $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
-                      $ubuntuVersion = 'ubuntu1804'
+                      $ubuntuVersion = 'ubuntu2004'
                       Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/cuda-$ubuntuVersion.pin" -OutFile cuda.pin
                       & sudo mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
                       & sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub"
@@ -391,10 +396,12 @@ jobs:
                             # workaround for GCC header issue on MacOS < 10.15
                             & sudo xcode-select -s /Applications/Xcode_10.3.app/Contents/Developer
                         }
-                        else {
-                            # workaround for GCC header issue on MacOS 10.15, cf. https://github.com/microsoft/vcpkg/issues/9029
-                            $env:CXXFLAGS = "${env:CXXFLAGS} -D_CTERMID_H_"
-                        }
+                        #else {
+                        #    # workaround for GCC header issue on MacOS 10.15, cf. https://github.com/microsoft/vcpkg/issues/9029
+                        #    $env:CXXFLAGS = "${env:CXXFLAGS} -D_CTERMID_H_"
+                        #}
+                        # workaround for GCC header issue on MacOS 10.15, cf. https://github.com/microsoft/vcpkg/issues/9029
+                        $env:CXXFLAGS = "${env:CXXFLAGS} -D_CTERMID_H_"
                     }
                     # let Vcpkg's bootstrap script figure out which version of GCC to use
                     $env:CC = ''
