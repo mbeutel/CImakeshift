@@ -401,10 +401,6 @@ jobs:
                 if ($IsWindows) {
                     New-Item -ItemType SymbolicLink -Path "$env:LOCALAPPDATA" -Name 'vcpkg' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
                 }
-                else {
-                    New-Item -Type Directory -Force "$env:HOME/.cache"
-                    & ln -s '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache' "$env:HOME/.cache/vcpkg"
-                }
                 if ('$(CIMAKESHIFT_DEPENDENCY_CACHE_HIT)' -ne 'True') {
                     & git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
                     cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
@@ -420,8 +416,7 @@ jobs:
                     }
                     Remove-Item -Recurse -Force './.git'
                 }
-              displayName: Bootstrap Vcpkg
-              condition: ne(variables.CIMAKESHIFT_DEPENDENCY_CACHE_HIT, 'true')
+              displayName: Set up Vcpkg
 
           - pwsh: |
               if ('$(System.Debug)' -eq 'True') {
