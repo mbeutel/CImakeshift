@@ -65,10 +65,10 @@ jobs:
           steps:
           - pwsh: |
               if ('${{ or(eq(parameters.vcpkgCache, 'true'), and(eq(parameters.vcpkgCache, ''), parameters.vcpkgRef)) }}' -eq 'true') {
-                  New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies'
+                  New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache'
               }
 
-              $revision='4' # Update this when making incompatible changes to the build pipeline definition.
+              $revision = '5'  # Update this when making incompatible changes to the build pipeline definition.
               if ($IsWindows) { $tripletOS = 'windows' }
               elseif ($IsLinux) { $tripletOS = 'linux' }
               elseif ($IsMacOS) { $tripletOS = 'osx' }
@@ -203,7 +203,7 @@ jobs:
               }
               $vcpkgArgs = '${{ parameters.vcpkgArgs }}' -replace '<vcpkgArgs>','${{ parameters.vcpkgArgs }}'
               if ('${{ parameters.vcpkgOverlayRef }}') {
-                  $vcpkgOverlayArgs = '--overlay-ports="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets"'
+                  $vcpkgOverlayArgs = '--overlay-ports="$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/triplets"'
               }
               $vcpkgPackages = '${{ parameters.vcpkgPackages }}'
               $cacheKey = (@(
@@ -221,7 +221,7 @@ jobs:
                   $cacheKey += ' | ${{ parameters.cacheKey }}'
               }
               if ('${{ parameters.vcpkgRef }}') {
-                  $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake"'
+                  $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake"'
                   $cmakeVcpkgArgs += " -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet"
               }
               $cmakeConfigArgs = '${{ parameters.cmakeConfigArgs }}' -replace '<cmakeConfigArgs>','${{ parameters.cmakeConfigArgs }}'
@@ -250,7 +250,7 @@ jobs:
               echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_REF]${{ parameters.vcpkgOverlayRef }}'
               echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_ARGS]$vcpkgArgs"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_PACKAGES]$vcpkgPackages"
-              echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_TOOLCHAIN_FILE]$(Build.BinariesDirectory)/dependencies/vcpkg/scripts/buildsystems/vcpkg.cmake'
+              echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_TOOLCHAIN_FILE]$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake'
               echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATIONS]${{ join(parameters.cmakeBuildConfigurations, ';') }}'
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_GENERATOR]$cmakeGenerator"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_SOURCE_DIR]${{ parameters.cmakeSourceDir }}"
@@ -260,7 +260,7 @@ jobs:
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_ARGS]$cmakeBuildArgs"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_TEST]${{ parameters.cmakeTest }}"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_TEST_ARGS]$cmakeTestArgs"
-              echo '##vso[task.setvariable variable=VCPKG_ROOT]$(Build.BinariesDirectory)/dependencies/vcpkg'
+              echo '##vso[task.setvariable variable=VCPKG_ROOT]$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
               echo "##vso[task.setvariable variable=VCPKG_TRIPLET]$vcpkgTriplet"
 
               # private variables
@@ -275,7 +275,7 @@ jobs:
               if ('$(System.Debug)' -eq 'True') {
                   Get-ChildItem env: | Format-List
                   if ('${{ or(eq(parameters.vcpkgCache, 'true'), and(eq(parameters.vcpkgCache, ''), parameters.vcpkgRef)) }}' -eq 'True') {
-                      Get-ChildItem -Force -Recurse '$(Build.BinariesDirectory)/dependencies'
+                      Get-ChildItem -Force -Recurse '$(Build.BinariesDirectory)/_CImakeshift_cache'
                   }
               }
               if ($IsWindows) {
@@ -381,37 +381,47 @@ jobs:
               displayName: Cache dependencies
               inputs:
                 key: '$(CIMAKESHIFT_VCPKG_MANIFEST_FILE_)$(CIMAKESHIFT_CACHE_KEY_)'
-                path: '$(Build.BinariesDirectory)/dependencies'
-                cacheHitVar: 'dependencyCacheHit'
+                path: '$(Build.BinariesDirectory)/_CImakeshift_cache'
+                cacheHitVar: 'CIMAKESHIFT_DEPENDENCY_CACHE_HIT'
 
           - ${{ if and(parameters.vcpkgRef, parameters.vcpkgOverlayRepo, parameters.vcpkgOverlayRef) }}:
             - pwsh: |
-                & git clone $(CIMAKESHIFT_VCPKG_OVERLAY_REPO) '$(Build.BinariesDirectory)/dependencies/overlay-repo'
-                cd '$(Build.BinariesDirectory)/dependencies/overlay-repo'
+                & git clone $(CIMAKESHIFT_VCPKG_OVERLAY_REPO) '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo'
+                cd '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo'
                 & git checkout --quiet --force $(CIMAKESHIFT_VCPKG_OVERLAY_REF)
-                New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/ports'
-                New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/overlay-repo/vcpkg/triplets'
+                New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/ports'
+                New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/triplets'
                 Remove-Item -Recurse -Force './.git'
               displayName: Clone Vcpkg overlay repository
-              condition: ne(variables.dependencyCacheHit, 'true')
+              condition: ne(variables.CIMAKESHIFT_DEPENDENCY_CACHE_HIT, 'true')
 
           - ${{ if parameters.vcpkgRef }}:
             - pwsh: |
-                & git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/dependencies/vcpkg'
-                cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
-                & git checkout --quiet --force $(CIMAKESHIFT_VCPKG_REF)
+                New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
                 if ($IsWindows) {
-                    & ./bootstrap-vcpkg.bat
+                    New-Item -ItemType SymbolicLink -Path "$env:LOCALAPPDATA" -Name 'vcpkg' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
                 }
-                else {  # Linux or MacOS
-                    $env:CC = ''
-                    $env:CXX = ''
-                    & chmod +x ./bootstrap-vcpkg.sh
-                    & ./bootstrap-vcpkg.sh
+                else {
+                    New-Item -Type Directory -Force "$env:HOME/.cache"
+                    & ln -s '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache' "$env:HOME/.cache/vcpkg"
                 }
-                Remove-Item -Recurse -Force './.git'
+                if ('$(CIMAKESHIFT_DEPENDENCY_CACHE_HIT)' -ne 'True') {
+                    & git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
+                    cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
+                    & git checkout --quiet --force $(CIMAKESHIFT_VCPKG_REF)
+                    if ($IsWindows) {
+                        & ./bootstrap-vcpkg.bat
+                    }
+                    else {  # Linux or MacOS
+                        $env:CC = ''
+                        $env:CXX = ''
+                        & chmod +x ./bootstrap-vcpkg.sh
+                        & ./bootstrap-vcpkg.sh
+                    }
+                    Remove-Item -Recurse -Force './.git'
+                }
               displayName: Bootstrap Vcpkg
-              condition: ne(variables.dependencyCacheHit, 'true')
+              condition: ne(variables.CIMAKESHIFT_DEPENDENCY_CACHE_HIT, 'true')
 
           - pwsh: |
               if ('$(System.Debug)' -eq 'True') {
@@ -450,28 +460,28 @@ jobs:
 
           - ${{ if parameters.vcpkgRef }}:
             - pwsh: |
-                cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
+                cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
                 if ($env:CIMAKESHIFT_VCPKG_PACKAGES) {
                     & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
                 }
                 if (Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json") {
                     # Vcpkg manifest mode
-                    New-Item -Type Directory -Force '$(Build.BinariesDirectory)/dependencies/vcpkg_manifest_installed'
+                    New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed'
                     if ($IsWindows) {
-                        New-Item -ItemType SymbolicLink -Path $env:CIMAKESHIFT_CMAKE_SOURCE_DIR -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/dependencies/vcpkg_manifest_installed'
+                        New-Item -ItemType SymbolicLink -Path $env:CIMAKESHIFT_CMAKE_SOURCE_DIR -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed'
                     }
                     else {
-                        & ln -s '$(Build.BinariesDirectory)/dependencies/vcpkg_manifest_installed' "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg_installed"
+                        & ln -s '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed' "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg_installed"
                     }
                     cd $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
-                    & '$(Build.BinariesDirectory)/dependencies/vcpkg/vcpkg' $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install
-                    cd '$(Build.BinariesDirectory)/dependencies/vcpkg'
+                    & '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install
+                    cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
                 }
                 Remove-Item -Recurse -Force './buildtrees' -ErrorAction Ignore
                 Remove-Item -Recurse -Force './downloads' -ErrorAction Ignore
                 Remove-Item -Recurse -Force './packages' -ErrorAction Ignore
               displayName: Install Vcpkg packages
-              condition: ne(variables.dependencyCacheHit, 'true')
+              condition: ne(variables.CIMAKESHIFT_DEPENDENCY_CACHE_HIT, 'true')
 
           - ${{ each step in parameters.postSetupSteps }}:
             - ${{ each pair in step }}:
@@ -501,10 +511,10 @@ jobs:
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
                   if ('${{ parameters.vcpkgRef }}' -and (Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json")) {
                       if ($IsWindows) {
-                          New-Item -ItemType SymbolicLink -Path . -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/dependencies/vcpkg_manifest_installed'
+                          New-Item -ItemType SymbolicLink -Path . -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed'
                       }
                       else {
-                          & ln -s '$(Build.BinariesDirectory)/dependencies/vcpkg_manifest_installed' './vcpkg_installed'
+                          & ln -s '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed' './vcpkg_installed'
                       }
                   }
                   $vcpkgArgs = $env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_ -split ' '
