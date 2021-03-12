@@ -129,6 +129,7 @@ jobs:
                   elseif ($cxxStandardLibrary -eq 'libstdc++') {
                       $content = @'
               
+              # Use libstdc++ as standard library.
               set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -stdlib=libstdc++")
               '@
                       Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
@@ -145,7 +146,7 @@ jobs:
                       throw "Unsupported C++ standard library '$cxxStandardLibrary' for ${{ parameters.cxxCompiler }}"
                   }
               }
-              $cxxSanitizers = '${{ join(parameters.cxxSanitizers, ';') }}'.split(';', [System.StringSplitOptions]::RemoveEmptyEntries) | select -Unique
+              $cxxSanitizers = '${{ join(';', parameters.cxxSanitizers) }}'.split(';', [System.StringSplitOptions]::RemoveEmptyEntries) | select -Unique
               if ('${{ parameters.cxxCompiler }}' -eq 'MSVC') {
                   foreach ($sanitizer in $cxxSanitizers) {
                       if ($sanitizer -eq 'ASan' -or $sanitizer -eq 'AddressSanitizer') {
@@ -224,12 +225,10 @@ jobs:
                       }
                   }
               }
-              if ('$(System.Debug)' -eq 'True') {
-                  echo "Toolchain file:"
-                  echo "--------------------"
-                  Get-Content '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake'
-                  echo "--------------------"
-              }
+              echo "Toolchain file:"
+              echo "--------------------"
+              Get-Content '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake'
+              echo "--------------------"
             displayName: Assemble toolchain file
 
           - pwsh: |
@@ -420,7 +419,7 @@ jobs:
               echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_ARGS]$vcpkgArgs"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_PACKAGES]$vcpkgPackages"
               echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_TOOLCHAIN_FILE]$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake'
-              echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATIONS]${{ join(parameters.cmakeBuildConfigurations, ';') }}'
+              echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATIONS]${{ join(';', parameters.cmakeBuildConfigurations) }}'
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_GENERATOR]$cmakeGenerator"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_SOURCE_DIR]${{ parameters.cmakeSourceDir }}"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_CONFIG]${{ parameters.cmakeConfig }}"
