@@ -68,12 +68,6 @@ jobs:
               vmImage: 'macOS-10.15'
           steps:
           - pwsh: |
-              $revision = '5'  # Update this when making incompatible changes to the build pipeline definition.
-              if ($IsWindows) { $tripletOS = 'windows' }
-              elseif ($IsLinux) { $tripletOS = 'linux' }
-              elseif ($IsMacOS) { $tripletOS = 'osx' }
-
-              # Prepare toolchain file
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_files'
               if ('${{ parameters.cmakeToolchainFile }}') {
                   Copy-Item '${{ parameters.cmakeToolchainFile }}' -Destination '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake'
@@ -236,12 +230,16 @@ jobs:
                   Get-Content '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake'
                   echo "--------------------"
               }
+            displayName: Assemble toolchain file
 
-              # Prepare cache directory
+          - pwsh: |
+              $revision = '5'  # Update this when making incompatible changes to the build pipeline definition.
+              if ($IsWindows) { $tripletOS = 'windows' }
+              elseif ($IsLinux) { $tripletOS = 'linux' }
+              elseif ($IsMacOS) { $tripletOS = 'osx' }
               if ('${{ or(eq(parameters.vcpkgCache, 'true'), and(eq(parameters.vcpkgCache, ''), parameters.vcpkgRef)) }}' -eq 'true') {
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache'
               }
-
               $cxxCompilerVersion = '${{ cxxCompilerVersion }}'
               $vcpkgTriplet = '${{ parameters.vcpkgTriplet }}' -replace '<os>',$tripletOS -replace '<platform>','${{ platform }}'
               $cudaPackagesRaw = ('${{ parameters.cudaPackages }}' -replace '\s+',' ').Trim()
