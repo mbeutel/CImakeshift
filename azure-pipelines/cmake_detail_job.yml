@@ -147,7 +147,7 @@ jobs:
               }
               $cxxSanitizers = '${{ join(parameters.cxxSanitizers, ';') }}'.split(';', [System.StringSplitOptions]::RemoveEmptyEntries) | select -Unique
               if ('${{ parameters.cxxCompiler }}' -eq 'MSVC') {
-                  for ($sanitizer in $cxxSanitizers) {
+                  foreach ($sanitizer in $cxxSanitizers) {
                       if ($sanitizer -eq 'ASan' -or $sanitizer -eq 'AddressSanitizer') {
                           $content = @'
 
@@ -163,7 +163,7 @@ jobs:
                   }
               }
               elseif ('${{ parameters.cxxCompiler }}' -eq 'Clang' -or '${{ parameters.cxxCompiler }}' -eq 'AppleClang') {
-                  for ($sanitizer in $cxxSanitizers) {
+                  foreach ($sanitizer in $cxxSanitizers) {
                       if ($sanitizer -eq 'ASan' -or $sanitizer -eq 'AddressSanitizer') {
                           $content = @'
 
@@ -194,7 +194,7 @@ jobs:
                   }
               }
               elseif ('${{ parameters.cxxCompiler }}' -eq 'GCC') {
-                  for ($sanitizer in $cxxSanitizers) {
+                  foreach ($sanitizer in $cxxSanitizers) {
                       if ($sanitizer -eq 'ASan' -or $sanitizer -eq 'AddressSanitizer') {
                           $content = @'
 
