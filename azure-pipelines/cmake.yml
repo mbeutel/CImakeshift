@@ -35,6 +35,42 @@
 #   AppleClang:         9_1, 10, 10_0_1, 11, 11_0_3, 12
 
 
+# Supported C++ compilers per operating system:
+#
+#             | Windows     Linux       MacOS
+# ============+====================================
+# GCC         | -           X           X
+# Clang       | X           X           -
+# MSVC        | X           -           -
+# AppleClang  | -           -           X
+
+
+# Supported platforms per operating system:
+#
+#         | Windows     Linux       MacOS
+# ========+====================================
+# x86     | X           -           -
+# x64     | X           X           X
+
+
+# Supported standard libraries:
+#
+#               | GCC             Clang (Linux)   AppleClang      MSVC            Clang (Windows)
+# ==============+================================================================================
+# MS-STL        | -               -               -               X (default)     X (default)
+# libstdc++     | X (default)     X               X               -               -
+# libc++        | -               X (default)     X (default)     -               -
+
+
+# Supported sanitizers:
+#
+#                                         | GCC     Clang/AppleClang    MSVC
+# ========================================+======================================
+# ASan/AddressSanitizer                   | X       X                   X
+# UBSan/UndefinedBehaviorSanitizer        | X       X                   -
+# ImplicitIntegerArithmeticValueChange    | -       X                   -
+
+
 # Useful CUDA packages:
 #
 #   cublas-dev      cuBLAS headers and libraries
@@ -58,17 +94,17 @@ parameters:
   tag: ''
 
   # Platform options
-  os: ''  # Windows|Linux|MacOS
-  platforms: []  # x86|x64
+  os: ''
+  platforms: []
 
   # C++ options
-  cxxCompiler: ''  # GCC|Clang|MSVC|AppleClang
+  cxxCompiler: ''
   cxxCompilerVersions: []
-  cxxStandardLibrary: ''  # MS-STL|libstdc++|libc++
+  cxxStandardLibrary: ''
   cxxStandardLibraryDebugMode: false
-  cxxSanitizers: []  # [AddressSanitizer, UndefinedBehaviorSanitizer]
+  cxxSanitizers: []
 
-  # CUDA options
+  # CUDA options (supported only on Linux and Windows)
   cudaCompiler: ''  # NVCC|Clang
   cudaCompilerVersions: [None]
   cudaPackages: []
