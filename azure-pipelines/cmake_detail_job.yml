@@ -181,8 +181,20 @@ jobs:
                           $content = @'
 
               # Enable UndefinedBehaviorSanitizer for Clang.
-              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fsanitize=undefined -fsanitize-trap=undefined -fsanitize=implicit-integer-arithmetic-value-change")
-              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fsanitize=undefined -fsanitize-trap=undefined -fsanitize=implicit-integer-arithmetic-value-change")
+              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fsanitize=undefined -fno-omit-frame-pointer -fsanitize-trap=undefined")
+              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fsanitize=undefined -fno-omit-frame-pointer -fsanitize-trap=undefined")
+              set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -fsanitize=undefined")
+              set(CMAKE_MODULE_LINKER_FLAGS_INIT "${CMAKE_MODULE_LINKER_FLAGS_INIT} -fsanitize=undefined")
+              set(CMAKE_SHARED_LINKER_FLAGS_INIT "${CMAKE_SHARED_LINKER_FLAGS_INIT} -fsanitize=undefined")
+              '@
+                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                      }
+                      elseif ($sanitizer -eq 'ImplicitIntegerArithmeticValueChange') {
+                          $content = @'
+
+              # Enable "implicit-integer-arithmetic-value-change" sanitizer for Clang.
+              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fno-omit-frame-pointer -fsanitize-trap=undefined -fsanitize=implicit-integer-arithmetic-value-change")
+              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fno-omit-frame-pointer -fsanitize-trap=undefined -fsanitize=implicit-integer-arithmetic-value-change")
               set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -fsanitize=undefined")
               set(CMAKE_MODULE_LINKER_FLAGS_INIT "${CMAKE_MODULE_LINKER_FLAGS_INIT} -fsanitize=undefined")
               set(CMAKE_SHARED_LINKER_FLAGS_INIT "${CMAKE_SHARED_LINKER_FLAGS_INIT} -fsanitize=undefined")
@@ -212,8 +224,8 @@ jobs:
                           $content = @'
 
               # Enable UndefinedBehaviorSanitizer for GCC.
-              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fsanitize=undefined -fsanitize-undefined-trap-on-error")
-              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fsanitize=undefined -fsanitize-undefined-trap-on-error")
+              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fsanitize=undefined -fno-omit-frame-pointer -fsanitize-undefined-trap-on-error")
+              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fsanitize=undefined -fno-omit-frame-pointer -fsanitize-undefined-trap-on-error")
               set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -fsanitize=undefined")
               set(CMAKE_MODULE_LINKER_FLAGS_INIT "${CMAKE_MODULE_LINKER_FLAGS_INIT} -fsanitize=undefined")
               set(CMAKE_SHARED_LINKER_FLAGS_INIT "${CMAKE_SHARED_LINKER_FLAGS_INIT} -fsanitize=undefined")
@@ -275,7 +287,6 @@ jobs:
                       $extraPath = "$llvmRoot;$extraPath"
                       $clangClPath = "$llvmRoot\clang-cl.exe"
                       $clangClCompatPath = $clangClPath -replace '\\','/'
-                      $cmakeGenerator = $cmakeGenerator -replace 'MSBuild','Visual Studio 16 2019'
                       $cmakeCompilerFlag = "-DCMAKE_C_COMPILER=`"$clangClCompatPath`" -DCMAKE_CXX_COMPILER=`"$clangClCompatPath`""
                       if ('${{ platform }}' -eq 'x86') {
                           # Workaround for https://gitlab.kitware.com/cmake/cmake/issues/16259
@@ -287,7 +298,7 @@ jobs:
                           echo '##vso[task.setvariable variable=CFLAGS]-m64'
                           echo '##vso[task.setvariable variable=CXXFLAGS]-m64'
                       }
-                      $msbuildGenerator = 'Ninja'
+                      $msbuildGenerator = 'Visual Studio 16 2019'
                       $defaultCmakeGenerator = 'Ninja'
                   }
                   $cmakeGenerator = $cmakeGenerator -replace 'MSBuild',$msbuildGenerator

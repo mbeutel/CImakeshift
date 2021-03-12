@@ -114,7 +114,7 @@ jobs:
       cxxCompilerVersions: [11]
       cxxStandardLibrary: libstdc++
       cxxStandardLibraryDebugMode: true
-      cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer]
+      cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer, ImplicitIntegerArithmeticValueChange]
       platforms: [x64]
       tag: 'sanitize'
       vcpkgTriplet: <platform>-<os>-sanitize
