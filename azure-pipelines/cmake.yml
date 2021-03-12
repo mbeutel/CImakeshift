@@ -1,5 +1,5 @@
 # Azure Pipelines job template for CMake builds
-# Version 0.4.0
+# Version 0.4.1
 # Author: Moritz Beutel
 #
 #
@@ -53,19 +53,23 @@
 parameters:
 
   # Caption and tag for identification of the job
+  # (note that captions and tags are restricted to the following characters: [A-Za-z0-9_.+ ])
   caption: ''
   tag: ''
 
   # Platform options
-  os: ''
-  platforms: []
+  os: ''  # Windows|Linux|MacOS
+  platforms: []  # x86|x64
 
   # C++ options
-  cxxCompiler: ''
+  cxxCompiler: ''  # GCC|Clang|MSVC|AppleClang
   cxxCompilerVersions: []
+  cxxStandardLibrary: ''  # MS-STL|libstdc++|libc++
+  cxxStandardLibraryDebugMode: false
+  cxxSanitizers: []  # [AddressSanitizer, UndefinedBehaviorSanitizer]
 
   # CUDA options
-  cudaCompiler: ''
+  cudaCompiler: ''  # NVCC|Clang
   cudaCompilerVersions: [None]
   cudaPackages: []
 
@@ -86,6 +90,7 @@ parameters:
 
   # Build options
   cmakeSourceDir: '$(Build.SourcesDirectory)'
+  cmakeToolchainFile: ''
   cmakeBuildConfigurations: [Debug, RelWithDebInfo]
   cmakeGenerator: ''
   cmakeConfig: true
@@ -101,35 +106,39 @@ parameters:
   postBuildSteps: []
 
   targets: []
-#    target.caption                   # overrides parameters.caption
-#    target.tag                       # overrides parameters.tag
-#    target.os                        # overrides parameters.os
-#    target.platforms                 # overrides parameters.platforms
-#    target.cxxCompiler               # overrides parameters.cxxCompiler
-#    target.cxxCompilerVersions       # overrides parameters.cxxCompilerVersions
-#    target.cudaCompiler              # overrides parameters.cudaCompiler
-#    target.cudaCompilerVersions      # overrides parameters.cudaCompilerVersions
-#    target.cmakeBuildConfigurations  # overrides parameters.cmakeBuildConfigurations
-#    target.vcpkgRepo                 # overrides parameters.vcpkgRepo
-#    target.vcpkgRef                  # overrides parameters.vcpkgRef
-#    target.vcpkgOverlayRepo          # overrides parameters.vcpkgOverlayRepo
-#    target.vcpkgOverlayRef           # overrides parameters.vcpkgOverlayRef
-#    target.vcpkgTriplet              # overrides parameters.vcpkgTriplet
-#    target.vcpkgArgs                 # overrides parameters.vcpkgArgs; can refer to parameters.vcpkgArgs as '<vcpkgArgs>'
-#    target.vcpkgPackages             # overrides parameters.vcpkgPackages; can refer to parameters.vcpkgPackages as '<vcpkgPackages>'
-#    target.vcpkgCache                # overrides parameters.vcpkgCache
-#    target.vcpkgCacheKey             # overrides parameters.vcpkgCacheKey; can refer to parameters.vcpkgCacheKey as '<vcpkgCacheKey>'
-#    target.cudaPackages              # overrides parameters.cudaPackages; can refer to parameters.cudaPackages as '<cudaPackages>'
-#    target.cmakeGenerator            # overrides parameters.cmakeGenerator
-#    target.cmakeConfig               # overrides parameters.cmakeConfig
-#    target.cmakeConfigArgs           # overrides parameters.cmakeConfigArgs; can refer to parameters.cmakeConfigArgs as '<cmakeConfigArgs>'
-#    target.cmakeBuild                # overrides parameters.cmakeBuild
-#    target.cmakeBuildArgs            # overrides parameters.cmakeBuildArgs; can refer to parameters.cmakeBuildArgs as '<cmakeBuildArgs>'
-#    target.cmakeTest                 # overrides parameters.cmakeTest
-#    target.cmakeTestArgs             # overrides parameters.cmakeTestArgs; can refer to parameters.cmakeTestArgs as '<cmakeTestArgs>'
-#    target.postSetupSteps            # adds to parameters.postSetupSteps
-#    target.preBuildSteps             # adds to parameters.preBuildSteps
-#    target.postBuildSteps            # adds to parameters.postBuildSteps
+#    target.caption                         # overrides parameters.caption
+#    target.tag                             # overrides parameters.tag
+#    target.os                              # overrides parameters.os
+#    target.platforms                       # overrides parameters.platforms
+#    target.cxxCompiler                     # overrides parameters.cxxCompiler
+#    target.cxxCompilerVersions             # overrides parameters.cxxCompilerVersions
+#    target.cxxStandardLibrary              # overrides parameters.cxxStandardLibrary
+#    target.cxxStandardLibraryDebugMode     # overrides parameters.cxxStandardLibraryDebugMode
+#    target.cxxSanitizers                   # overrides parameters.cxxSanitizers
+#    target.cudaCompiler                    # overrides parameters.cudaCompiler
+#    target.cudaCompilerVersions            # overrides parameters.cudaCompilerVersions
+#    target.cmakeBuildConfigurations        # overrides parameters.cmakeBuildConfigurations
+#    target.vcpkgRepo                       # overrides parameters.vcpkgRepo
+#    target.vcpkgRef                        # overrides parameters.vcpkgRef
+#    target.vcpkgOverlayRepo                # overrides parameters.vcpkgOverlayRepo
+#    target.vcpkgOverlayRef                 # overrides parameters.vcpkgOverlayRef
+#    target.vcpkgTriplet                    # overrides parameters.vcpkgTriplet
+#    target.vcpkgArgs                       # overrides parameters.vcpkgArgs; can refer to parameters.vcpkgArgs as '<vcpkgArgs>'
+#    target.vcpkgPackages                   # overrides parameters.vcpkgPackages; can refer to parameters.vcpkgPackages as '<vcpkgPackages>'
+#    target.vcpkgCache                      # overrides parameters.vcpkgCache
+#    target.vcpkgCacheKey                   # overrides parameters.vcpkgCacheKey; can refer to parameters.vcpkgCacheKey as '<vcpkgCacheKey>'
+#    target.cudaPackages                    # overrides parameters.cudaPackages; can refer to parameters.cudaPackages as '<cudaPackages>'
+#    target.cmakeToolchainFile              # overrides parameters.cmakeToolchainFile
+#    target.cmakeGenerator                  # overrides parameters.cmakeGenerator
+#    target.cmakeConfig                     # overrides parameters.cmakeConfig
+#    target.cmakeConfigArgs                 # overrides parameters.cmakeConfigArgs; can refer to parameters.cmakeConfigArgs as '<cmakeConfigArgs>'
+#    target.cmakeBuild                      # overrides parameters.cmakeBuild
+#    target.cmakeBuildArgs                  # overrides parameters.cmakeBuildArgs; can refer to parameters.cmakeBuildArgs as '<cmakeBuildArgs>'
+#    target.cmakeTest                       # overrides parameters.cmakeTest
+#    target.cmakeTestArgs                   # overrides parameters.cmakeTestArgs; can refer to parameters.cmakeTestArgs as '<cmakeTestArgs>'
+#    target.postSetupSteps                  # adds to parameters.postSetupSteps
+#    target.preBuildSteps                   # adds to parameters.preBuildSteps
+#    target.postBuildSteps                  # adds to parameters.postBuildSteps
 
 jobs:
 - ${{ each target in parameters.targets }}:
@@ -156,6 +165,13 @@ jobs:
         - ${{ target.cxxCompilerVersions }}
       - ${{ if not(target.cxxCompilerVersions) }}:
         - ${{ parameters.cxxCompilerVersions }}
+      cxxStandardLibrary: '${{ coalesce(target.cxxStandardLibrary, parameters.cxxStandardLibrary) }}'
+      cxxStandardLibraryDebugMode: '${{ coalesce(target.cxxStandardLibraryDebugMode, parameters.cxxStandardLibraryDebugMode) }}'
+      cxxSanitizers:
+      - ${{ if target.cxxSanitizers }}:
+        - ${{ target.cxxSanitizers }}
+      - ${{ if not(target.cxxSanitizers) }}:
+        - ${{ parameters.cxxSanitizers }}
       cudaCompiler: '${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}'
       cudaCompilerVersions:
       - ${{ if target.cudaCompilerVersions }}:
@@ -169,6 +185,7 @@ jobs:
       vcpkgTriplet: '${{ coalesce(target.vcpkgTriplet, parameters.vcpkgTriplet) }}'
       vcpkgCache: '${{ coalesce(target.vcpkgCache, parameters.vcpkgCache) }}'
       vcpkgCacheKey: '${{ coalesce(target.vcpkgCacheKey, parameters.vcpkgCacheKey) }}'
+      cmakeToolchainFile: '${{ coalesce(target.cmakeToolchainFile, parameters.cmakeToolchainFile) }}'
       cmakeBuildConfigurations:
       - ${{ if target.cmakeBuildConfigurations }}:
         - ${{ target.cmakeBuildConfigurations }}

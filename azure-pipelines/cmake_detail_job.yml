@@ -19,6 +19,9 @@ parameters:
   cxxCompilerVersions: []
   cudaCompiler: ''
   cudaCompilerVersions: []
+  cxxStandardLibrary: ''
+  cxxStandardLibraryDebugMode: ''
+  cxxSanitizers: []
   vcpkgRepo: ''
   vcpkgRef: ''
   vcpkgOverlayRepo: ''
@@ -26,11 +29,12 @@ parameters:
   vcpkgTriplet: ''
   vcpkgCache: ''
   vcpkgCacheKey: ''
+  cmakeToolchainFile: ''
   cmakeBuildConfigurations: []
   cmakeGenerator: ''
-  cmakeConfig: true
-  cmakeBuild: true
-  cmakeTest: true
+  cmakeConfig: ''
+  cmakeBuild: ''
+  cmakeTest: ''
 
   # Augmented string parameters
   cudaPackages: ''
@@ -46,7 +50,7 @@ jobs:
   - ${{ each platform in parameters.platforms }}:
     - ${{ each cxxCompilerVersion in parameters.cxxCompilerVersions }}:
       - ${{ each cudaCompilerVersion in parameters.cudaCompilerVersions }}:
-        - job: '${{ replace(replace(replace(format(''<_captionBegin_>{0}<_captionEnd_>'', replace(replace(parameters.caption, ''.'', ''_''), '' '', ''_'')), ''<_captionBegin_><_captionEnd_>'', ''''), ''<_captionBegin_>'', ''''), ''<_captionEnd_>'', ''_'') }}${{ parameters.os }}_${{ platform }}_${{ parameters.cxxCompiler }}${{ cxxCompilerVersion }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', cudaCompilerVersion), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format(''_{0}'', parameters.cudaCompiler)) }}_${{ join(''_'', parameters.cmakeBuildConfigurations) }}${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', replace(replace(parameters.tag, ''.'', ''_''), '' '', ''_'')), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', ''_''), ''<_tagEnd_>'', '''') }}'
+        - job: '${{ replace(replace(replace(format(''<_captionBegin_>{0}<_captionEnd_>'', replace(replace(replace(parameters.caption, ''+'', ''_''), ''.'', ''_''), '' '', ''_'')), ''<_captionBegin_><_captionEnd_>'', ''''), ''<_captionBegin_>'', ''''), ''<_captionEnd_>'', ''_'') }}${{ parameters.os }}_${{ platform }}_${{ parameters.cxxCompiler }}${{ cxxCompilerVersion }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', cudaCompilerVersion), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format(''_{0}'', parameters.cudaCompiler)) }}_${{ join(''_'', parameters.cmakeBuildConfigurations) }}${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', replace(replace(replace(parameters.tag, ''+'',''_''), ''.'', ''_''), '' '', ''_'')), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', ''_''), ''<_tagEnd_>'', '''') }}'
           displayName: '${{ replace(replace(replace(format(''<_captionBegin_>{0}<_captionEnd_>'', parameters.caption), ''<_captionBegin_><_captionEnd_>'', ''''), ''<_captionBegin_>'', ''''), ''<_captionEnd_>'', '': '') }}${{ parameters.os }} ${{ platform }}, ${{ parameters.cxxCompiler }} ${{ replace(cxxCompilerVersion, ''_'', ''.'') }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', replace(cudaCompilerVersion, ''_'', ''.'')), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format('', {0} '', parameters.cudaCompiler)) }}, ${{ join(''+'', parameters.cmakeBuildConfigurations) }}${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', parameters.tag), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', '', ''), ''<_tagEnd_>'', '''') }}'
           pool:
             name: Azure Pipelines
@@ -64,20 +68,184 @@ jobs:
               vmImage: 'macOS-10.15'
           steps:
           - pwsh: |
-              if ('${{ or(eq(parameters.vcpkgCache, 'true'), and(eq(parameters.vcpkgCache, ''), parameters.vcpkgRef)) }}' -eq 'true') {
-                  New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache'
-              }
-
               $revision = '5'  # Update this when making incompatible changes to the build pipeline definition.
               if ($IsWindows) { $tripletOS = 'windows' }
               elseif ($IsLinux) { $tripletOS = 'linux' }
               elseif ($IsMacOS) { $tripletOS = 'osx' }
+
+              # Prepare toolchain file
+              New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_files'
+              if ('${{ parameters.cmakeToolchainFile }}') {
+                  Copy-Item '${{ parameters.cmakeToolchainFile }}' -Destination '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake'
+              }
+              else {
+                  New-Item '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -ItemType file
+              }
+              $cxxStandardLibrary = '${{ parameters.cxxStandardLibrary }}'
+              $cxxStandardLibraryDebugMode = ('${{ parameters.cxxStandardLibraryDebugMode }}' -eq 'true')
+              if ('${{ parameters.cxxCompiler }}' -eq 'MSVC' -or ('${{ parameters.cxxCompiler }}' -eq 'Clang' -and $IsWindows)) {
+                  if ($cxxStandardLibrary -eq '' -or $cxxStandardLibrary -eq 'default' -or $cxxStandardLibrary -ne 'MS-STL') {
+                      if ($cxxStandardLibraryDebugMode) {
+                          $content = @'
+              
+              # For Microsoft STL, enable checked iterators in non-Debug builds by setting `_ITERATOR_DEBUG_LEVEL=1`. (Debug builds already
+              # have debug iterators, a superset of checked iterators, enabled by default, i.e. `_ITERATOR_DEBUG_LEVEL=2`.)
+              set(CMAKE_CXX_FLAGS_DEBUG_INIT "${CMAKE_CXX_FLAGS_DEBUG_INIT}")
+              set(CMAKE_CXX_FLAGS_MINSIZEREL_INIT "${CMAKE_CXX_FLAGS_MINSIZEREL_INIT} /D_ITERATOR_DEBUG_LEVEL=1")
+              set(CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "${CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT} /D_ITERATOR_DEBUG_LEVEL=1")
+              set(CMAKE_CXX_FLAGS_RELEASE_INIT "${CMAKE_CXX_FLAGS_RELEASE_INIT} /D_ITERATOR_DEBUG_LEVEL=1")
+              '@
+                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                      }
+                  }
+                  else {
+                      throw "Unsupported C++ standard library '$cxxStandardLibrary' for ${{ parameters.cxxCompiler }}"
+                  }
+              }
+              elseif ('${{ parameters.cxxCompiler }}' -eq 'GCC') {
+                  if ($cxxStandardLibrary -eq '' -or $cxxStandardLibrary -eq 'default' -or $cxxStandardLibrary -eq 'libstdc++') {
+                      if ($cxxStandardLibraryDebugMode) {
+                          $content = @'
+              
+              # For libstdc++, enable the debug mode for all configurations by defining `_GLIBCXX_DEBUG`.
+              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -D_GLIBCXX_DEBUG")
+              '@
+                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                      }
+                  }
+                  else {
+                      throw "Unsupported C++ standard library '$cxxStandardLibrary' for ${{ parameters.cxxCompiler }}"
+                  }
+              }
+              elseif ('${{ parameters.cxxCompiler }}' -eq 'Clang' -or '${{ parameters.cxxCompiler }}' -eq 'AppleClang') {
+                  if ($cxxStandardLibrary -eq '' -or $cxxStandardLibrary -eq 'default' -or $cxxStandardLibrary -eq 'libc++') {
+                      if ($cxxStandardLibraryDebugMode) {
+                          $content = @'
+              
+              # For libc++, enable iterator debugging + assertions (`_LIBCPP_DEBUG=1`) in the Debug build; for Release builds, enable iterator
+              # debugging only (`_LIBCPP_DEBUG=0`).
+              set(CMAKE_CXX_FLAGS_DEBUG_INIT "${CMAKE_CXX_FLAGS_DEBUG_INIT} -D_LIBCPP_DEBUG=1")
+              set(CMAKE_CXX_FLAGS_MINSIZEREL_INIT "${CMAKE_CXX_FLAGS_MINSIZEREL_INIT} -D_LIBCPP_DEBUG=0")
+              set(CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "${CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT} -D_LIBCPP_DEBUG=0")
+              set(CMAKE_CXX_FLAGS_RELEASE_INIT "${CMAKE_CXX_FLAGS_RELEASE_INIT} -D_LIBCPP_DEBUG=0")
+              '@
+                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                      }
+                  }
+                  elseif ($cxxStandardLibrary -eq 'libstdc++') {
+                      $content = @'
+              
+              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -stdlib=libstdc++")
+              '@
+                      Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                      if ($cxxStandardLibraryDebugMode) {
+                          $content = @'
+              
+              # For libstdc++, enable the debug mode for all configurations by defining `_GLIBCXX_DEBUG`.
+              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -D_GLIBCXX_DEBUG")
+              '@
+                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                      }
+                  }
+                  else {
+                      throw "Unsupported C++ standard library '$cxxStandardLibrary' for ${{ parameters.cxxCompiler }}"
+                  }
+              }
+              $cxxSanitizers = '${{ join(parameters.cxxSanitizers, ';') }}'.split(';', [System.StringSplitOptions]::RemoveEmptyEntries) | select -Unique
+              if ('${{ parameters.cxxCompiler }}' -eq 'MSVC') {
+                  for ($sanitizer in $cxxSanitizers) {
+                      if ($sanitizer -eq 'ASan' -or $sanitizer -eq 'AddressSanitizer') {
+                          $content = @'
+
+              # Enable AddressSanitizer for MSVC.
+              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} /fsanitize=address")
+              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} /fsanitize=address")
+              '@
+                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                      }
+                      else {
+                          throw "Unsupported C++ sanitizer '$sanitizer' for ${{ parameters.cxxCompiler }}"
+                      }
+                  }
+              }
+              elseif ('${{ parameters.cxxCompiler }}' -eq 'Clang' -or '${{ parameters.cxxCompiler }}' -eq 'AppleClang') {
+                  for ($sanitizer in $cxxSanitizers) {
+                      if ($sanitizer -eq 'ASan' -or $sanitizer -eq 'AddressSanitizer') {
+                          $content = @'
+
+              # Enable AddressSanitizer for Clang.
+              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fsanitize=address -fno-omit-frame-pointer")
+              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fsanitize=address -fno-omit-frame-pointer")
+              set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -fsanitize=address")
+              set(CMAKE_MODULE_LINKER_FLAGS_INIT "${CMAKE_MODULE_LINKER_FLAGS_INIT} -fsanitize=address")
+              set(CMAKE_SHARED_LINKER_FLAGS_INIT "${CMAKE_SHARED_LINKER_FLAGS_INIT} -fsanitize=address")
+              '@
+                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                      }
+                      elseif ($sanitizer -eq 'UBSan' -or $sanitizer -eq 'UndefinedBehaviorSanitizer') {
+                          $content = @'
+
+              # Enable UndefinedBehaviorSanitizer for Clang.
+              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fsanitize=undefined -fsanitize-trap=undefined -fsanitize=implicit-integer-arithmetic-value-change")
+              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fsanitize=undefined -fsanitize-trap=undefined -fsanitize=implicit-integer-arithmetic-value-change")
+              set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -fsanitize=undefined")
+              set(CMAKE_MODULE_LINKER_FLAGS_INIT "${CMAKE_MODULE_LINKER_FLAGS_INIT} -fsanitize=undefined")
+              set(CMAKE_SHARED_LINKER_FLAGS_INIT "${CMAKE_SHARED_LINKER_FLAGS_INIT} -fsanitize=undefined")
+              '@
+                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                      }
+                      else {
+                          throw "Unsupported C++ sanitizer '$sanitizer' for ${{ parameters.cxxCompiler }}"
+                      }
+                  }
+              }
+              elseif ('${{ parameters.cxxCompiler }}' -eq 'GCC') {
+                  for ($sanitizer in $cxxSanitizers) {
+                      if ($sanitizer -eq 'ASan' -or $sanitizer -eq 'AddressSanitizer') {
+                          $content = @'
+
+              # Enable AddressSanitizer for GCC.
+              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fsanitize=address -fno-omit-frame-pointer")
+              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fsanitize=address -fno-omit-frame-pointer")
+              set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -fsanitize=address")
+              set(CMAKE_MODULE_LINKER_FLAGS_INIT "${CMAKE_MODULE_LINKER_FLAGS_INIT} -fsanitize=address")
+              set(CMAKE_SHARED_LINKER_FLAGS_INIT "${CMAKE_SHARED_LINKER_FLAGS_INIT} -fsanitize=address")
+              '@
+                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                      }
+                      elseif ($sanitizer -eq 'UBSan' -or $sanitizer -eq 'UndefinedBehaviorSanitizer') {
+                          $content = @'
+
+              # Enable UndefinedBehaviorSanitizer for GCC.
+              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fsanitize=undefined -fsanitize-undefined-trap-on-error")
+              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fsanitize=undefined -fsanitize-undefined-trap-on-error")
+              set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -fsanitize=undefined")
+              set(CMAKE_MODULE_LINKER_FLAGS_INIT "${CMAKE_MODULE_LINKER_FLAGS_INIT} -fsanitize=undefined")
+              set(CMAKE_SHARED_LINKER_FLAGS_INIT "${CMAKE_SHARED_LINKER_FLAGS_INIT} -fsanitize=undefined")
+              '@
+                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                      }
+                      else {
+                          throw "Unsupported C++ sanitizer '$sanitizer' for ${{ parameters.cxxCompiler }}"
+                      }
+                  }
+              }
+              if ('$(System.Debug)' -eq 'True') {
+                  echo "Toolchain file:"
+                  echo "--------------------"
+                  Get-Content '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake'
+                  echo "--------------------"
+              }
+
+              # Prepare cache directory
+              if ('${{ or(eq(parameters.vcpkgCache, 'true'), and(eq(parameters.vcpkgCache, ''), parameters.vcpkgRef)) }}' -eq 'true') {
+                  New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache'
+              }
+
               $cxxCompilerVersion = '${{ cxxCompilerVersion }}'
               $vcpkgTriplet = '${{ parameters.vcpkgTriplet }}' -replace '<os>',$tripletOS -replace '<platform>','${{ platform }}'
               $cudaPackagesRaw = ('${{ parameters.cudaPackages }}' -replace '\s+',' ').Trim()
               $cudaPackagesRawArray = $cudaPackagesRaw.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
-              echo "cudaPackagesRaw: '$cudaPackagesRaw'"
-              echo "cudaPackagesRawArray: $cudaPackagesRawArray"
               $cmakeGenerator = '${{ parameters.cmakeGenerator }}'
               New-Item -Type Directory -Force "$HOME/bin"
               if ($IsWindows) {
@@ -201,7 +369,7 @@ jobs:
               if ($vcpkgRepo -eq '' -and '${{ parameters.vcpkgRef }}') {
                   $vcpkgRepo = 'https://github.com/microsoft/vcpkg.git'
               }
-              $vcpkgArgs = '${{ parameters.vcpkgArgs }}' -replace '<vcpkgArgs>','${{ parameters.vcpkgArgs }}'
+              $vcpkgArgs = '${{ parameters.vcpkgArgs }}'
               if ('${{ parameters.vcpkgOverlayRef }}') {
                   $vcpkgOverlayArgs = '--overlay-ports="$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/triplets"'
               }
@@ -221,12 +389,15 @@ jobs:
                   $cacheKey += ' | ${{ parameters.cacheKey }}'
               }
               if ('${{ parameters.vcpkgRef }}') {
-                  $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake"'
+                  $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake"'
                   $cmakeVcpkgArgs += " -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet"
               }
-              $cmakeConfigArgs = '${{ parameters.cmakeConfigArgs }}' -replace '<cmakeConfigArgs>','${{ parameters.cmakeConfigArgs }}'
-              $cmakeBuildArgs = '${{ parameters.cmakeBuildArgs }}' -replace '<cmakeBuildArgs>','${{ parameters.cmakeBuildArgs }}'
-              $cmakeTestArgs = '${{ parameters.cmakeTestArgs }}' -replace '<cmakeTestArgs>','${{ parameters.cmakeTestArgs }}'
+              else {
+                  $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake"'
+              }
+              $cmakeConfigArgs = '${{ parameters.cmakeConfigArgs }}'
+              $cmakeBuildArgs = '${{ parameters.cmakeBuildArgs }}'
+              $cmakeTestArgs = '${{ parameters.cmakeTestArgs }}'
 
               $vcpkgManifestFile = ''
               if ('${{ parameters.vcpkgRef }}' -and (Test-Path '${{ parameters.cmakeSourceDir }}/vcpkg.json')) {

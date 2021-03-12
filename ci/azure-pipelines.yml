@@ -98,11 +98,11 @@ jobs:
     - os: Linux
       cxxCompiler: GCC
       cxxCompilerVersions: [10]
+      cxxStandardLibraryDebugMode: true
+      cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer]
       platforms: [x64]
       tag: 'sanitize'
-      vcpkgTriplet: <platform>-<os>-sanitize
-      cmakeBuildConfigurations: [Debug]
-      cmakeConfigArgs: '<cmakeConfigArgs> -DCMAKESHIFT_PRIVATE_COMPILE_SETTINGS=runtime-checks;debug-stdlib'
+      cmakeBuildConfigurations: [Debug, RelWithDebInfo]
 
     - os: Linux
       cxxCompiler: Clang
@@ -112,11 +112,13 @@ jobs:
     - os: Linux
       cxxCompiler: Clang
       cxxCompilerVersions: [11]
+      cxxStandardLibrary: libstdc++
+      cxxStandardLibraryDebugMode: true
+      cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer]
       platforms: [x64]
       tag: 'sanitize'
       vcpkgTriplet: <platform>-<os>-sanitize
-      cmakeBuildConfigurations: [Debug]
-      cmakeConfigArgs: '<cmakeConfigArgs> -DCMAKESHIFT_PRIVATE_COMPILE_SETTINGS=runtime-checks;debug-stdlib'
+      cmakeBuildConfigurations: [Debug, RelWithDebInfo]
 
     - os: Linux
       cxxCompiler: GCC
