@@ -77,6 +77,7 @@ jobs:
               }
               $toolchainFileAppendix = @'
               
+              
               include_guard(GLOBAL)
               '@
 
@@ -86,6 +87,7 @@ jobs:
                   if ($cxxStandardLibrary -eq '' -or $cxxStandardLibrary -eq 'default' -or $cxxStandardLibrary -ne 'MS-STL') {
                       if ($cxxStandardLibraryDebugMode) {
                           $toolchainFileAppendix += @'
+              
               
               # For Microsoft STL, enable checked iterators in non-Debug builds by setting `_ITERATOR_DEBUG_LEVEL=1`. (Debug builds already
               # have debug iterators, a superset of checked iterators, enabled by default, i.e. `_ITERATOR_DEBUG_LEVEL=2`.)
@@ -105,6 +107,7 @@ jobs:
                       if ($cxxStandardLibraryDebugMode) {
                           $toolchainFileAppendix += @'
               
+              
               # For libstdc++, enable the debug mode for all configurations by defining `_GLIBCXX_DEBUG`.
               set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -D_GLIBCXX_DEBUG")
               '@
@@ -119,6 +122,7 @@ jobs:
                       if ($cxxStandardLibraryDebugMode) {
                           $toolchainFileAppendix += @'
               
+              
               # For libc++, enable iterator debugging + assertions (`_LIBCPP_DEBUG=1`) in the Debug build; for Release builds, enable iterator
               # debugging only (`_LIBCPP_DEBUG=0`).
               set(CMAKE_CXX_FLAGS_DEBUG_INIT "${CMAKE_CXX_FLAGS_DEBUG_INIT} -D_LIBCPP_DEBUG=1")
@@ -131,11 +135,13 @@ jobs:
                   elseif ($cxxStandardLibrary -eq 'libstdc++') {
                       $toolchainFileAppendix += @'
               
+              
               # Use libstdc++ as standard library.
               set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -stdlib=libstdc++")
               '@
                       if ($cxxStandardLibraryDebugMode) {
                           $toolchainFileAppendix += @'
+              
               
               # For libstdc++, enable the debug mode for all configurations by defining `_GLIBCXX_DEBUG`.
               set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -D_GLIBCXX_DEBUG")
@@ -165,7 +171,7 @@ jobs:
                   foreach ($sanitizer in $cxxSanitizers) {
                       if ($sanitizer -eq 'ASan' -or $sanitizer -eq 'AddressSanitizer') {
                           $sanitizeCompileFlags += @('-fsanitize=address')
-                          $sanitizeLinkFlags += @('/fsanitize=address')
+                          $sanitizeLinkFlags += @('-fsanitize=address')
                           $anySan = $true
                       }
                       elseif ($sanitizer -eq 'UBSan' -or $sanitizer -eq 'UndefinedBehaviorSanitizer') {
@@ -187,7 +193,7 @@ jobs:
                   }
                   if ($anyUBSan) {
                       $sanitizeCompileFlags += @('-fsanitize-trap=undefined')
-                      $sanitizeLinkFlags += @('/fsanitize=undefined')
+                      $sanitizeLinkFlags += @('-fsanitize=undefined')
                   }
               }
               elseif ('${{ parameters.cxxCompiler }}' -eq 'GCC') {
@@ -195,12 +201,12 @@ jobs:
                   foreach ($sanitizer in $cxxSanitizers) {
                       if ($sanitizer -eq 'ASan' -or $sanitizer -eq 'AddressSanitizer') {
                           $sanitizeCompileFlags += @('-fsanitize=address')
-                          $sanitizeLinkFlags += @('/fsanitize=address')
+                          $sanitizeLinkFlags += @('-fsanitize=address')
                           $anySan = $true
                       }
                       elseif ($sanitizer -eq 'UBSan' -or $sanitizer -eq 'UndefinedBehaviorSanitizer') {
                           $sanitizeCompileFlags += @('-fsanitize=undefined', '-fsanitize-undefined-trap-on-error')
-                          $sanitizeLinkFlags += @('/fsanitize=undefined')
+                          $sanitizeLinkFlags += @('-fsanitize=undefined')
                           $anySan = $true
                       }
                       else {
@@ -214,12 +220,14 @@ jobs:
               if ($sanitizeCompileFlags.Count -ne 0) {
                   $toolchainFileAppendix += @"
               
+              
               # Enable sanitizers for ${{ parameters.cxxCompiler }}.
               set(CMAKE_C_FLAGS_INIT "`${CMAKE_C_FLAGS_INIT} $($sanitizeCompileFlags -join ' ')")
               set(CMAKE_CXX_FLAGS_INIT "`${CMAKE_CXX_FLAGS_INIT} $($sanitizeCompileFlags -join ' ')")
               "@
                   if ($sanitizeLinkFlags.Count -ne 0) {
                       $toolchainFileAppendix += @"
+              
               set(CMAKE_EXE_LINKER_FLAGS_INIT "`${CMAKE_EXE_LINKER_FLAGS_INIT} $($sanitizeLinkFlags -join ' ')")
               set(CMAKE_MODULE_LINKER_FLAGS_INIT "`${CMAKE_MODULE_LINKER_FLAGS_INIT} $($sanitizeLinkFlags -join ' ')")
               set(CMAKE_SHARED_LINKER_FLAGS_INIT "`${CMAKE_SHARED_LINKER_FLAGS_INIT} $($sanitizeLinkFlags -join ' ')")
