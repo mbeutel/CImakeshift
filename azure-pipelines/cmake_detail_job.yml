@@ -75,12 +75,17 @@ jobs:
               else {
                   New-Item '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -ItemType file
               }
+              $toolchainFileAppendix = @'
+              
+              include_guard(GLOBAL)
+              '@
+
               $cxxStandardLibrary = '${{ parameters.cxxStandardLibrary }}'
               $cxxStandardLibraryDebugMode = ('${{ parameters.cxxStandardLibraryDebugMode }}' -eq 'true')
               if ('${{ parameters.cxxCompiler }}' -eq 'MSVC' -or ('${{ parameters.cxxCompiler }}' -eq 'Clang' -and $IsWindows)) {
                   if ($cxxStandardLibrary -eq '' -or $cxxStandardLibrary -eq 'default' -or $cxxStandardLibrary -ne 'MS-STL') {
                       if ($cxxStandardLibraryDebugMode) {
-                          $content = @'
+                          $toolchainFileAppendix += @'
               
               # For Microsoft STL, enable checked iterators in non-Debug builds by setting `_ITERATOR_DEBUG_LEVEL=1`. (Debug builds already
               # have debug iterators, a superset of checked iterators, enabled by default, i.e. `_ITERATOR_DEBUG_LEVEL=2`.)
@@ -89,7 +94,6 @@ jobs:
               set(CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "${CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT} /D_ITERATOR_DEBUG_LEVEL=1")
               set(CMAKE_CXX_FLAGS_RELEASE_INIT "${CMAKE_CXX_FLAGS_RELEASE_INIT} /D_ITERATOR_DEBUG_LEVEL=1")
               '@
-                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
                       }
                   }
                   else {
@@ -99,12 +103,11 @@ jobs:
               elseif ('${{ parameters.cxxCompiler }}' -eq 'GCC') {
                   if ($cxxStandardLibrary -eq '' -or $cxxStandardLibrary -eq 'default' -or $cxxStandardLibrary -eq 'libstdc++') {
                       if ($cxxStandardLibraryDebugMode) {
-                          $content = @'
+                          $toolchainFileAppendix += @'
               
               # For libstdc++, enable the debug mode for all configurations by defining `_GLIBCXX_DEBUG`.
               set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -D_GLIBCXX_DEBUG")
               '@
-                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
                       }
                   }
                   else {
@@ -114,7 +117,7 @@ jobs:
               elseif ('${{ parameters.cxxCompiler }}' -eq 'Clang' -or '${{ parameters.cxxCompiler }}' -eq 'AppleClang') {
                   if ($cxxStandardLibrary -eq '' -or $cxxStandardLibrary -eq 'default' -or $cxxStandardLibrary -eq 'libc++') {
                       if ($cxxStandardLibraryDebugMode) {
-                          $content = @'
+                          $toolchainFileAppendix += @'
               
               # For libc++, enable iterator debugging + assertions (`_LIBCPP_DEBUG=1`) in the Debug build; for Release builds, enable iterator
               # debugging only (`_LIBCPP_DEBUG=0`).
@@ -123,23 +126,20 @@ jobs:
               set(CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT "${CMAKE_CXX_FLAGS_RELWITHDEBINFO_INIT} -D_LIBCPP_DEBUG=0")
               set(CMAKE_CXX_FLAGS_RELEASE_INIT "${CMAKE_CXX_FLAGS_RELEASE_INIT} -D_LIBCPP_DEBUG=0")
               '@
-                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
                       }
                   }
                   elseif ($cxxStandardLibrary -eq 'libstdc++') {
-                      $content = @'
+                      $toolchainFileAppendix += @'
               
               # Use libstdc++ as standard library.
               set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -stdlib=libstdc++")
               '@
-                      Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
                       if ($cxxStandardLibraryDebugMode) {
-                          $content = @'
+                          $toolchainFileAppendix += @'
               
               # For libstdc++, enable the debug mode for all configurations by defining `_GLIBCXX_DEBUG`.
               set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -D_GLIBCXX_DEBUG")
               '@
-                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
                       }
                   }
                   else {
@@ -147,16 +147,12 @@ jobs:
                   }
               }
               $cxxSanitizers = '${{ join(';', parameters.cxxSanitizers) }}'.split(';', [System.StringSplitOptions]::RemoveEmptyEntries) | select -Unique
+              $sanitizeCompileFlags = @()
+              $sanitizeLinkFlags = @()
               if ('${{ parameters.cxxCompiler }}' -eq 'MSVC') {
                   foreach ($sanitizer in $cxxSanitizers) {
                       if ($sanitizer -eq 'ASan' -or $sanitizer -eq 'AddressSanitizer') {
-                          $content = @'
-
-              # Enable AddressSanitizer for MSVC.
-              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} /fsanitize=address")
-              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} /fsanitize=address")
-              '@
-                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                          $sanitizeCompileFlags += @('/fsanitize=address')
                       }
                       else {
                           throw "Unsupported C++ sanitizer '$sanitizer' for ${{ parameters.cxxCompiler }}"
@@ -164,79 +160,73 @@ jobs:
                   }
               }
               elseif ('${{ parameters.cxxCompiler }}' -eq 'Clang' -or '${{ parameters.cxxCompiler }}' -eq 'AppleClang') {
+                  $anySan = $false
+                  $anyUBSan = $false
                   foreach ($sanitizer in $cxxSanitizers) {
                       if ($sanitizer -eq 'ASan' -or $sanitizer -eq 'AddressSanitizer') {
-                          $content = @'
-
-              # Enable AddressSanitizer for Clang.
-              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fsanitize=address -fno-omit-frame-pointer")
-              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fsanitize=address -fno-omit-frame-pointer")
-              set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -fsanitize=address")
-              set(CMAKE_MODULE_LINKER_FLAGS_INIT "${CMAKE_MODULE_LINKER_FLAGS_INIT} -fsanitize=address")
-              set(CMAKE_SHARED_LINKER_FLAGS_INIT "${CMAKE_SHARED_LINKER_FLAGS_INIT} -fsanitize=address")
-              '@
-                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                          $sanitizeCompileFlags += @('-fsanitize=address')
+                          $sanitizeLinkFlags += @('/fsanitize=address')
+                          $anySan = $true
                       }
                       elseif ($sanitizer -eq 'UBSan' -or $sanitizer -eq 'UndefinedBehaviorSanitizer') {
-                          $content = @'
-
-              # Enable UndefinedBehaviorSanitizer for Clang.
-              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fsanitize=undefined -fno-omit-frame-pointer -fsanitize-trap=undefined")
-              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fsanitize=undefined -fno-omit-frame-pointer -fsanitize-trap=undefined")
-              set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -fsanitize=undefined")
-              set(CMAKE_MODULE_LINKER_FLAGS_INIT "${CMAKE_MODULE_LINKER_FLAGS_INIT} -fsanitize=undefined")
-              set(CMAKE_SHARED_LINKER_FLAGS_INIT "${CMAKE_SHARED_LINKER_FLAGS_INIT} -fsanitize=undefined")
-              '@
-                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                          $sanitizeCompileFlags += @('-fsanitize=undefined')
+                          $anySan = $true
+                          $anyUBSan = $true
                       }
                       elseif ($sanitizer -eq 'ImplicitIntegerArithmeticValueChange') {
-                          $content = @'
-
-              # Enable "implicit-integer-arithmetic-value-change" sanitizer for Clang.
-              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fno-omit-frame-pointer -fsanitize-trap=undefined -fsanitize=implicit-integer-arithmetic-value-change")
-              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fno-omit-frame-pointer -fsanitize-trap=undefined -fsanitize=implicit-integer-arithmetic-value-change")
-              set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -fsanitize=undefined")
-              set(CMAKE_MODULE_LINKER_FLAGS_INIT "${CMAKE_MODULE_LINKER_FLAGS_INIT} -fsanitize=undefined")
-              set(CMAKE_SHARED_LINKER_FLAGS_INIT "${CMAKE_SHARED_LINKER_FLAGS_INIT} -fsanitize=undefined")
-              '@
-                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                          $sanitizeCompileFlags += @('-fsanitize=implicit-integer-arithmetic-value-change')
+                          $anySan = $true
+                          $anyUBSan = $true
                       }
                       else {
                           throw "Unsupported C++ sanitizer '$sanitizer' for ${{ parameters.cxxCompiler }}"
                       }
+                  }
+                  if ($anySan) {
+                      $sanitizeCompileFlags += @('-fno-omit-frame-pointer')
+                  }
+                  if ($anyUBSan) {
+                      $sanitizeCompileFlags += @('-fsanitize-trap=undefined')
+                      $sanitizeLinkFlags += @('/fsanitize=undefined')
                   }
               }
               elseif ('${{ parameters.cxxCompiler }}' -eq 'GCC') {
+                  $anySan = $false
                   foreach ($sanitizer in $cxxSanitizers) {
                       if ($sanitizer -eq 'ASan' -or $sanitizer -eq 'AddressSanitizer') {
-                          $content = @'
-
-              # Enable AddressSanitizer for GCC.
-              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fsanitize=address -fno-omit-frame-pointer")
-              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fsanitize=address -fno-omit-frame-pointer")
-              set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -fsanitize=address")
-              set(CMAKE_MODULE_LINKER_FLAGS_INIT "${CMAKE_MODULE_LINKER_FLAGS_INIT} -fsanitize=address")
-              set(CMAKE_SHARED_LINKER_FLAGS_INIT "${CMAKE_SHARED_LINKER_FLAGS_INIT} -fsanitize=address")
-              '@
-                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                          $sanitizeCompileFlags += @('-fsanitize=address')
+                          $sanitizeLinkFlags += @('/fsanitize=address')
+                          $anySan = $true
                       }
                       elseif ($sanitizer -eq 'UBSan' -or $sanitizer -eq 'UndefinedBehaviorSanitizer') {
-                          $content = @'
-
-              # Enable UndefinedBehaviorSanitizer for GCC.
-              set(CMAKE_C_FLAGS_INIT "${CMAKE_C_FLAGS_INIT} -fsanitize=undefined -fno-omit-frame-pointer -fsanitize-undefined-trap-on-error")
-              set(CMAKE_CXX_FLAGS_INIT "${CMAKE_CXX_FLAGS_INIT} -fsanitize=undefined -fno-omit-frame-pointer -fsanitize-undefined-trap-on-error")
-              set(CMAKE_EXE_LINKER_FLAGS_INIT "${CMAKE_EXE_LINKER_FLAGS_INIT} -fsanitize=undefined")
-              set(CMAKE_MODULE_LINKER_FLAGS_INIT "${CMAKE_MODULE_LINKER_FLAGS_INIT} -fsanitize=undefined")
-              set(CMAKE_SHARED_LINKER_FLAGS_INIT "${CMAKE_SHARED_LINKER_FLAGS_INIT} -fsanitize=undefined")
-              '@
-                          Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $content
+                          $sanitizeCompileFlags += @('-fsanitize=undefined', '-fsanitize-undefined-trap-on-error')
+                          $sanitizeLinkFlags += @('/fsanitize=undefined')
+                          $anySan = $true
                       }
                       else {
                           throw "Unsupported C++ sanitizer '$sanitizer' for ${{ parameters.cxxCompiler }}"
                       }
                   }
+                  if ($anySan) {
+                      $sanitizeCompileFlags += @('-fno-omit-frame-pointer')
+                  }
               }
+              if ($sanitizeCompileFlags.Count -ne 0) {
+                  $toolchainFileAppendix += @"
+              
+              # Enable sanitizers for ${{ parameters.cxxCompiler }}.
+              set(CMAKE_C_FLAGS_INIT "`${CMAKE_C_FLAGS_INIT} $($sanitizeCompileFlags -join ' ')")
+              set(CMAKE_CXX_FLAGS_INIT "`${CMAKE_CXX_FLAGS_INIT} $($sanitizeCompileFlags -join ' ')")
+                  "@
+                  if ($sanitizeLinkFlags.Count -ne 0) {
+                      $toolchainFileAppendix += @"
+              set(CMAKE_EXE_LINKER_FLAGS_INIT "`${CMAKE_EXE_LINKER_FLAGS_INIT} $($sanitizeLinkFlags -join ' ')")
+              set(CMAKE_MODULE_LINKER_FLAGS_INIT "`${CMAKE_MODULE_LINKER_FLAGS_INIT} $($sanitizeLinkFlags -join ' ')")
+              set(CMAKE_SHARED_LINKER_FLAGS_INIT "`${CMAKE_SHARED_LINKER_FLAGS_INIT} $($sanitizeLinkFlags -join ' ')")
+                      "@
+                  }
+              }
+              Add-Content -Path '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake' -Value $toolchainFileAppendix
               echo "Toolchain file:"
               echo "--------------------"
               Get-Content '$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake'
