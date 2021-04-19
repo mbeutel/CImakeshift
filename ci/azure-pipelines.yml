@@ -65,7 +65,7 @@ jobs:
       cxxCompiler: MSVC
       cxxCompilerVersions: [19_2]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [11_0, 11_1, 11_2]
+      cudaCompilerVersions: [10_1, 10_2, 11_0, 11_1, 11_2]
       platforms: [x64]
       vcpkgPackages: ['<vcpkgPackages>', 'catch2']
       cudaPackages: ['nvrtc-dev']
@@ -119,6 +119,15 @@ jobs:
       tag: 'sanitize'
       vcpkgTriplet: <platform>-<os>-sanitize
       cmakeBuildConfigurations: [Debug, RelWithDebInfo]
+
+    - os: Linux
+      cxxCompiler: GCC
+      cxxCompilerVersions: [6]
+      cudaCompiler: NVCC
+      cudaCompilerVersions: [10_1, 10_2]
+      platforms: [x64]
+      cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
+      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 
     - os: Linux
       cxxCompiler: GCC
