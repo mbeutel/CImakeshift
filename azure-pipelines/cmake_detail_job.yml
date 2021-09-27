@@ -463,6 +463,7 @@ jobs:
                               '9' = 'http://releases.llvm.org/9.0.0/LLVM-9.0.0-win64.exe'
                               '10' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/LLVM-10.0.0-win64.exe'
                               '11' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/LLVM-11.0.1-win64.exe'
+                              '12' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/LLVM-12.0.1-win64.exe'
                           }
                           $clangURL = $clangCompilerVersion_URL['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                           Invoke-WebRequest $clangURL -OutFile "$HOME/LLVM-installer.exe"
@@ -477,6 +478,8 @@ jobs:
                           '11.0' = 'http://developer.download.nvidia.com/compute/cuda/11.0.2/network_installers/cuda_11.0.2_win10_network.exe'
                           '11.1' = 'http://developer.download.nvidia.com/compute/cuda/11.1.1/network_installers/cuda_11.1.1_win10_network.exe'
                           '11.2' = 'http://developer.download.nvidia.com/compute/cuda/11.2.1/network_installers/cuda_11.2.1_win10_network.exe'
+                          '11.3' = 'https://developer.download.nvidia.com/compute/cuda/11.3.0/network_installers/cuda_11.3.0_win10_network.exe'
+                          '11.4' = 'https://developer.download.nvidia.com/compute/cuda/11.4.0/network_installers/cuda_11.4.0_win10_network.exe'
                       }
                       Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
                       Write-Host '[CImakeshift] Installing CUDA packages $(CIMAKESHIFT_CUDA_PACKAGES)'
@@ -622,7 +625,10 @@ jobs:
                           '12'     = '12.4'    # also 12.0, 12.1, 12.2, 12.3
                           '12_0'   = '12.4'
                           '12_0_0' = '12.4'
-                          #'12_0_5' = '12.5'  # currently in beta
+                          '12_0_5' = '12.5'
+                          '13'     = '13.0'
+                          '13_0'   = '13.0'
+                          '13_0_0' = '13.0'
                       }
                       $xcodeVersion = $appleClangVersion_xcodeVersion['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                       & sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer
