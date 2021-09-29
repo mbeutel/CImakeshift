@@ -53,11 +53,12 @@ jobs:
 
     - os: Windows
       cxxCompiler: MSVC
-      cxxCompilerVersions: [19_1, 19_2]
+      cxxCompilerVersions: [19_1, 19_2, 12_3]
       platforms: [x86, x64]
 
     - os: Windows
       cxxCompiler: Clang
+      #cxxCompilerVersions: [12, VS2022]
       cxxCompilerVersions: [12, VS2019]
       platforms: [x86, x64]
 
@@ -170,11 +171,13 @@ jobs:
 
     - os: Windows
       cxxCompiler: MSVC
+      #cxxCompilerVersions: [19_3]
       cxxCompilerVersions: [19_2]
       platforms: [x64]
 
     - os: Windows
       cxxCompiler: Clang
+      #cxxCompilerVersions: [12, VS2022]
       cxxCompilerVersions: [12, VS2019]
       platforms: [x64]
 
