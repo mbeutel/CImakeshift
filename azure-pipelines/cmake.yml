@@ -1,5 +1,5 @@
 # Azure Pipelines job template for CMake builds
-# Version 0.4.1
+# Version 0.4.2
 # Author: Moritz Beutel
 #
 #
@@ -19,10 +19,10 @@
 # Supported compiler versions:
 #
 # Windows:
-#   MSVC:               19_1, 19_2
-#                       (also known as VS2017, VS2019)
-#   Clang:              10, 11, 12, VS2019
-#                       (VS2019 indicates the version of Clang that ships with VS)
+#   MSVC:               19_1, 19_2, 19_3
+#                       (also known as VS2017, VS2019, VS2022)
+#   Clang:              VS2019, VS2022
+#                       (the version of Clang that ships with VS)
 #   NVCC:               10_1, 10_2, 11_0, 11_1, 11_2, 11_3, 11_4
 #
 # Linux:
