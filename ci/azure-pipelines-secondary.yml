@@ -53,7 +53,7 @@ jobs:
 
     - os: Windows
       cxxCompiler: Clang
-      cxxCompilerVersions: [10, 11]
+      cxxCompilerVersions: [10, 11, 12]
       platforms: [x86, x64]
 
     - os: Windows
@@ -92,7 +92,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [5, 6, 7, 8, 9, 10]
+      cxxCompilerVersions: [5, 6, 7, 8, 9, 10, 11]
       platforms: [x64]
 
     - os: Linux

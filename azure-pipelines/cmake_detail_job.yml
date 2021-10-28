@@ -477,6 +477,7 @@ jobs:
                               '10' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/LLVM-10.0.0-win64.exe'
                               '11' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/LLVM-11.0.1-win64.exe'
                               '12' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/LLVM-12.0.1-win64.exe'
+                              '13' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/LLVM-13.0.0-win64.exe'
                           }
                           $clangURL = $clangCompilerVersion_URL['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                           Invoke-WebRequest $clangURL -OutFile "$HOME/LLVM-installer.exe"

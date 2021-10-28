@@ -59,7 +59,7 @@ jobs:
     - os: Windows
       cxxCompiler: Clang
       #cxxCompilerVersions: [12, VS2022]
-      cxxCompilerVersions: [12, VS2019]
+      cxxCompilerVersions: [13, VS2019]
       platforms: [x86, x64]
 
     - os: Windows
@@ -107,12 +107,12 @@ jobs:
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [4, 11]
+      cxxCompilerVersions: [4, 12]
       platforms: [x64]
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [12]
+      cxxCompilerVersions: [13]
       cxxStandardLibrary: libstdc++
       cxxStandardLibraryDebugMode: true
       cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer, ImplicitIntegerArithmeticValueChange]
@@ -188,7 +188,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [12]
+      cxxCompilerVersions: [13]
       platforms: [x64]
 
     - os: MacOS

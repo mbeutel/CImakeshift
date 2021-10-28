@@ -1,5 +1,5 @@
 # Azure Pipelines job template for CMake builds
-# Version 0.4.2
+# Version 0.4.3
 # Author: Moritz Beutel
 #
 #
@@ -27,7 +27,7 @@
 #
 # Linux:
 #   GCC:                5, 6, 7, 8, 9, 10, 11
-#   Clang:              4, 5, 6, 7, 8, 9, 10, 11, 12
+#   Clang:              4, 5, 6, 7, 8, 9, 10, 11, 12, 13
 #   NVCC:               10_1, 10_2 (only with GCC 6 and earlier or Clang 5 and earlier)
 #                       11_0, 11_1, 11_2, 11_3, 11_4
 #
