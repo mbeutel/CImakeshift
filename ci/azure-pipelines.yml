@@ -137,7 +137,7 @@ jobs:
       cudaCompiler: NVCC
       cudaCompilerVersions: [11_0]
       platforms: [x64]
-      vcpkgPackages: ['catch2', 'cmakeshift', 'gsl-lite']
+      vcpkgPackages: ['catch2', 'gsl-lite']
       cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
       cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 

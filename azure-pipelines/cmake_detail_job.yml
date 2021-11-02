@@ -421,6 +421,7 @@ jobs:
               $vcpkgManifestFile = ''
               if ('${{ parameters.vcpkgRef }}' -and (Test-Path '${{ parameters.cmakeSourceDir }}/vcpkg.json')) {
                   $vcpkgManifestFile = '${{ parameters.cmakeSourceDir }}/vcpkg.json | '
+                  $cacheKey += ' | ${{ parameters.cmakeSourceDir }}/vcpkg.json'
               }
 
               # public variables accessible to custom job steps
@@ -526,6 +527,7 @@ jobs:
                       elseif ([int]'$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ge 11) {
                           $clangRepository = "llvm-toolchain-$osVersionName-$(CIMAKESHIFT_CLANG_FULL_VERSION_)"
                           & sudo apt-add-repository "deb http://apt.llvm.org/$osVersionName/ $clangRepository main"
+                          & wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | & sudo apt-key add -
                       }
                       $packages += 'clang-$(CIMAKESHIFT_CLANG_FULL_VERSION_)'
                   }
