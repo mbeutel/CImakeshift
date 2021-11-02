@@ -54,7 +54,7 @@ jobs:
 
     - os: Windows
       cxxCompiler: MSVC
-      cxxCompilerVersions: [19_1, 19_2, 12_3]
+      cxxCompilerVersions: [19_1, 19_2, 19_3]
       platforms: [x86, x64]
 
     - os: Windows
