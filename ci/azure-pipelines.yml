@@ -119,7 +119,7 @@ jobs:
       cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer, ImplicitIntegerArithmeticValueChange]
       platforms: [x64]
       tag: 'sanitize'
-      vcpkgTriplet: <platform>-<os>-sanitize
+      vcpkgTriplet: <platform>-<os>
       cmakeBuildConfigurations: [Debug, RelWithDebInfo]
 
     - os: Linux
