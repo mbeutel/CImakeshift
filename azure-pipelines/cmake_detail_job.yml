@@ -54,9 +54,9 @@ jobs:
           displayName: '${{ replace(replace(replace(format(''<_captionBegin_>{0}<_captionEnd_>'', parameters.caption), ''<_captionBegin_><_captionEnd_>'', ''''), ''<_captionBegin_>'', ''''), ''<_captionEnd_>'', '': '') }}${{ parameters.os }} ${{ platform }}, ${{ parameters.cxxCompiler }} ${{ replace(cxxCompilerVersion, ''_'', ''.'') }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', replace(cudaCompilerVersion, ''_'', ''.'')), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format('', {0} '', parameters.cudaCompiler)) }}, ${{ join(''+'', parameters.cmakeBuildConfigurations) }}${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', parameters.tag), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', '', ''), ''<_tagEnd_>'', '''') }}'
           pool:
             name: Azure Pipelines
-            ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2022')), and(eq(parameters.cxxCompiler, 'MSVC'), eq(cxxCompilerVersion, '19_3')))) }}:
+            ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2022')), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, 'VS2022'), eq(cxxCompilerVersion, '19_3'))))) }}:
               vmImage: 'windows-2022'
-            ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2019')), and(eq(parameters.cxxCompiler, 'MSVC'), eq(cxxCompilerVersion, '19_2')))) }}:
+            ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2019')), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, 'VS2019'), eq(cxxCompilerVersion, '19_2'))))) }}:
               vmImage: 'windows-2019'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(10, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-22.04'
@@ -280,13 +280,8 @@ jobs:
                       $defaultCmakeGenerator = 'Ninja'
                   }
                   elseif ('${{ parameters.cxxCompiler }}' -eq 'Clang') {
-                      if ('${{ cxxCompilerVersion }}' -eq 'VS2019' -or '${{ cxxCompilerVersion }}' -eq 'VS2022') {
-                          $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-                          $llvmRoot = Join-Path $vsPath 'VC\Tools\Llvm\bin'
-                      }
-                      else {
-                          $llvmRoot = "${env:ProgramFiles}\LLVM\bin"
-                      }
+                      $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+                      $llvmRoot = Join-Path $vsPath 'VC\Tools\Llvm\bin'
                       $extraPath = "$llvmRoot;$extraPath"
                       $clangClPath = "$llvmRoot\clang-cl.exe"
                       $clangClCompatPath = $clangClPath -replace '\\','/'
@@ -468,22 +463,6 @@ jobs:
               }
               if ($IsWindows) {
                   $ninjaOS = 'win'
-                  if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
-                    if ('$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ne 'VS2019' -and '$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ne 'VS2022') {
-                          # TODO: not really supported anymore
-                          $clangCompilerVersion_URL = @{
-                              '9' = 'http://releases.llvm.org/9.0.0/LLVM-9.0.0-win64.exe'
-                              '10' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/LLVM-10.0.0-win64.exe'
-                              '11' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/LLVM-11.0.1-win64.exe'
-                              '12' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/LLVM-12.0.1-win64.exe'
-                              '13' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/LLVM-13.0.0-win64.exe'
-                              '14' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.4/LLVM-14.0.4-win64.exe'
-                          }
-                          $clangURL = $clangCompilerVersion_URL['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
-                          Invoke-WebRequest $clangURL -OutFile "$HOME/LLVM-installer.exe"
-                          Start-Process -Wait "$HOME/LLVM-installer.exe" '/S'
-                      }
-                  }
                   if ('$(CIMAKESHIFT_CUDA_COMPILER)' -and '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -ne 'None') {
                       $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
                       $cudaVersion_URL = @{
@@ -513,13 +492,9 @@ jobs:
                   elseif ($osVersionRaw -eq '20.04') {
                       $osVersionName = 'focal'
                   }
-                  else {  # if ($osVersionRaw -eq '22.04')
+                  elseif ($osVersionRaw -eq '22.04') {
                       $osVersionName = 'jammy'
                   }
-                  #$packages += 'cmake'
-                  #Invoke-WebRequest -OutFile "$HOME/kitware-archive-latest.asc" https://apt.kitware.com/keys/kitware-archive-latest.asc
-                  #& sudo apt-key add "$HOME/kitware-archive-latest.asc"
-                  #& sudo apt-add-repository "deb https://apt.kitware.com/ubuntu/ $osVersionName main"
                   if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                       & sudo apt-add-repository ppa:ubuntu-toolchain-r/test
                       $packages += ('gcc-$(CIMAKESHIFT_CXX_COMPILER_VERSION)', 'g++-$(CIMAKESHIFT_CXX_COMPILER_VERSION)')
@@ -544,11 +519,6 @@ jobs:
                       & sudo apt-key del 7fa2af80
                       & wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu$osVersionFlat/x86_64/cuda-keyring_1.0-1_all.deb
                       & sudo dpkg -i cuda-keyring_1.0-1_all.deb
-                      #Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/cuda-$ubuntuVersion.pin" -OutFile cuda.pin
-                      #& sudo mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
-                      #& sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub"
-                      #& sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/ /"
-                      #$packages += '$(CIMAKESHIFT_CUDA_PACKAGES)'.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
                       $packages += "cuda-toolkit-$cudaVersionDash $(CIMAKESHIFT_CUDA_PACKAGES)".split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
                   }
                   & sudo apt-get update
@@ -668,14 +638,6 @@ jobs:
                 }
                 if (Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json") {
                     # Vcpkg manifest mode
-                    #New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed'
-                    #if ($IsWindows) {
-                    #    New-Item -ItemType SymbolicLink -Path $env:CIMAKESHIFT_CMAKE_SOURCE_DIR -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed'
-                    #    New-Item -ItemType SymbolicLink -Path $env:CIMAKESHIFT_CMAKE_SOURCE_DIR -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed'
-                    #}
-                    #else {
-                    #    & ln -s '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed' "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg_installed"
-                    #}
                     cd $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
                     & '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install
                     cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
@@ -712,14 +674,6 @@ jobs:
               - pwsh: |
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  #if ('${{ parameters.vcpkgRef }}' -and (Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json")) {
-                  #    if ($IsWindows) {
-                  #        New-Item -ItemType SymbolicLink -Path . -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed'
-                  #    }
-                  #    else {
-                  #        & ln -s '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed' './vcpkg_installed'
-                  #    }
-                  #}
                   $vcpkgArgs = $env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_ -split ' '
                   $args = $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS -split ' '
                   & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $vcpkgArgs $env:CIMAKESHIFT_CMAKE_SOURCE_DIR $args
