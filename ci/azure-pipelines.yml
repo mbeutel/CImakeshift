@@ -59,8 +59,7 @@ jobs:
 
     - os: Windows
       cxxCompiler: Clang
-      #cxxCompilerVersions: [12, VS2022]
-      cxxCompilerVersions: [13, VS2019]
+      cxxCompilerVersions: [VS2019, VS2022]
       platforms: [x86, x64]
 
     - os: Windows
@@ -187,7 +186,7 @@ jobs:
 
     - os: Windows
       cxxCompiler: Clang
-      cxxCompilerVersions: [14, VS2022]
+      cxxCompilerVersions: [VS2022]
       platforms: [x64]
 
     - os: Linux

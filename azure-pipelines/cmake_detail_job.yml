@@ -54,7 +54,7 @@ jobs:
           displayName: '${{ replace(replace(replace(format(''<_captionBegin_>{0}<_captionEnd_>'', parameters.caption), ''<_captionBegin_><_captionEnd_>'', ''''), ''<_captionBegin_>'', ''''), ''<_captionEnd_>'', '': '') }}${{ parameters.os }} ${{ platform }}, ${{ parameters.cxxCompiler }} ${{ replace(cxxCompilerVersion, ''_'', ''.'') }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', replace(cudaCompilerVersion, ''_'', ''.'')), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format('', {0} '', parameters.cudaCompiler)) }}, ${{ join(''+'', parameters.cmakeBuildConfigurations) }}${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', parameters.tag), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', '', ''), ''<_tagEnd_>'', '''') }}'
           pool:
             name: Azure Pipelines
-            ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), ne(cxxCompilerVersion, 'VS2019')), and(eq(parameters.cxxCompiler, 'MSVC'), eq(cxxCompilerVersion, '19_3')))) }}:
+            ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2022')), and(eq(parameters.cxxCompiler, 'MSVC'), eq(cxxCompilerVersion, '19_3')))) }}:
               vmImage: 'windows-2022'
             ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2019')), and(eq(parameters.cxxCompiler, 'MSVC'), eq(cxxCompilerVersion, '19_2')))) }}:
               vmImage: 'windows-2019'
@@ -470,6 +470,7 @@ jobs:
                   $ninjaOS = 'win'
                   if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
                     if ('$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ne 'VS2019' -and '$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ne 'VS2022') {
+                          # TODO: not really supported anymore
                           $clangCompilerVersion_URL = @{
                               '9' = 'http://releases.llvm.org/9.0.0/LLVM-9.0.0-win64.exe'
                               '10' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-10.0.0/LLVM-10.0.0-win64.exe'
