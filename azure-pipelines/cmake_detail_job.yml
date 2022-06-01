@@ -64,9 +64,9 @@ jobs:
               vmImage: 'ubuntu-20.04'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), ge(6, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), ge(5, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-18.04'
-            ${{ if and(eq(parameters.os, 'MacOS'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(8, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '13'), eq(cxxCompilerVersion, '13_0'), eq(cxxCompilerVersion, '13_0_0'), eq(cxxCompilerVersion, '13_1_6'))))) }}:
+            ${{ if and(eq(parameters.os, 'MacOS'), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '13'), eq(cxxCompilerVersion, '13_0'), eq(cxxCompilerVersion, '13_0_0'), eq(cxxCompilerVersion, '13_1_6')))) }}:
               vmImage: 'macOS-12'
-            ${{ if and(eq(parameters.os, 'MacOS'), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '11_0_3'), eq(cxxCompilerVersion, '12'), eq(cxxCompilerVersion, '12_0'), eq(cxxCompilerVersion, '12_0_0'), eq(cxxCompilerVersion, '12_0_5')))) }}:
+            ${{ if and(eq(parameters.os, 'MacOS'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(8, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '11_0_3'), eq(cxxCompilerVersion, '12'), eq(cxxCompilerVersion, '12_0'), eq(cxxCompilerVersion, '12_0_0'), eq(cxxCompilerVersion, '12_0_5'))))) }}:
               vmImage: 'macOS-11'
             ${{ if and(eq(parameters.os, 'MacOS'), or(and(eq(parameters.cxxCompiler, 'GCC'), ge(8, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '10_0_1'), eq(cxxCompilerVersion, '11'), eq(cxxCompilerVersion, '11_0'), eq(cxxCompilerVersion, '11_0_0'))))) }}:
               vmImage: 'macOS-10.15'
@@ -670,6 +670,7 @@ jobs:
                     #New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed'
                     #if ($IsWindows) {
                     #    New-Item -ItemType SymbolicLink -Path $env:CIMAKESHIFT_CMAKE_SOURCE_DIR -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed'
+                    #    New-Item -ItemType SymbolicLink -Path $env:CIMAKESHIFT_CMAKE_SOURCE_DIR -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed'
                     #}
                     #else {
                     #    & ln -s '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed' "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg_installed"
@@ -710,14 +711,14 @@ jobs:
               - pwsh: |
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  if ('${{ parameters.vcpkgRef }}' -and (Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json")) {
-                      if ($IsWindows) {
-                          New-Item -ItemType SymbolicLink -Path . -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed'
-                      }
-                      else {
-                          & ln -s '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed' './vcpkg_installed'
-                      }
-                  }
+                  #if ('${{ parameters.vcpkgRef }}' -and (Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json")) {
+                  #    if ($IsWindows) {
+                  #        New-Item -ItemType SymbolicLink -Path . -Name 'vcpkg_installed' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed'
+                  #    }
+                  #    else {
+                  #        & ln -s '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_manifest_installed' './vcpkg_installed'
+                  #    }
+                  #}
                   $vcpkgArgs = $env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_ -split ' '
                   $args = $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS -split ' '
                   & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $vcpkgArgs $env:CIMAKESHIFT_CMAKE_SOURCE_DIR $args
