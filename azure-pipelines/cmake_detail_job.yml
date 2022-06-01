@@ -58,8 +58,10 @@ jobs:
               vmImage: 'windows-2022'
             ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2019')), and(eq(parameters.cxxCompiler, 'MSVC'), eq(cxxCompilerVersion, '19_2')))) }}:
               vmImage: 'windows-2019'
-            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(6, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(5, cxxCompilerVersion)))) }}:
+            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(10, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-22.04'
+            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(6, cxxCompilerVersion), ge(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(5, cxxCompilerVersion), ge(10, cxxCompilerVersion)))) }}:
+              vmImage: 'ubuntu-20.04'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), ge(6, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), ge(5, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-18.04'
             ${{ if and(eq(parameters.os, 'MacOS'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(8, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '13'), eq(cxxCompilerVersion, '13_0'), eq(cxxCompilerVersion, '13_0_0'), eq(cxxCompilerVersion, '13_1_6'))))) }}:
@@ -245,6 +247,7 @@ jobs:
 
           - pwsh: |
               $revision = '5'  # Update this when making incompatible changes to the build pipeline definition.
+              echo "DEBUG: IsWindows: $IsWindows, IsLinux: $IsLinux, IsMacOS: $IsMacOS"
               if ($IsWindows) { $tripletOS = 'windows' }
               elseif ($IsLinux) { $tripletOS = 'linux' }
               elseif ($IsMacOS) { $tripletOS = 'osx' }
