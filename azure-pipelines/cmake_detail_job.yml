@@ -64,7 +64,7 @@ jobs:
               vmImage: 'ubuntu-18.04'
             ${{ if and(eq(parameters.os, 'MacOS'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(8, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '13'), eq(cxxCompilerVersion, '13_0'), eq(cxxCompilerVersion, '13_0_0'), eq(cxxCompilerVersion, '13_1_6'))))) }}:
               vmImage: 'macOS-12'
-            ${{ if and(eq(parameters.os, 'MacOS'), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '11_0_3'), eq(cxxCompilerVersion, '12'), eq(cxxCompilerVersion, '12_0'), eq(cxxCompilerVersion, '12_0_0'), eq(cxxCompilerVersion, '12_0_5'), eq(cxxCompilerVersion, '13'), eq(cxxCompilerVersion, '13_0'), eq(cxxCompilerVersion, '13_0_0'), eq(cxxCompilerVersion, '13_1_6')))) }}:
+            ${{ if and(eq(parameters.os, 'MacOS'), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '11_0_3'), eq(cxxCompilerVersion, '12'), eq(cxxCompilerVersion, '12_0'), eq(cxxCompilerVersion, '12_0_0'), eq(cxxCompilerVersion, '12_0_5')))) }}:
               vmImage: 'macOS-11'
             ${{ if and(eq(parameters.os, 'MacOS'), or(and(eq(parameters.cxxCompiler, 'GCC'), ge(8, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '10_0_1'), eq(cxxCompilerVersion, '11'), eq(cxxCompilerVersion, '11_0'), eq(cxxCompilerVersion, '11_0_0'))))) }}:
               vmImage: 'macOS-10.15'
