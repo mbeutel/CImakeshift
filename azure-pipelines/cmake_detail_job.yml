@@ -54,9 +54,9 @@ jobs:
           displayName: '${{ replace(replace(replace(format(''<_captionBegin_>{0}<_captionEnd_>'', parameters.caption), ''<_captionBegin_><_captionEnd_>'', ''''), ''<_captionBegin_>'', ''''), ''<_captionEnd_>'', '': '') }}${{ parameters.os }} ${{ platform }}, ${{ parameters.cxxCompiler }} ${{ replace(cxxCompilerVersion, ''_'', ''.'') }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', replace(cudaCompilerVersion, ''_'', ''.'')), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format('', {0} '', parameters.cudaCompiler)) }}, ${{ join(''+'', parameters.cmakeBuildConfigurations) }}${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', parameters.tag), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', '', ''), ''<_tagEnd_>'', '''') }}'
           pool:
             name: Azure Pipelines
-            ${{ if and(eq(parameters.os, 'Windows'), or(eq(cxxCompilerVersion, 'VS2022'), and(eq(parameters.cxxCompiler, 'MSVC'), eq(cxxCompilerVersion, '19_3')))) }}:
+            ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2022')), and(eq(parameters.cxxCompiler, 'MSVC'), eq(cxxCompilerVersion, '19_3')))) }}:
               vmImage: 'windows-2022'
-            ${{ if and(eq(parameters.os, 'Windows'), or(eq(parameters.cxxCompiler, 'Clang'), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, '19_2'), eq(cxxCompilerVersion, 'VS2019'))))) }}:
+            ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2019')), and(eq(parameters.cxxCompiler, 'MSVC'), eq(cxxCompilerVersion, '19_2')))) }}:
               vmImage: 'windows-2019'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(6, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(5, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-22.04'
