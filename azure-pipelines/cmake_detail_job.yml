@@ -56,21 +56,18 @@ jobs:
             name: Azure Pipelines
             ${{ if and(eq(parameters.os, 'Windows'), or(eq(cxxCompilerVersion, 'VS2022'), and(eq(parameters.cxxCompiler, 'MSVC'), eq(cxxCompilerVersion, '19_3')))) }}:
               vmImage: 'windows-2022'
-            #${{ if and(eq(parameters.os, 'Windows'), or(eq(cxxCompilerVersion, 'VS2019'), and(eq(parameters.cxxCompiler, 'MSVC'), eq(cxxCompilerVersion, '19_2')))) }}:
             ${{ if and(eq(parameters.os, 'Windows'), or(eq(parameters.cxxCompiler, 'Clang'), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, '19_2'), eq(cxxCompilerVersion, 'VS2019'))))) }}:
               vmImage: 'windows-2019'
-            ${{ if and(eq(parameters.os, 'Windows'), or(eq(cxxCompilerVersion, 'VS2017'), and(eq(parameters.cxxCompiler, 'MSVC'), eq(cxxCompilerVersion, '19_1')))) }}:
-              vmImage: 'vs2017-win2016'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(6, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(5, cxxCompilerVersion)))) }}:
-              vmImage: 'ubuntu-20.04'
+              vmImage: 'ubuntu-22.04'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), ge(6, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), ge(5, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-18.04'
-            ${{ if and(eq(parameters.os, 'MacOS'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(8, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '11_0_3'), eq(cxxCompilerVersion, '12'), eq(cxxCompilerVersion, '12_0'), eq(cxxCompilerVersion, '12_0_0'), eq(cxxCompilerVersion, '12_0_5'), eq(cxxCompilerVersion, '13'), eq(cxxCompilerVersion, '13_0'), eq(cxxCompilerVersion, '13_0_0'))))) }}:
+            ${{ if and(eq(parameters.os, 'MacOS'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(8, cxxCompilerVersion)), and(eq(cxxCompilerVersion, '13'), eq(cxxCompilerVersion, '13_0'), eq(cxxCompilerVersion, '13_0_0'), eq(cxxCompilerVersion, '13_1_6'))))) }}:
+              vmImage: 'macOS-12'
+            ${{ if and(eq(parameters.os, 'MacOS'), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '11_0_3'), eq(cxxCompilerVersion, '12'), eq(cxxCompilerVersion, '12_0'), eq(cxxCompilerVersion, '12_0_0'), eq(cxxCompilerVersion, '12_0_5'), eq(cxxCompilerVersion, '13'), eq(cxxCompilerVersion, '13_0'), eq(cxxCompilerVersion, '13_0_0'), eq(cxxCompilerVersion, '13_1_6')))) }}:
               vmImage: 'macOS-11'
             ${{ if and(eq(parameters.os, 'MacOS'), or(and(eq(parameters.cxxCompiler, 'GCC'), ge(8, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '10_0_1'), eq(cxxCompilerVersion, '11'), eq(cxxCompilerVersion, '11_0'), eq(cxxCompilerVersion, '11_0_0'))))) }}:
               vmImage: 'macOS-10.15'
-            ${{ if and(eq(parameters.os, 'MacOS'), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '9_1'), eq(cxxCompilerVersion, '9_1_0'), eq(cxxCompilerVersion, '10'), eq(cxxCompilerVersion, '10_0'), eq(cxxCompilerVersion, '10_0_0')))) }}:
-              vmImage: 'macOS-10.14'
           steps:
           - pwsh: |
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_files'
@@ -266,8 +263,6 @@ jobs:
                       echo "##vso[task.setvariable variable=CC]cl.exe"
                       echo "##vso[task.setvariable variable=CXX]cl.exe"
                       $msvcOrVSVersion_msvcVersion = @{
-                          '19_1'   = '19_1'
-                          'VS2017' = '19_1'
                           '19_2'   = '19_2'
                           'VS2019' = '19_2'
                           '19_3'   = '19_3'
@@ -275,7 +270,6 @@ jobs:
                       }
                       $cxxCompilerVersion = $msvcOrVSVersion_msvcVersion[$cxxCompilerVersion]
                       $msvcVersion_msbuildGenerator = @{
-                          '19_1' = 'Visual Studio 15 2017'
                           '19_2' = 'Visual Studio 16 2019'
                           '19_3' = 'Visual Studio 17 2022'
                       }
@@ -479,6 +473,7 @@ jobs:
                               '11' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-11.0.1/LLVM-11.0.1-win64.exe'
                               '12' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-12.0.1/LLVM-12.0.1-win64.exe'
                               '13' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-13.0.0/LLVM-13.0.0-win64.exe'
+                              '14' = 'https://github.com/llvm/llvm-project/releases/download/llvmorg-14.0.4/LLVM-14.0.4-win64.exe'
                           }
                           $clangURL = $clangCompilerVersion_URL['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                           Invoke-WebRequest $clangURL -OutFile "$HOME/LLVM-installer.exe"
@@ -495,6 +490,9 @@ jobs:
                           '11.2' = 'http://developer.download.nvidia.com/compute/cuda/11.2.1/network_installers/cuda_11.2.1_win10_network.exe'
                           '11.3' = 'https://developer.download.nvidia.com/compute/cuda/11.3.1/network_installers/cuda_11.3.1_win10_network.exe'
                           '11.4' = 'https://developer.download.nvidia.com/compute/cuda/11.4.2/network_installers/cuda_11.4.2_win10_network.exe'
+                          '11.5' = 'https://developer.download.nvidia.com/compute/cuda/11.5.2/network_installers/cuda_11.5.2_windows_network.exe'
+                          '11.6' = 'https://developer.download.nvidia.com/compute/cuda/11.6.2/network_installers/cuda_11.6.2_windows_network.exe'
+                          '11.7' = 'https://developer.download.nvidia.com/compute/cuda/11.7.0/network_installers/cuda_11.7.0_windows_network.exe'
                       }
                       Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
                       Write-Host '[CImakeshift] Installing CUDA packages $(CIMAKESHIFT_CUDA_PACKAGES)'
@@ -508,8 +506,11 @@ jobs:
                   if ($osVersionRaw -eq '18.04') {
                       $osVersionName = 'bionic'
                   }
-                  else {
+                  elseif ($osVersionRaw -eq '20.04') {
                       $osVersionName = 'focal'
+                  }
+                  else {  # if ($osVersionRaw -eq '22.04')
+                      $osVersionName = 'jammy'
                   }
                   #$packages += 'cmake'
                   #Invoke-WebRequest -OutFile "$HOME/kitware-archive-latest.asc" https://apt.kitware.com/keys/kitware-archive-latest.asc
@@ -533,13 +534,18 @@ jobs:
                   }
                   if ('$(CIMAKESHIFT_CUDA_COMPILER)' -and '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -ne 'None') {
                       $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
+                      $cudaVersionDash = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','-'
                       $osVersionFlat = $osVersionRaw -replace [regex]::escape('.'),''
                       $ubuntuVersion = "ubuntu$osVersionFlat"
-                      Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/cuda-$ubuntuVersion.pin" -OutFile cuda.pin
-                      & sudo mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
-                      & sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub"
-                      & sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/ /"
-                      $packages += '$(CIMAKESHIFT_CUDA_PACKAGES)'.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
+                      & sudo apt-key del 7fa2af80
+                      & wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu$osVersionFlat/x86_64/cuda-keyring_1.0-1_all.deb
+                      & sudo dpkg -i cuda-keyring_1.0-1_all.deb
+                      #Invoke-WebRequest "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/cuda-$ubuntuVersion.pin" -OutFile cuda.pin
+                      #& sudo mv cuda.pin /etc/apt/preferences.d/cuda-repository-pin-600
+                      #& sudo apt-key adv --fetch-keys "https://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/7fa2af80.pub"
+                      #& sudo add-apt-repository "deb http://developer.download.nvidia.com/compute/cuda/repos/$ubuntuVersion/x86_64/ /"
+                      #$packages += '$(CIMAKESHIFT_CUDA_PACKAGES)'.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
+                      $packages += "cuda-toolkit-$cudaVersionDash $(CIMAKESHIFT_CUDA_PACKAGES)".split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
                   }
                   & sudo apt-get update
                   Write-Host "[CImakeshift] Installing packages $packages"
@@ -561,12 +567,8 @@ jobs:
                   if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                       & brew install gcc@$(CIMAKESHIFT_CXX_COMPILER_VERSION)
                   }
-                  if ($osVersion -lt '10.15') {
-                      # https://stackoverflow.com/a/52530212
-                      sudo installer -pkg /Library/Developer/CommandLineTools/Packages/macOS_SDK_headers_for_macOS_10.14.pkg
-                  }
               }
-              $ninjaVersion = '1.10.2'
+              $ninjaVersion = '1.11.0'
               Invoke-WebRequest "https://github.com/ninja-build/ninja/releases/download/v${ninjaVersion}/ninja-$ninjaOS.zip" -OutFile "$HOME/ninja-$ninjaOS.zip"
               Expand-Archive -LiteralPath "$HOME/ninja-$ninjaOS.zip" -DestinationPath "$HOME/bin"
               if (-not $IsWindows) {
@@ -628,11 +630,6 @@ jobs:
                   }
                   elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang') {
                       $appleClangVersion_xcodeVersion = @{
-                          '9_1'    = '9.4.1'
-                          '9_1_0'  = '9.4.1'
-                          '10'     = '10.1'    # also 10
-                          '10_0'   = '10.1'
-                          '10_0_0' = '10.1'
                           '10_0_1' = '10.3'    # also 10.2, 10.2.1
                           '11'     = '11.3.1'  # also 11.1, 11.2, 11.2.1, 11.3
                           '11_0'   = '11.3.1'
@@ -642,9 +639,10 @@ jobs:
                           '12_0'   = '12.4'
                           '12_0_0' = '12.4'
                           '12_0_5' = '12.5.1'  # also 12.5
-                          '13'     = '13.0'
-                          '13_0'   = '13.0'
-                          '13_0_0' = '13.0'
+                          '13'     = '13.2.1'
+                          '13_0'   = '13.2.1'
+                          '13_0_0' = '13.2.1'
+                          '13_1_6' = '13.4'
                       }
                       $xcodeVersion = $appleClangVersion_xcodeVersion['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                       & sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer

@@ -21,7 +21,7 @@ jobs:
 - template: azure-pipelines/cmake.yml@CImakeshift
   parameters:
     caption: Basic
-    vcpkgRef: f79c681fc2b42f9c7c5024459b5a867d56ac6123
+    vcpkgRef: f78f4440df86358575dea65e748a39fdad41eb85
     #vcpkgOverlayRepo: 'https://mp-force.ziti.uni-heidelberg.de/asc/infrastructure/vcpkg-ports.git'
     #vcpkgOverlayRef: 28b52673c26e29ccdce93ffa78413f26a0b11c8f
     #vcpkgPackages: ['cmakeshift', 'gsl-lite']
@@ -54,7 +54,7 @@ jobs:
 
     - os: Windows
       cxxCompiler: MSVC
-      cxxCompilerVersions: [19_1, 19_2, 19_3]
+      cxxCompilerVersions: [19_2, 19_3]
       platforms: [x86, x64]
 
     - os: Windows
@@ -67,7 +67,17 @@ jobs:
       cxxCompiler: MSVC
       cxxCompilerVersions: [19_2]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [10_2, 11_4]
+      cudaCompilerVersions: [10_2]
+      platforms: [x64]
+      vcpkgPackages: ['<vcpkgPackages>', 'catch2']
+      cudaPackages: ['nvrtc-dev']
+      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
+
+    - os: Windows
+      cxxCompiler: MSVC
+      cxxCompilerVersions: [19_3]
+      cudaCompiler: NVCC
+      cudaCompilerVersions: [11_7]
       platforms: [x64]
       vcpkgPackages: ['<vcpkgPackages>', 'catch2']
       cudaPackages: ['nvrtc-dev']
@@ -94,12 +104,12 @@ jobs:
 
     - os: Linux
       cxxCompiler: GCC
-      cxxCompilerVersions: [5, 10]
+      cxxCompilerVersions: [5, 11]
       platforms: [x64]
 
     - os: Linux
       cxxCompiler: GCC
-      cxxCompilerVersions: [11]
+      cxxCompilerVersions: [12]
       cxxStandardLibraryDebugMode: true
       cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer]
       platforms: [x64]
@@ -108,12 +118,12 @@ jobs:
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [4, 12]
+      cxxCompilerVersions: [4, 13]
       platforms: [x64]
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [13]
+      cxxCompilerVersions: [14]
       cxxStandardLibrary: libstdc++
       cxxStandardLibraryDebugMode: true
       cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer, ImplicitIntegerArithmeticValueChange]
@@ -143,27 +153,27 @@ jobs:
 
     - os: Linux
       cxxCompiler: GCC
-      cxxCompilerVersions: [9]
+      cxxCompilerVersions: [11]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [11_4]
+      cudaCompilerVersions: [11_7]
       platforms: [x64]
       cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
       cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 
     - os: MacOS
       cxxCompiler: GCC
-      cxxCompilerVersions: [5, 11]
+      cxxCompilerVersions: [5, 12]
       platforms: [x64]
 
     - os: MacOS
       cxxCompiler: AppleClang
-      cxxCompilerVersions: [9_1, 13]
+      cxxCompilerVersions: [10_0_1, 13_1_6]
       platforms: [x64]
 
 - template: azure-pipelines/cmake.yml@CImakeshift
   parameters:
     caption: Vcpkg manifests
-    vcpkgRef: f79c681fc2b42f9c7c5024459b5a867d56ac6123
+    vcpkgRef: f78f4440df86358575dea65e748a39fdad41eb85
 
     cmakeSourceDir: '$(Build.SourcesDirectory)/ci/vcpkg-manifest'
     cmakeConfigArgs: '-DBUILD_TESTING=ON -DCMAKESHIFT_WARNING_LEVEL=high'
@@ -172,32 +182,30 @@ jobs:
 
     - os: Windows
       cxxCompiler: MSVC
-      #cxxCompilerVersions: [19_3]
-      cxxCompilerVersions: [19_2]
+      cxxCompilerVersions: [19_3]
       platforms: [x64]
 
     - os: Windows
       cxxCompiler: Clang
-      #cxxCompilerVersions: [12, VS2022]
-      cxxCompilerVersions: [12, VS2019]
+      cxxCompilerVersions: [14, VS2022]
       platforms: [x64]
 
     - os: Linux
       cxxCompiler: GCC
-      cxxCompilerVersions: [11]
+      cxxCompilerVersions: [12]
       platforms: [x64]
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [13]
+      cxxCompilerVersions: [14]
       platforms: [x64]
 
     - os: MacOS
       cxxCompiler: GCC
-      cxxCompilerVersions: [11]
+      cxxCompilerVersions: [12]
       platforms: [x64]
 
     - os: MacOS
       cxxCompiler: AppleClang
-      cxxCompilerVersions: [13]
+      cxxCompilerVersions: [13_1_6]
       platforms: [x64]
