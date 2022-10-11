@@ -574,11 +574,11 @@ jobs:
             - pwsh: |
                 New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
                 if ($IsWindows) {
-                    New-Item -ItemType SymbolicLink -Path "$env:LOCALAPPDATA" -Name 'vcpkg' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
+                    New-Item -ItemType SymbolicLink -Force -Path "$env:LOCALAPPDATA" -Name 'vcpkg' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
                 }
                 else {
                     New-Item -Type Directory -Force "$env:HOME/.cache"
-                    New-Item -ItemType SymbolicLink -Path "$env:HOME/.cache" -Name 'vcpkg' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
+                    New-Item -ItemType SymbolicLink -Force -Path "$env:HOME/.cache" -Name 'vcpkg' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
                 }
                 if ('$(CIMAKESHIFT_DEPENDENCY_CACHE_HIT)' -ne 'True') {
                     & git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
