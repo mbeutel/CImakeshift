@@ -574,11 +574,21 @@ jobs:
             - pwsh: |
                 New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
                 if ($IsWindows) {
-                    New-Item -ItemType SymbolicLink -Force -Path "$env:LOCALAPPDATA" -Name 'vcpkg' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
+                    if (Test-Path "$env:LOCALAPPDATA\vcpkg") {
+                        Write-Host "vcpkg cache directory already exists for some reason..."
+                        Get-ChildItem -Path "$env:LOCALAPPDATA\vcpkg" -Recurse
+                        Remove-Item -Path "$env:LOCALAPPDATA\vcpkg" -Recurse -Force
+                    }
+                    New-Item -ItemType SymbolicLink -Path "$env:LOCALAPPDATA" -Name 'vcpkg' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
                 }
                 else {
+                    if (Test-Path "$env:HOME/.cache/vcpkg") {
+                        Write-Host "vcpkg cache directory already exists for some reason..."
+                        Get-ChildItem -Path "$env:HOME/.cache/vcpkg" -Recurse
+                        Remove-Item -Path "$env:HOME/.cache/vcpkg" -Recurse -Force
+                    }
                     New-Item -Type Directory -Force "$env:HOME/.cache"
-                    New-Item -ItemType SymbolicLink -Force -Path "$env:HOME/.cache" -Name 'vcpkg' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
+                    New-Item -ItemType SymbolicLink -Path "$env:HOME/.cache" -Name 'vcpkg' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
                 }
                 if ('$(CIMAKESHIFT_DEPENDENCY_CACHE_HIT)' -ne 'True') {
                     & git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
