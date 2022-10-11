@@ -23,7 +23,7 @@
 #                       (also known as VS2019, VS2022)
 #   Clang:              VS2019, VS2022
 #                       (the version of Clang that ships with VS)
-#   NVCC:               10_1, 10_2, 11_0, 11_1, 11_2, 11_3, 11_4, 11_5, 11_6, 11_7
+#   NVCC:               10_1, 10_2, 11_0, 11_1, 11_2, 11_3, 11_4, 11_5, 11_6, 11_7, 11_8
 #
 # Linux:
 #   GCC:                6, 7, 8, 9, 10, 11, 12
@@ -33,7 +33,7 @@
 #
 # MacOS:
 #   GCC:                6, 7, 8, 9, 10, 11, 12
-#   AppleClang:         10_0_1, 11, 11_0_3, 12, 12_0_5, 13, 13_1_6
+#   AppleClang:         10_0_1, 11, 11_0_3, 12, 12_0_5, 13, 13_1_6, 14
 
 
 # Supported C++ compilers per operating system:
