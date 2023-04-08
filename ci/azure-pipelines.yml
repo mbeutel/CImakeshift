@@ -152,7 +152,7 @@ jobs:
 
     - os: MacOS
       cxxCompiler: GCC
-      cxxCompilerVersions: [7, 12]
+      cxxCompilerVersions: [8, 12]
       platforms: [x64]
 
     - os: MacOS
