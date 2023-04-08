@@ -152,12 +152,13 @@ jobs:
 
     - os: MacOS
       cxxCompiler: GCC
-      cxxCompilerVersions: [8, 12]
+      cxxCompilerVersions: [9, 10, 11, 12]
       platforms: [x64]
 
     - os: MacOS
       cxxCompiler: AppleClang
-      cxxCompilerVersions: [10_0_1, 14, 14_0_3]
+      #cxxCompilerVersions: [10_0_1, 14, 14_0_3]
+      cxxCompilerVersions: [10_0_1, 14]
       platforms: [x64]
 
 - template: azure-pipelines/cmake.yml@CImakeshift
