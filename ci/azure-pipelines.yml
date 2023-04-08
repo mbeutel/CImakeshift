@@ -113,7 +113,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: GCC
-      cxxCompilerVersions: [6, 11]
+      cxxCompilerVersions: [7, 11]
       platforms: [x64]
 
     - os: Linux
@@ -127,7 +127,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [4, 13]
+      cxxCompilerVersions: [6, 13]
       platforms: [x64]
 
     - os: Linux
@@ -140,15 +140,6 @@ jobs:
       tag: 'sanitize'
       vcpkgTriplet: <platform>-<os>
       cmakeBuildConfigurations: [Debug, RelWithDebInfo]
-
-    - os: Linux
-      cxxCompiler: GCC
-      cxxCompilerVersions: [6]
-      cudaCompiler: NVCC
-      cudaCompilerVersions: [10_2]
-      platforms: [x64]
-      cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
-      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
 
     - os: Linux
       cxxCompiler: GCC
@@ -171,7 +162,7 @@ jobs:
 
     - os: MacOS
       cxxCompiler: GCC
-      cxxCompilerVersions: [6, 12]
+      cxxCompilerVersions: [7, 12]
       platforms: [x64]
 
     - os: MacOS

@@ -62,14 +62,10 @@ jobs:
               vmImage: 'ubuntu-22.04'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(6, cxxCompilerVersion), ge(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(5, cxxCompilerVersion), ge(10, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-20.04'
-            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), ge(6, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), ge(5, cxxCompilerVersion)))) }}:
-              vmImage: 'ubuntu-18.04'
             ${{ if and(eq(parameters.os, 'MacOS'), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '13'), eq(cxxCompilerVersion, '13_0'), eq(cxxCompilerVersion, '13_0_0'), eq(cxxCompilerVersion, '13_1_6'), eq(cxxCompilerVersion, '14'), eq(cxxCompilerVersion, '14_0'), eq(cxxCompilerVersion, '14_0_0'), eq(cxxCompilerVersion, '14_0_3')))) }}:
               vmImage: 'macOS-12'
             ${{ if and(eq(parameters.os, 'MacOS'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(8, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '11_0_3'), eq(cxxCompilerVersion, '12'), eq(cxxCompilerVersion, '12_0'), eq(cxxCompilerVersion, '12_0_0'), eq(cxxCompilerVersion, '12_0_5'))))) }}:
               vmImage: 'macOS-11'
-            ${{ if and(eq(parameters.os, 'MacOS'), or(and(eq(parameters.cxxCompiler, 'GCC'), ge(8, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '10_0_1'), eq(cxxCompilerVersion, '11'), eq(cxxCompilerVersion, '11_0'), eq(cxxCompilerVersion, '11_0_0'))))) }}:
-              vmImage: 'macOS-10.15'
           steps:
           - pwsh: |
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_files'
@@ -466,8 +462,6 @@ jobs:
                   if ('$(CIMAKESHIFT_CUDA_COMPILER)' -and '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -ne 'None') {
                       $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
                       $cudaVersion_URL = @{
-                          '10.1' = 'http://developer.download.nvidia.com/compute/cuda/10.1/Prod/network_installers/cuda_10.1.243_win10_network.exe'
-                          '10.2' = 'http://developer.download.nvidia.com/compute/cuda/10.2/Prod/network_installers/cuda_10.2.89_win10_network.exe'
                           '11.0' = 'http://developer.download.nvidia.com/compute/cuda/11.0.2/network_installers/cuda_11.0.2_win10_network.exe'
                           '11.1' = 'http://developer.download.nvidia.com/compute/cuda/11.1.1/network_installers/cuda_11.1.1_win10_network.exe'
                           '11.2' = 'http://developer.download.nvidia.com/compute/cuda/11.2.1/network_installers/cuda_11.2.1_win10_network.exe'
@@ -621,10 +615,6 @@ jobs:
                   }
                   elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang') {
                       $appleClangVersion_xcodeVersion = @{
-                          '10_0_1' = '10.3'    # also 10.2, 10.2.1
-                          '11'     = '11.3.1'  # also 11.1, 11.2, 11.2.1, 11.3
-                          '11_0'   = '11.3.1'
-                          '11_0_0' = '11.3.1'
                           '11_0_3' = '11.7'    # also 11.4, 11.4.1, 11.5, 11.6
                           '12'     = '12.4'    # also 12.0, 12.1, 12.2, 12.3
                           '12_0'   = '12.4'
