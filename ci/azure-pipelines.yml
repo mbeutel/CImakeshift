@@ -64,16 +64,6 @@ jobs:
 
     - os: Windows
       cxxCompiler: MSVC
-      cxxCompilerVersions: [19_2]
-      cudaCompiler: NVCC
-      cudaCompilerVersions: [10_2]
-      platforms: [x64]
-      vcpkgPackages: ['<vcpkgPackages>', 'catch2']
-      cudaPackages: ['nvrtc-dev']
-      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
-
-    - os: Windows
-      cxxCompiler: MSVC
       cxxCompilerVersions: [19_3]
       cudaCompiler: NVCC
       cudaCompilerVersions: [11_8]
