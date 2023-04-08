@@ -76,7 +76,17 @@ jobs:
       cxxCompiler: MSVC
       cxxCompilerVersions: [19_3]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [11_7]
+      cudaCompilerVersions: [11_8]
+      platforms: [x64]
+      vcpkgPackages: ['<vcpkgPackages>', 'catch2']
+      cudaPackages: ['nvrtc-dev']
+      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
+
+    - os: Windows
+      cxxCompiler: MSVC
+      cxxCompilerVersions: [19_3]
+      cudaCompiler: NVCC
+      cudaCompilerVersions: [12_1]
       platforms: [x64]
       vcpkgPackages: ['<vcpkgPackages>', 'catch2']
       cudaPackages: ['nvrtc-dev']
@@ -122,7 +132,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [14]
+      cxxCompilerVersions: [16]
       cxxStandardLibrary: libstdc++
       cxxStandardLibraryDebugMode: true
       cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer, ImplicitIntegerArithmeticValueChange]
@@ -144,7 +154,7 @@ jobs:
       cxxCompiler: GCC
       cxxCompilerVersions: [8]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [11_0]
+      cudaCompilerVersions: [11_8]
       platforms: [x64]
       vcpkgPackages: ['catch2', 'gsl-lite']
       cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
@@ -154,7 +164,7 @@ jobs:
       cxxCompiler: GCC
       cxxCompilerVersions: [11]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [11_7]
+      cudaCompilerVersions: [12_1]
       platforms: [x64]
       cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
       cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
@@ -166,7 +176,7 @@ jobs:
 
     - os: MacOS
       cxxCompiler: AppleClang
-      cxxCompilerVersions: [10_0_1, 13_1_6]
+      cxxCompilerVersions: [10_0_1, 14, 14_0_3]
       platforms: [x64]
 
 - template: azure-pipelines/cmake.yml@CImakeshift
@@ -196,7 +206,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [14]
+      cxxCompilerVersions: [15]
       platforms: [x64]
 
     - os: MacOS
