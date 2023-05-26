@@ -21,7 +21,7 @@ jobs:
 - template: azure-pipelines/cmake.yml@CImakeshift
   parameters:
     caption: Basic
-    vcpkgRef: f78f4440df86358575dea65e748a39fdad41eb85
+    vcpkgRef: c6592ce60ff394049905365865f59e3a4d93d35b
     #vcpkgOverlayRepo: 'https://mp-force.ziti.uni-heidelberg.de/asc/infrastructure/vcpkg-ports.git'
     #vcpkgOverlayRef: 28b52673c26e29ccdce93ffa78413f26a0b11c8f
     #vcpkgPackages: ['cmakeshift', 'gsl-lite']
