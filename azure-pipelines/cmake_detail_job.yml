@@ -570,8 +570,17 @@ jobs:
 
           - ${{ if and(parameters.vcpkgRef, parameters.vcpkgOverlayRepo, parameters.vcpkgOverlayRef) }}:
             - pwsh: |
+                if ($System.Debug) {
+                    Write-Host "& git clone $(CIMAKESHIFT_VCPKG_OVERLAY_REPO) '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo'"
+                }
                 & git clone $(CIMAKESHIFT_VCPKG_OVERLAY_REPO) '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo'
+                if ($System.Debug) {
+                    Write-Host "cd '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo'"
+                }
                 cd '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo'
+                if ($System.Debug) {
+                    Write-Host "& git checkout --quiet --force $(CIMAKESHIFT_VCPKG_OVERLAY_REF)"
+                }
                 & git checkout --quiet --force $(CIMAKESHIFT_VCPKG_OVERLAY_REF)
                 New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/ports'
                 New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/triplets'
@@ -600,8 +609,17 @@ jobs:
                     New-Item -ItemType SymbolicLink -Path "$env:HOME/.cache" -Name 'vcpkg' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
                 }
                 if ('$(CIMAKESHIFT_DEPENDENCY_CACHE_HIT)' -ne 'True') {
+                    if ($System.Debug) {
+                        Write-Host "& git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'"
+                    }
                     & git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
+                    if ($System.Debug) {
+                        Write-Host "cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'"
+                    }
                     cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
+                    if ($System.Debug) {
+                        Write-Host "& git checkout --quiet --force $(CIMAKESHIFT_VCPKG_REF)"
+                    }
                     & git checkout --quiet --force $(CIMAKESHIFT_VCPKG_REF)
                     if ($IsWindows) {
                         & ./bootstrap-vcpkg.bat
@@ -650,6 +668,9 @@ jobs:
                           '15_2_0' = '15.2'
                       }
                       $xcodeVersion = $appleClangVersion_xcodeVersion['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
+                      if ($System.Debug) {
+                          Write-Host "& sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer"
+                      }
                       & sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer
                       echo '##vso[task.setvariable variable=CC]clang'
                       echo '##vso[task.setvariable variable=CXX]clang++'
@@ -661,11 +682,17 @@ jobs:
             - pwsh: |
                 cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
                 if ($env:CIMAKESHIFT_VCPKG_PACKAGES) {
+                    if ($System.Debug) {
+                        Write-Host "& ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install"
+                    }
                     & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
                 }
                 if (Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json") {
                     # Vcpkg manifest mode
                     cd $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
+                    if ($System.Debug) {
+                        Write-Host "& '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install"
+                    }
                     & '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install
                     cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
                 }
@@ -703,12 +730,18 @@ jobs:
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
                   $vcpkgArgs = $env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_ -split ' '
                   $args = $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS -split ' '
+                  if ($System.Debug) {
+                      Write-Host "& cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $vcpkgArgs"
+                  }
                   & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $vcpkgArgs $env:CIMAKESHIFT_CMAKE_SOURCE_DIR $args
                 displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(parameters.cmakeBuild, 'true') }}:
               - pwsh: |
                   $args = $env:CIMAKESHIFT_CMAKE_BUILD_ARGS -split ' '
+                  if ($System.Debug) {
+                      Write-Host "& cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $args"
+                  }
                   & cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $args
                 displayName: 'Build ${{ config }}'
 
@@ -716,6 +749,9 @@ jobs:
               - pwsh: |
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
                   $args = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
+                  if ($System.Debug) {
+                    Write-Host "& ctest --verbose --output-on-failure --test-action Test --build-config ${{ config }} $args"
+                  }
                   & ctest --verbose --output-on-failure --test-action Test --build-config ${{ config }} $args
                   if (-not $?) {
                       if (Test-Path 'Testing/Temporary') {
