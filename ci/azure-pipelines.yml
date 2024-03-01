@@ -22,13 +22,10 @@ jobs:
   parameters:
     caption: Basic
     vcpkgRef: ba2298b26ce17b5248685d30b359185485413674
-    #vcpkgOverlayRepo: 'https://mp-force.ziti.uni-heidelberg.de/asc/infrastructure/vcpkg-ports.git'
-    #vcpkgOverlayRef: 28b52673c26e29ccdce93ffa78413f26a0b11c8f
-    #vcpkgPackages: ['cmakeshift', 'gsl-lite']
     vcpkgPackages: ['gsl-lite']
 
     cmakeSourceDir: '$(Build.SourcesDirectory)/ci/basic'
-    cmakeConfigArgs: '-DBUILD_TESTING=ON -DCMAKESHIFT_WARNING_LEVEL=high'
+    cmakeConfigArgs: '--trace --trace-expand -DBUILD_TESTING=ON -DCMAKESHIFT_WARNING_LEVEL=high'
     #cmakeTestArgs: '--exclude-regex cuda' # do not run CUDA tests
 
     postSetupSteps:
