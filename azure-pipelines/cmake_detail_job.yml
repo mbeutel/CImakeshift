@@ -62,6 +62,10 @@ jobs:
               vmImage: 'ubuntu-22.04'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(6, cxxCompilerVersion), ge(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(5, cxxCompilerVersion), ge(10, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-20.04'
+            ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '15_1'), eq(cxxCompilerVersion, '15_1_0'), eq(cxxCompilerVersion, '15_2'), eq(cxxCompilerVersion, '15_2_0'))) }}:
+              vmImage: 'macOS-13'
+            ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '15'), eq(cxxCompilerVersion, '15_0'), eq(cxxCompilerVersion, '15_0_1'))) }}:
+              vmImage: 'macOS-13'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '14'), eq(cxxCompilerVersion, '14_0'), eq(cxxCompilerVersion, '14_0_0'), eq(cxxCompilerVersion, '14_0_3'))) }}:
               vmImage: 'macOS-13'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '13'), eq(cxxCompilerVersion, '13_0'), eq(cxxCompilerVersion, '13_0_0'), eq(cxxCompilerVersion, '13_1_6'))) }}:
@@ -478,7 +482,9 @@ jobs:
                           '11.7' = 'https://developer.download.nvidia.com/compute/cuda/11.7.1/network_installers/cuda_11.7.1_windows_network.exe'
                           '11.8' = 'https://developer.download.nvidia.com/compute/cuda/11.8.0/network_installers/cuda_11.8.0_windows_network.exe'
                           '12.0' = 'https://developer.download.nvidia.com/compute/cuda/12.0.1/network_installers/cuda_12.0.1_windows_network.exe'
-                          '12.1' = 'https://developer.download.nvidia.com/compute/cuda/12.1.0/network_installers/cuda_12.1.0_windows_network.exe'
+                          '12.1' = 'https://developer.download.nvidia.com/compute/cuda/12.1.1/network_installers/cuda_12.1.1_windows_network.exe'
+                          '12.2' = 'https://developer.download.nvidia.com/compute/cuda/12.2.2/network_installers/cuda_12.2.2_windows_network.exe'
+                          '12.3' = 'https://developer.download.nvidia.com/compute/cuda/12.3.2/network_installers/cuda_12.3.2_windows_network.exe'
                       }
                       Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
                       Write-Host '[CImakeshift] Installing CUDA packages $(CIMAKESHIFT_CUDA_PACKAGES)'
@@ -634,7 +640,14 @@ jobs:
                           '14'     = '14.2'
                           '14_0'   = '14.2'
                           '14_0_0' = '14.2'
-                          '14_0_3' = '14.3'
+                          '14_0_3' = '14.3.1'
+                          '15'     = '15.0.1'
+                          '15_0'   = '15.0.1'
+                          '15_0_1' = '15.0.1'
+                          '15_1'   = '15.1'
+                          '15_1_0' = '15.1'
+                          '15_2'   = '15.2'
+                          '15_2_0' = '15.2'
                       }
                       $xcodeVersion = $appleClangVersion_xcodeVersion['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                       & sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer
