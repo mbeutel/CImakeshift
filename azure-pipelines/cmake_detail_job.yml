@@ -406,11 +406,11 @@ jobs:
                   $cacheKey += ' | ${{ parameters.cacheKey }}'
               }
               if ('${{ parameters.vcpkgRef }}') {
-                  $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake"'
+                  $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake'
                   $cmakeVcpkgArgs += " -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet"
               }
               else {
-                  $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake"'
+                  $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake'
               }
               $cmakeConfigArgs = '${{ parameters.cmakeConfigArgs }}'
               $cmakeBuildArgs = '${{ parameters.cmakeBuildArgs }}'
