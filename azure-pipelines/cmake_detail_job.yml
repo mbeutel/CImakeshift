@@ -406,7 +406,7 @@ jobs:
                   $cacheKey += ' | ${{ parameters.cacheKey }}'
               }
               if ('${{ parameters.vcpkgRef }}') {
-                  $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake'
+                  $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE="$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake"'
                   $cmakeVcpkgArgs += " -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet"
               }
               else {
@@ -571,9 +571,9 @@ jobs:
           - ${{ if and(parameters.vcpkgRef, parameters.vcpkgOverlayRepo, parameters.vcpkgOverlayRef) }}:
             - pwsh: |
                 if ('$(System.Debug)' -eq 'True') {
-                    Write-Host "& git clone $(CIMAKESHIFT_VCPKG_OVERLAY_REPO) '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo'"
+                    Write-Host "& git clone $(CIMAKESHIFT_VCPKG_OVERLAY_REPO) $(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo"
                 }
-                & git clone $(CIMAKESHIFT_VCPKG_OVERLAY_REPO) '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo'
+                & git clone $(CIMAKESHIFT_VCPKG_OVERLAY_REPO) $(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo
                 if ('$(System.Debug)' -eq 'True') {
                     Write-Host "cd '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo'"
                 }
@@ -610,9 +610,9 @@ jobs:
                 }
                 if ('$(CIMAKESHIFT_DEPENDENCY_CACHE_HIT)' -ne 'True') {
                     if ('$(System.Debug)' -eq 'True') {
-                        Write-Host "& git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'"
+                        Write-Host "& git clone $(CIMAKESHIFT_VCPKG_REPO) $(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg"
                     }
-                    & git clone $(CIMAKESHIFT_VCPKG_REPO) '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
+                    & git clone $(CIMAKESHIFT_VCPKG_REPO) $(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg
                     if ('$(System.Debug)' -eq 'True') {
                         Write-Host "cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'"
                     }
@@ -683,7 +683,7 @@ jobs:
                 cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
                 if ($env:CIMAKESHIFT_VCPKG_PACKAGES) {
                     if ('$(System.Debug)' -eq 'True') {
-                        Write-Host "& ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install"
+                        Write-Host "& ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)"
                     }
                     & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
                 }
@@ -740,9 +740,9 @@ jobs:
               - pwsh: |
                   $args = $env:CIMAKESHIFT_CMAKE_BUILD_ARGS -split ' '
                   if ('$(System.Debug)' -eq 'True') {
-                      Write-Host "& cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $args"
+                      Write-Host "& cmake --build $(Build.BinariesDirectory)/build/${{ config }} --parallel --verbose --config ${{ config }} $args"
                   }
-                  & cmake --build '$(Build.BinariesDirectory)/build/${{ config }}' --parallel --verbose --config ${{ config }} $args
+                  & cmake --build $(Build.BinariesDirectory)/build/${{ config }} --parallel --verbose --config ${{ config }} $args
                 displayName: 'Build ${{ config }}'
 
             - ${{ if eq(parameters.cmakeTest, 'true') }}:

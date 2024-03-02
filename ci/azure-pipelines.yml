@@ -25,7 +25,7 @@ jobs:
     vcpkgPackages: ['gsl-lite']
 
     cmakeSourceDir: '$(Build.SourcesDirectory)/ci/basic'
-    cmakeConfigArgs: '--trace --trace-expand -DBUILD_TESTING=ON -DCMAKESHIFT_WARNING_LEVEL=high'
+    cmakeConfigArgs: '-DBUILD_TESTING=ON -DCMAKESHIFT_WARNING_LEVEL=high'
     #cmakeTestArgs: '--exclude-regex cuda' # do not run CUDA tests
 
     postSetupSteps:
