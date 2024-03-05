@@ -476,8 +476,8 @@ jobs:
               }
               if ($IsWindows) {
                   $ninjaOS = 'win'
-                  if ('$(CIMAKESHIFT_CUDA_COMPILER)' -and '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -ne 'None') {
-                      $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
+                  if ('$[variables.CIMAKESHIFT_CUDA_COMPILER]' -and '$[variables.CIMAKESHIFT_CUDA_COMPILER_VERSION]' -ne 'None') {
+                      $cudaVersion = '$[variables.CIMAKESHIFT_CUDA_COMPILER_VERSION]' -replace '_','.'
                       $cudaVersion_URL = @{
                           '11.0' = 'http://developer.download.nvidia.com/compute/cuda/11.0.2/network_installers/cuda_11.0.2_win10_network.exe'
                           '11.1' = 'http://developer.download.nvidia.com/compute/cuda/11.1.1/network_installers/cuda_11.1.1_win10_network.exe'
@@ -494,8 +494,8 @@ jobs:
                           '12.3' = 'https://developer.download.nvidia.com/compute/cuda/12.3.2/network_installers/cuda_12.3.2_windows_network.exe'
                       }
                       Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
-                      Write-Host '[CImakeshift] Installing CUDA packages $(CIMAKESHIFT_CUDA_PACKAGES)'
-                      Start-Process -Wait "$HOME/cuda_installer_network.exe" (@('-s') + ('$(CIMAKESHIFT_CUDA_PACKAGES)'.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)))
+                      Write-Host "[CImakeshift] Installing CUDA packages $env:CIMAKESHIFT_CUDA_PACKAGES"
+                      & "$HOME/cuda_installer_network.exe" '-s' $[variables.CIMAKESHIFT_CUDA_PACKAGES]
                   }
               }
               elseif ($IsLinux) {
@@ -511,42 +511,45 @@ jobs:
                   elseif ($osVersionRaw -eq '22.04') {
                       $osVersionName = 'jammy'
                   }
-                  if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
+                  if ('$[variables.CIMAKESHIFT_CXX_COMPILER]' -eq 'GCC') {
+                      Write-Host "[CImakeshift] Installing packages gcc-$env:CIMAKESHIFT_CXX_COMPILER_VERSION g++-$env:CIMAKESHIFT_CXX_COMPILER_VERSION"
                       & sudo apt-add-repository ppa:ubuntu-toolchain-r/test
-                      $packages += ('gcc-$(CIMAKESHIFT_CXX_COMPILER_VERSION)', 'g++-$(CIMAKESHIFT_CXX_COMPILER_VERSION)')
+                      & sudo apt-get update
+                      & sudo apt-get install gcc-$[variables.CIMAKESHIFT_CXX_COMPILER_VERSION] g++-$[variables.CIMAKESHIFT_CXX_COMPILER_VERSION]
                   }
-                  elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
-                      if ([int]'$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ge 5 -and [int]'$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -lt 11) {
-                          $clangRepository = 'llvm-toolchain-$(CIMAKESHIFT_CLANG_FULL_VERSION_)'
+                  elseif ('$[variables.CIMAKESHIFT_CXX_COMPILER]' -eq 'Clang') {
+                      Write-Host "[CImakeshift] Installing packages clang-$env:CIMAKESHIFT_CLANG_FULL_VERSION_"
+                      if ([int]'$[variables.CIMAKESHIFT_CXX_COMPILER_VERSION]' -ge 5 -and [int]'$[variables.CIMAKESHIFT_CXX_COMPILER_VERSION]' -lt 11) {
+                          $clangRepository = 'llvm-toolchain-$[variables.CIMAKESHIFT_CLANG_FULL_VERSION_]'
                           & sudo apt-add-repository "deb http://apt.llvm.org/$osVersionName/ $clangRepository main"
                       }
-                      elseif ([int]'$(CIMAKESHIFT_CXX_COMPILER_VERSION)' -ge 11) {
-                          $clangRepository = "llvm-toolchain-$osVersionName-$(CIMAKESHIFT_CLANG_FULL_VERSION_)"
+                      elseif ([int]'$[variables.CIMAKESHIFT_CXX_COMPILER_VERSION]' -ge 11) {
+                          $clangRepository = "llvm-toolchain-$osVersionName-$[variables.CIMAKESHIFT_CLANG_FULL_VERSION_]"
                           & sudo apt-add-repository "deb http://apt.llvm.org/$osVersionName/ $clangRepository main"
                           & wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | & sudo apt-key add -
                       }
-                      $packages += 'clang-$(CIMAKESHIFT_CLANG_FULL_VERSION_)'
+                      & sudo apt-get update
+                      & sudo apt-get install clang-$[variables.CIMAKESHIFT_CLANG_FULL_VERSION_]
                   }
-                  if ('$(CIMAKESHIFT_CUDA_COMPILER)' -and '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -ne 'None') {
-                      $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
-                      $cudaVersionDash = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','-'
+                  if ('$[variables.CIMAKESHIFT_CUDA_COMPILER]' -and '$[variables.CIMAKESHIFT_CUDA_COMPILER_VERSION]' -ne 'None') {
+                      $cudaVersion = '$[variables.CIMAKESHIFT_CUDA_COMPILER_VERSION]' -replace '_','.'
+                      $cudaVersionDash = '$[variables.CIMAKESHIFT_CUDA_COMPILER_VERSION]' -replace '_','-'
+                      Write-Host "[CImakeshift] Installing packages cuda-toolkit-$cudaVersionDash $env:CIMAKESHIFT_CUDA_PACKAGES"
                       $osVersionFlat = $osVersionRaw -replace [regex]::escape('.'),''
                       $ubuntuVersion = "ubuntu$osVersionFlat"
                       & sudo apt-key del 7fa2af80
                       & wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu$osVersionFlat/x86_64/cuda-keyring_1.0-1_all.deb
                       & sudo dpkg -i cuda-keyring_1.0-1_all.deb
-                      $packages += "cuda-toolkit-$cudaVersionDash $(CIMAKESHIFT_CUDA_PACKAGES)".split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
+                      & sudo apt-get update
+                      & sudo apt-get install cuda-toolkit-$cudaVersionDash $[variables.CIMAKESHIFT_CUDA_PACKAGES]
                   }
-                  & sudo apt-get update
-                  Write-Host "[CImakeshift] Installing packages $packages"
-                  & sudo apt-get install $packages
                   #& ln -s /usr/bin/cmake $HOME/bin/cmake
                   #& ln -s /usr/bin/ctest $HOME/bin/ctest
-                  if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
+                  if ('$[variables.CIMAKESHIFT_CXX_COMPILER]' -eq 'GCC') {
                       & ln -s $(Get-Command $env:CC).Path $HOME/bin/gcc
                       & ln -s $(Get-Command $env:CXX).Path $HOME/bin/g++
                   }
-                  elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'Clang') {
+                  elseif ('$[variables.CIMAKESHIFT_CXX_COMPILER]' -eq 'Clang') {
                       & ln -s $(Get-Command $env:CC).Path $HOME/bin/clang
                       & ln -s $(Get-Command $env:CXX).Path $HOME/bin/clang++
                   }
@@ -554,8 +557,8 @@ jobs:
               elseif ($IsMacOS) {
                   $osVersion = [version](sw_vers -productVersion)
                   $ninjaOS = 'mac'
-                  if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
-                      & brew install gcc@$(CIMAKESHIFT_CXX_COMPILER_VERSION)
+                  if ('$[variables.CIMAKESHIFT_CXX_COMPILER]' -eq 'GCC') {
+                      & brew install gcc@$[variables.CIMAKESHIFT_CXX_COMPILER_VERSION]
                   }
                   & brew install pkg-config
               }
@@ -578,17 +581,17 @@ jobs:
           - ${{ if and(parameters.vcpkgRef, parameters.vcpkgOverlayRepo, parameters.vcpkgOverlayRef) }}:
             - pwsh: |
                 if ('$(System.Debug)' -eq 'True') {
-                    Write-Host "& git clone $(CIMAKESHIFT_VCPKG_OVERLAY_REPO) $(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo"
+                    Write-Host "& git clone $[variables.CIMAKESHIFT_VCPKG_OVERLAY_REPO] $(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo"
                 }
-                & git clone $(CIMAKESHIFT_VCPKG_OVERLAY_REPO) $(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo
+                & git clone $[variables.CIMAKESHIFT_VCPKG_OVERLAY_REPO] $(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo
                 if ('$(System.Debug)' -eq 'True') {
                     Write-Host "cd '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo'"
                 }
                 cd '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo'
                 if ('$(System.Debug)' -eq 'True') {
-                    Write-Host "& git checkout --quiet --force $(CIMAKESHIFT_VCPKG_OVERLAY_REF)"
+                    Write-Host "& git checkout --quiet --force $env:CIMAKESHIFT_VCPKG_OVERLAY_REF"
                 }
-                & git checkout --quiet --force $(CIMAKESHIFT_VCPKG_OVERLAY_REF)
+                & git checkout --quiet --force $[variables.CIMAKESHIFT_VCPKG_OVERLAY_REF]
                 New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/ports'
                 New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/triplets'
                 Remove-Item -Recurse -Force './.git'
@@ -615,19 +618,19 @@ jobs:
                     New-Item -Type Directory -Force "$env:HOME/.cache"
                     New-Item -ItemType SymbolicLink -Path "$env:HOME/.cache" -Name 'vcpkg' -Value '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg_cache'
                 }
-                if ('$(CIMAKESHIFT_DEPENDENCY_CACHE_HIT)' -ne 'True') {
+                if ('$[variables.CIMAKESHIFT_DEPENDENCY_CACHE_HIT]' -ne 'True') {
                     if ('$(System.Debug)' -eq 'True') {
-                        Write-Host "& git clone $(CIMAKESHIFT_VCPKG_REPO) $(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg"
+                        Write-Host "& git clone $env:CIMAKESHIFT_VCPKG_REPO $(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg"
                     }
-                    & git clone $(CIMAKESHIFT_VCPKG_REPO) $(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg
+                    & git clone $[variables.CIMAKESHIFT_VCPKG_REPO] $(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg
                     if ('$(System.Debug)' -eq 'True') {
                         Write-Host "cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'"
                     }
                     cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
                     if ('$(System.Debug)' -eq 'True') {
-                        Write-Host "& git checkout --quiet --force $(CIMAKESHIFT_VCPKG_REF)"
+                        Write-Host "& git checkout --quiet --force $env:CIMAKESHIFT_VCPKG_REF"
                     }
-                    & git checkout --quiet --force $(CIMAKESHIFT_VCPKG_REF)
+                    & git checkout --quiet --force $[variables.CIMAKESHIFT_VCPKG_REF]
                     if ($IsWindows) {
                         & ./bootstrap-vcpkg.bat
                     }
@@ -646,12 +649,12 @@ jobs:
                   Get-ChildItem env: | Format-List # for debugging
               }
               if ($IsMacOS) {
-                  if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
+                  if ('$[variables.CIMAKESHIFT_CXX_COMPILER]' -eq 'GCC') {
                       echo "##vso[task.setvariable variable=CXXFLAGS]$env:CXXFLAGS_OLD"
-                      echo '##vso[task.setvariable variable=CC]gcc-$(CIMAKESHIFT_CXX_COMPILER_VERSION)'
-                      echo '##vso[task.setvariable variable=CXX]g++-$(CIMAKESHIFT_CXX_COMPILER_VERSION)'
+                      echo '##vso[task.setvariable variable=CC]gcc-$[variables.CIMAKESHIFT_CXX_COMPILER_VERSION]'
+                      echo '##vso[task.setvariable variable=CXX]g++-$[variables.CIMAKESHIFT_CXX_COMPILER_VERSION]'
                   }
-                  elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang') {
+                  elseif ('$[variables.CIMAKESHIFT_CXX_COMPILER]' -eq 'AppleClang') {
                       $appleClangVersion_xcodeVersion = @{
                           '11_0_3' = '11.7'    # also 11.4, 11.4.1, 11.5, 11.6
                           '12'     = '12.4'    # also 12.0, 12.1, 12.2, 12.3
@@ -674,7 +677,7 @@ jobs:
                           '15_2'   = '15.2'
                           '15_2_0' = '15.2'
                       }
-                      $xcodeVersion = $appleClangVersion_xcodeVersion['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
+                      $xcodeVersion = $appleClangVersion_xcodeVersion['$[variables.CIMAKESHIFT_CXX_COMPILER_VERSION]']
                       if ('$(System.Debug)' -eq 'True') {
                           Write-Host "& sudo xcode-select -s /Applications/Xcode_$xcodeVersion.app/Contents/Developer"
                       }
@@ -692,7 +695,7 @@ jobs:
                     if ('$(System.Debug)' -eq 'True') {
                         Write-Host "& ./vcpkg --triplet $env:VCPKG_DEFAULT_TRIPLET $env:CIMAKESHIFT_VCPKG_ARGS install $env:CIMAKESHIFT_VCPKG_PACKAGES"
                     }
-                    & ./vcpkg --triplet $(VCPKG_DEFAULT_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
+                    & ./vcpkg --triplet $[variables.VCPKG_DEFAULT_TRIPLET] $[variables.CIMAKESHIFT_VCPKG_ARGS] install $[variables.CIMAKESHIFT_VCPKG_PACKAGES]
                 }
                 if (Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json") {
                     # Vcpkg manifest mode
@@ -700,7 +703,7 @@ jobs:
                     if ('$(System.Debug)' -eq 'True') {
                         Write-Host "& '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' --triplet $env:VCPKG_DEFAULT_TRIPLET $env:CIMAKESHIFT_VCPKG_ARGS '--feature-flags=manifests' install"
                     }
-                    & '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' --triplet $(VCPKG_DEFAULT_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install
+                    & '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' --triplet $[variables.VCPKG_DEFAULT_TRIPLET] $[variables.CIMAKESHIFT_VCPKG_ARGS] '--feature-flags=manifests' install
                     cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
                 }
                 Remove-Item -Recurse -Force './buildtrees' -ErrorAction Ignore
@@ -738,7 +741,7 @@ jobs:
                   if ('$(System.Debug)' -eq 'True') {
                       Write-Host "& cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS $env:CIMAKESHIFT_CMAKE_SOURCE_DIR"
                   }
-                  & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
+                  & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $[variables.CIMAKESHIFT_CMAKE_CONFIG_ARGS] $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
                 displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(parameters.cmakeBuild, 'true') }}:
@@ -746,7 +749,7 @@ jobs:
                   if ('$(System.Debug)' -eq 'True') {
                       Write-Host "& cmake --build $(Build.BinariesDirectory)/build/${{ config }} --parallel --verbose --config ${{ config }} $env:CIMAKESHIFT_CMAKE_BUILD_ARGS"
                   }
-                  & cmake --build $(Build.BinariesDirectory)/build/${{ config }} --parallel --verbose --config ${{ config }} $(CIMAKESHIFT_CMAKE_BUILD_ARGS)
+                  & cmake --build $(Build.BinariesDirectory)/build/${{ config }} --parallel --verbose --config ${{ config }} $[variables.CIMAKESHIFT_CMAKE_BUILD_ARGS]
                 displayName: 'Build ${{ config }}'
 
             - ${{ if eq(parameters.cmakeTest, 'true') }}:
@@ -755,7 +758,7 @@ jobs:
                   if ('$(System.Debug)' -eq 'True') {
                     Write-Host "& ctest --verbose --output-on-failure --test-action Test --build-config ${{ config }} $env:CIMAKESHIFT_CMAKE_TEST_ARGS"
                   }
-                  & ctest --verbose --output-on-failure --test-action Test --build-config ${{ config }} $(CIMAKESHIFT_CMAKE_TEST_ARGS)
+                  & ctest --verbose --output-on-failure --test-action Test --build-config ${{ config }} $[variables.CIMAKESHIFT_CMAKE_TEST_ARGS]
                   if (-not $?) {
                       if (Test-Path 'Testing/Temporary') {
                           foreach ($file in Get-ChildItem "Testing/Temporary/MemoryChecker.*.log") {
