@@ -161,7 +161,7 @@ jobs:
 - template: azure-pipelines/cmake.yml@CImakeshift
   parameters:
     caption: Vcpkg manifests
-    vcpkgRef: f78f4440df86358575dea65e748a39fdad41eb85
+    vcpkgRef: ba2298b26ce17b5248685d30b359185485413674
 
     cmakeSourceDir: '$(Build.SourcesDirectory)/ci/vcpkg-manifest'
     cmakeConfigArgs: '-DBUILD_TESTING=ON -DCMAKESHIFT_WARNING_LEVEL=high'
