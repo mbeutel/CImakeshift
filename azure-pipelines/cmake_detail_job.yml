@@ -265,6 +265,8 @@ jobs:
               $cudaPackagesRaw = ('${{ parameters.cudaPackages }}' -replace '\s+',' ').Trim()
               $cudaPackagesRawArray = $cudaPackagesRaw.split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
               $cmakeGenerator = '${{ parameters.cmakeGenerator }}'
+              $cmakeToolchainConfigArgs = ''
+              $cmakeCudaCompilerFlag = ''
               New-Item -Type Directory -Force "$HOME/bin"
               if ($IsWindows) {
                   $extraPath = "$HOME/bin"
@@ -290,8 +292,8 @@ jobs:
                       $llvmRoot = Join-Path $vsPath 'VC\Tools\Llvm\bin'
                       $extraPath = "$llvmRoot;$extraPath"
                       $clangClPath = "$llvmRoot\clang-cl.exe"
-                      $clangClCompatPath = $clangClPath -replace '\\','/'
-                      $cmakeCompilerFlag = "-DCMAKE_C_COMPILER=`"$clangClCompatPath`" -DCMAKE_CXX_COMPILER=`"$clangClCompatPath`""
+                      echo "##vso[task.setvariable variable=CC]$clangClPath"
+                      echo "##vso[task.setvariable variable=CXX]$clangClPath"
                       if ('${{ platform }}' -eq 'x86') {
                           # Workaround for https://gitlab.kitware.com/cmake/cmake/issues/16259
                           echo '##vso[task.setvariable variable=CFLAGS]-m32'
@@ -311,11 +313,16 @@ jobs:
                       $defaultCmakeGenerator = 'Ninja'
                   }
                   $cmakeGenerator = $cmakeGenerator -replace 'MSBuild',$msbuildGenerator
+                  if ($cmakeGenerator -like 'Visual Studio *') {
+                      if ('${{ parameters.cxxCompiler }}' -eq 'Clang') {
+                          $cmakeToolchainConfigArgs = "$cmakeToolchainConfigArgs -T ClangCL"
+                      }
+                  }
                   if('${{ parameters.cudaCompiler }}' -and '${{ cudaCompilerVersion }}' -ne 'None') {
                       $cudaVersionRaw = '${{ cudaCompilerVersion }}'
                       $cudaVersion = $cudaVersionRaw -replace '_','.'
                       $cudaPath = "$env:SystemDrive/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v$cudaVersion"
-                      $cmakeCudaCompilerFlag = "-DCMAKE_CUDA_COMPILER=`"$cudaPath/bin/nvcc.exe`""
+                      $cmakeCudaCompilerFlag = "`"-DCMAKE_CUDA_COMPILER=$cudaPath/bin/nvcc.exe`""
                       $cudaPackages = @(@('nvcc', 'cudart') + $cudaPackagesRawArray | % { "${_}_$cudaVersion" }) -replace '-','_' -join ' '
                       echo "##vso[task.setvariable variable=CUDA_PATH]$cudaPath"
                       echo "##vso[task.setvariable variable=CUDA_PATH_V$cudaVersionRaw]$cudaPath"
@@ -362,7 +369,7 @@ jobs:
                   $defaultCmakeGenerator = 'Ninja'
                   if('${{ parameters.cudaCompiler }}' -and '${{ cudaCompilerVersion }}' -ne 'None') {
                       $cudaVersion = '${{ cudaCompilerVersion }}' -replace '_','.'
-                      $cmakeCudaCompilerFlag = "-DCMAKE_CUDA_COMPILER=`"/usr/local/cuda-$cudaVersion/bin/nvcc`""
+                      $cmakeCudaCompilerFlag = "`"-DCMAKE_CUDA_COMPILER=/usr/local/cuda-$cudaVersion/bin/nvcc`""
                       $cudaVersion_Dash = $cudaVersion -replace '\.','-'
                       $cudaPackages = @(@('nvcc', 'cudart-dev') + $cudaPackagesRawArray | % { "cuda-$_-${cudaVersion_Dash}" }) -join ' '
                   }
@@ -388,7 +395,8 @@ jobs:
               }
               $vcpkgArgs = '${{ parameters.vcpkgArgs }}'
               if ('${{ parameters.vcpkgOverlayRef }}') {
-                  $vcpkgOverlayArgs = '--overlay-ports="$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/ports" --overlay-triplets="$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/triplets"'
+                  echo '##vso[task.setvariable variable=VCPKG_OVERLAY_PORTS]$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/ports'
+                  echo '##vso[task.setvariable variable=VCPKG_OVERLAY_TRIPLETS]$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/triplets'
               }
               $vcpkgPackages = '${{ parameters.vcpkgPackages }}'
               $cacheKey = (@(
@@ -405,16 +413,17 @@ jobs:
               if ('${{ parameters.cacheKey }}') {
                   $cacheKey += ' | ${{ parameters.cacheKey }}'
               }
-              if ('${{ parameters.vcpkgRef }}') {
-                  $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake'
-                  $cmakeVcpkgArgs += " -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet"
-              }
-              else {
-                  $cmakeVcpkgArgs = '-DCMAKE_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake'
-              }
               $cmakeConfigArgs = '${{ parameters.cmakeConfigArgs }}'
+              $cmakeConfigArgs = "$cmakeToolchainConfigArgs $cmakeCudaCompilerFlag $cmakeConfigArgs"
               $cmakeBuildArgs = '${{ parameters.cmakeBuildArgs }}'
               $cmakeTestArgs = '${{ parameters.cmakeTestArgs }}'
+              if ('${{ parameters.vcpkgRef }}') {
+                  echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_TOOLCHAIN_FILE]$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake'
+                  $cmakeConfigArgs = "-DCMAKE_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet $cmakeConfigArgs"
+              }
+              else {
+                  $cmakeConfigArgs = "-DCMAKE_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake $cmakeConfigArgs"
+              }
 
               $vcpkgManifestFile = ''
               if ('${{ parameters.vcpkgRef }}' -and (Test-Path '${{ parameters.cmakeSourceDir }}/vcpkg.json')) {
@@ -439,25 +448,23 @@ jobs:
               echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_REF]${{ parameters.vcpkgOverlayRef }}'
               echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_ARGS]$vcpkgArgs"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_PACKAGES]$vcpkgPackages"
-              echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_TOOLCHAIN_FILE]$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake'
+              echo '##vso[task.setvariable variable=CIMAKESHIFT_TOOLCHAIN_FILE]$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake'
               echo '##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_CONFIGURATIONS]${{ join(';', parameters.cmakeBuildConfigurations) }}'
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_GENERATOR]$cmakeGenerator"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_SOURCE_DIR]${{ parameters.cmakeSourceDir }}"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_CONFIG]${{ parameters.cmakeConfig }}"
-              echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_CONFIG_ARGS]$cmakeCompilerFlag $cmakeCudaCompilerFlag $cmakeConfigArgs"
+              echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_CONFIG_ARGS]$cmakeConfigArgs"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD]${{ parameters.cmakeBuild }}"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_ARGS]$cmakeBuildArgs"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_TEST]${{ parameters.cmakeTest }}"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_TEST_ARGS]$cmakeTestArgs"
               echo '##vso[task.setvariable variable=VCPKG_ROOT]$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
-              echo "##vso[task.setvariable variable=VCPKG_TRIPLET]$vcpkgTriplet"
+              echo "##vso[task.setvariable variable=VCPKG_DEFAULT_TRIPLET]$vcpkgTriplet"
 
               # private variables
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CACHE_KEY_]$cacheKey"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CLANG_FULL_VERSION_]$clangFullVersion"
-              echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_OVERLAY_ARGS_]$vcpkgOverlayArgs"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_MANIFEST_FILE_]$vcpkgManifestFile"
-              echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_VCPKG_ARGS_]$cmakeVcpkgArgs"
             displayName: Set environment variables
 
           - pwsh: |
@@ -683,17 +690,17 @@ jobs:
                 cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
                 if ($env:CIMAKESHIFT_VCPKG_PACKAGES) {
                     if ('$(System.Debug)' -eq 'True') {
-                        Write-Host "& ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)"
+                        Write-Host "& ./vcpkg --triplet $env:VCPKG_DEFAULT_TRIPLET $env:CIMAKESHIFT_VCPKG_ARGS install $env:CIMAKESHIFT_VCPKG_PACKAGES"
                     }
-                    & ./vcpkg $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
+                    & ./vcpkg --triplet $(VCPKG_DEFAULT_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
                 }
                 if (Test-Path "$env:CIMAKESHIFT_CMAKE_SOURCE_DIR/vcpkg.json") {
                     # Vcpkg manifest mode
                     cd $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
                     if ('$(System.Debug)' -eq 'True') {
-                        Write-Host "& '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install"
+                        Write-Host "& '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' --triplet $env:VCPKG_DEFAULT_TRIPLET $env:CIMAKESHIFT_VCPKG_ARGS '--feature-flags=manifests' install"
                     }
-                    & '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' $(CIMAKESHIFT_VCPKG_OVERLAY_ARGS_) --triplet $(VCPKG_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install
+                    & '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' --triplet $(VCPKG_DEFAULT_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install
                     cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
                 }
                 Remove-Item -Recurse -Force './buildtrees' -ErrorAction Ignore
@@ -728,31 +735,27 @@ jobs:
               - pwsh: |
                   New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  $vcpkgArgs = $env:CIMAKESHIFT_CMAKE_VCPKG_ARGS_ -split ' '
-                  $args = $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS -split ' '
                   if ('$(System.Debug)' -eq 'True') {
-                      Write-Host "& cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $vcpkgArgs $env:CIMAKESHIFT_CMAKE_SOURCE_DIR $args"
+                      Write-Host "& cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS $env:CIMAKESHIFT_CMAKE_SOURCE_DIR"
                   }
-                  & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $vcpkgArgs $env:CIMAKESHIFT_CMAKE_SOURCE_DIR $args
+                  & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
                 displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(parameters.cmakeBuild, 'true') }}:
               - pwsh: |
-                  $args = $env:CIMAKESHIFT_CMAKE_BUILD_ARGS -split ' '
                   if ('$(System.Debug)' -eq 'True') {
-                      Write-Host "& cmake --build $(Build.BinariesDirectory)/build/${{ config }} --parallel --verbose --config ${{ config }} $args"
+                      Write-Host "& cmake --build $(Build.BinariesDirectory)/build/${{ config }} --parallel --verbose --config ${{ config }} $env:CIMAKESHIFT_CMAKE_BUILD_ARGS"
                   }
-                  & cmake --build $(Build.BinariesDirectory)/build/${{ config }} --parallel --verbose --config ${{ config }} $args
+                  & cmake --build $(Build.BinariesDirectory)/build/${{ config }} --parallel --verbose --config ${{ config }} $(CIMAKESHIFT_CMAKE_BUILD_ARGS)
                 displayName: 'Build ${{ config }}'
 
             - ${{ if eq(parameters.cmakeTest, 'true') }}:
               - pwsh: |
                   cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  $args = $env:CIMAKESHIFT_CMAKE_TEST_ARGS -split ' '
                   if ('$(System.Debug)' -eq 'True') {
-                    Write-Host "& ctest --verbose --output-on-failure --test-action Test --build-config ${{ config }} $args"
+                    Write-Host "& ctest --verbose --output-on-failure --test-action Test --build-config ${{ config }} $env:CIMAKESHIFT_CMAKE_TEST_ARGS"
                   }
-                  & ctest --verbose --output-on-failure --test-action Test --build-config ${{ config }} $args
+                  & ctest --verbose --output-on-failure --test-action Test --build-config ${{ config }} $(CIMAKESHIFT_CMAKE_TEST_ARGS)
                   if (-not $?) {
                       if (Test-Path 'Testing/Temporary') {
                           foreach ($file in Get-ChildItem "Testing/Temporary/MemoryChecker.*.log") {
