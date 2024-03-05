@@ -419,10 +419,10 @@ jobs:
               $cmakeTestArgs = '${{ parameters.cmakeTestArgs }}'
               if ('${{ parameters.vcpkgRef }}') {
                   echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_TOOLCHAIN_FILE]$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake'
-                  $cmakeConfigArgs = "-DCMAKE_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake -DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet $cmakeConfigArgs"
+                  $cmakeConfigArgs = "`"-DCMAKE_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake`" `"-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet $cmakeConfigArgs"
               }
               else {
-                  $cmakeConfigArgs = "-DCMAKE_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake $cmakeConfigArgs"
+                  $cmakeConfigArgs = "`"-DCMAKE_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" $cmakeConfigArgs"
               }
 
               $vcpkgManifestFile = ''
@@ -495,7 +495,7 @@ jobs:
                       }
                       Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
                       Write-Host "[CImakeshift] Installing CUDA packages $env:CIMAKESHIFT_CUDA_PACKAGES"
-                      & "$HOME/cuda_installer_network.exe" '-s' $(CIMAKESHIFT_CUDA_PACKAGES)
+                      Start-Process -Wait "$HOME/cuda_installer_network.exe" '-s' $(CIMAKESHIFT_CUDA_PACKAGES)
                   }
               }
               elseif ($IsLinux) {
