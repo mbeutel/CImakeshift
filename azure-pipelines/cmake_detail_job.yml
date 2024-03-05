@@ -495,7 +495,8 @@ jobs:
                       }
                       Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
                       Write-Host "[CImakeshift] Installing CUDA packages $env:CIMAKESHIFT_CUDA_PACKAGES"
-                      Start-Process -Wait "$HOME/cuda_installer_network.exe" '-s' $(CIMAKESHIFT_CUDA_PACKAGES)
+                      $packages = ($env:CIMAKESHIFT_CUDA_PACKAGES -split ' +(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)').Trim("`"'")
+                      Start-Process -Wait "$HOME/cuda_installer_network.exe" ((,'-s') + $packages)
                   }
               }
               elseif ($IsLinux) {
