@@ -21,7 +21,7 @@ jobs:
 - template: azure-pipelines/cmake.yml@CImakeshift
   parameters:
     caption: Basic
-    vcpkgRef: ba2298b26ce17b5248685d30b359185485413674
+    vcpkgRef: b505fa789fd96eb5496a2e42c651c169e8460d27
     vcpkgPackages: ['gsl-lite']
 
     cmakeSourceDir: '$(Build.SourcesDirectory)/ci/basic'
@@ -73,7 +73,7 @@ jobs:
       cxxCompiler: MSVC
       cxxCompilerVersions: [19_3]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [12_1]
+      cudaCompilerVersions: [12_6]
       platforms: [x64]
       vcpkgPackages: ['<vcpkgPackages>', 'catch2']
       cudaPackages: ['nvrtc-dev']
@@ -100,12 +100,12 @@ jobs:
 
     - os: Linux
       cxxCompiler: GCC
-      cxxCompilerVersions: [7, 12]
+      cxxCompilerVersions: [7, 13]
       platforms: [x64]
 
     - os: Linux
       cxxCompiler: GCC
-      cxxCompilerVersions: [13]
+      cxxCompilerVersions: [14]
       cxxStandardLibraryDebugMode: true
       cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer]
       platforms: [x64]
@@ -119,7 +119,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [17]
+      cxxCompilerVersions: [19]
       cxxStandardLibrary: libstdc++
       cxxStandardLibraryDebugMode: true
       cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer, ImplicitIntegerArithmeticValueChange]
@@ -140,9 +140,9 @@ jobs:
 
     - os: Linux
       cxxCompiler: GCC
-      cxxCompilerVersions: [12]
+      cxxCompilerVersions: [13]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [12_3]
+      cudaCompilerVersions: [12_6]
       platforms: [x64]
       cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
       cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
@@ -155,7 +155,7 @@ jobs:
     - os: MacOS
       cxxCompiler: AppleClang
       #cxxCompilerVersions: [10_0_1, 14, 14_0_3]
-      cxxCompilerVersions: [10_0_1, 15]
+      cxxCompilerVersions: [13, 15]
       platforms: [x64]
 
 - template: azure-pipelines/cmake.yml@CImakeshift
@@ -180,20 +180,20 @@ jobs:
 
     - os: Linux
       cxxCompiler: GCC
-      cxxCompilerVersions: [13]
+      cxxCompilerVersions: [14]
       platforms: [x64]
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [17]
+      cxxCompilerVersions: [19]
       platforms: [x64]
 
     - os: MacOS
       cxxCompiler: GCC
-      cxxCompilerVersions: [13]
+      cxxCompilerVersions: [14]
       platforms: [x64]
 
     - os: MacOS
       cxxCompiler: AppleClang
-      cxxCompilerVersions: [13_1_6, 14_0_3, 15_2]
+      cxxCompilerVersions: [13_1_6, 14_0_3, 16]
       platforms: [x64]
