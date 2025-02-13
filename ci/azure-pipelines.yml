@@ -63,7 +63,7 @@ jobs:
       cxxCompiler: MSVC
       cxxCompilerVersions: [19_3]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [12_6]
+      cudaCompilerVersions: [12_8]
       platforms: [x64]
       vcpkgPackages: ['<vcpkgPackages>', 'catch2']
       cudaPackages: ['nvrtc-dev']
@@ -95,7 +95,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: GCC
-      cxxCompilerVersions: [13]
+      cxxCompilerVersions: [14]
       cxxStandardLibraryDebugMode: true
       cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer]
       platforms: [x64]
@@ -132,7 +132,7 @@ jobs:
       cxxCompiler: GCC
       cxxCompilerVersions: [13]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [12_6]
+      cudaCompilerVersions: [12_8]
       platforms: [x64]
       cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
       cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
@@ -184,5 +184,5 @@ jobs:
 
     - os: MacOS
       cxxCompiler: AppleClang
-      cxxCompilerVersions: [13_1_6, 14_0_3, 16]
+      cxxCompilerVersions: [14_0_3, 15, 16]
       platforms: [x64]
