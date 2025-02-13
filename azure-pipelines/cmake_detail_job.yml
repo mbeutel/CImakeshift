@@ -59,19 +59,17 @@ jobs:
             ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2019')), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, 'VS2019'), eq(cxxCompilerVersion, '19_2'))))) }}:
               vmImage: 'windows-2019'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(10, cxxCompilerVersion)))) }}:
-              vmImage: 'ubuntu-22.04'
+              vmImage: 'ubuntu-24.04'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(6, cxxCompilerVersion), ge(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(5, cxxCompilerVersion), ge(10, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-20.04'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '16'), eq(cxxCompilerVersion, '16_0'), eq(cxxCompilerVersion, '16_0_0'))) }}:
-              vmImage: 'macOS-14'
+              vmImage: 'macOS-15'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '15_1'), eq(cxxCompilerVersion, '15_1_0'), eq(cxxCompilerVersion, '15_2'), eq(cxxCompilerVersion, '15_2_0'), eq(cxxCompilerVersion, '15_3'), eq(cxxCompilerVersion, '15_3_0'), eq(cxxCompilerVersion, '15_4'), eq(cxxCompilerVersion, '15_4_0'))) }}:
               vmImage: 'macOS-14'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '15'), eq(cxxCompilerVersion, '15_0'), eq(cxxCompilerVersion, '15_0_1'))) }}:
               vmImage: 'macOS-14'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '14'), eq(cxxCompilerVersion, '14_0'), eq(cxxCompilerVersion, '14_0_0'), eq(cxxCompilerVersion, '14_0_3'))) }}:
               vmImage: 'macOS-13'
-            ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '13'), eq(cxxCompilerVersion, '13_0'), eq(cxxCompilerVersion, '13_0_0'), eq(cxxCompilerVersion, '13_1_6'))) }}:
-              vmImage: 'macOS-12'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'GCC'), ge(cxxCompilerVersion, '10')) }}:
               vmImage: 'macOS-14'
           steps:
@@ -493,6 +491,7 @@ jobs:
                           '12.4' = 'https://developer.download.nvidia.com/compute/cuda/12.4.1/network_installers/cuda_12.4.1_windows_network.exe'
                           '12.5' = 'https://developer.download.nvidia.com/compute/cuda/12.5.1/network_installers/cuda_12.5.1_windows_network.exe'
                           '12.6' = 'https://developer.download.nvidia.com/compute/cuda/12.6.2/network_installers/cuda_12.6.2_windows_network.exe'
+                          '12.8' = 'https://developer.download.nvidia.com/compute/cuda/12.8.0/network_installers/cuda_12.8.0_windows_network.exe'
                       }
                       Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
                       Write-Host "[CImakeshift] Installing CUDA packages $env:CIMAKESHIFT_CUDA_PACKAGES"
@@ -658,10 +657,6 @@ jobs:
                   }
                   elseif ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'AppleClang') {
                       $appleClangVersion_xcodeVersion = @{
-                          '13'     = '13.2.1'
-                          '13_0'   = '13.2.1'
-                          '13_0_0' = '13.2.1'
-                          '13_1_6' = '13.4.1'
                           '14'     = '14.2'
                           '14_0'   = '14.2'
                           '14_0_0' = '14.2'
@@ -677,9 +672,9 @@ jobs:
                           '15_3_0' = '15.3'
                           '15_4'   = '15.4'
                           '15_4_0' = '15.4'
-                          '16'     = '16.0'
-                          '16_0'   = '16.0'
-                          '16_0_0' = '16.0'
+                          '16'     = '16.2'
+                          '16_0'   = '16.2'
+                          '16_0_0' = '16.2'
                       }
                       $xcodeVersion = $appleClangVersion_xcodeVersion['$(CIMAKESHIFT_CXX_COMPILER_VERSION)']
                       if ('$(System.Debug)' -eq 'True') {
