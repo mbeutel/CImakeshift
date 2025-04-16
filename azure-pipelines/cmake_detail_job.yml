@@ -58,9 +58,9 @@ jobs:
               vmImage: 'windows-2022'
             ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2019')), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, 'VS2019'), eq(cxxCompilerVersion, '19_2'))))) }}:
               vmImage: 'windows-2019'
-            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(10, cxxCompilerVersion)))) }}:
+            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(13, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-24.04'
-            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(6, cxxCompilerVersion), ge(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(5, cxxCompilerVersion), ge(10, cxxCompilerVersion)))) }}:
+            ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(8, cxxCompilerVersion), ge(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(5, cxxCompilerVersion), ge(13, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-22.04'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '16'), eq(cxxCompilerVersion, '16_0'), eq(cxxCompilerVersion, '16_0_0'))) }}:
               vmImage: 'macOS-15'
@@ -503,13 +503,7 @@ jobs:
                   $ninjaOS = 'linux'
                   $packages = @()
                   $osVersionRaw = lsb_release -r -s
-                  if ($osVersionRaw -eq '18.04') {
-                      $osVersionName = 'bionic'
-                  }
-                  elseif ($osVersionRaw -eq '20.04') {
-                      $osVersionName = 'focal'
-                  }
-                  elseif ($osVersionRaw -eq '22.04') {
+                  if ($osVersionRaw -eq '22.04') {
                       $osVersionName = 'jammy'
                   }
                   elseif ($osVersionRaw -eq '24.04') {
