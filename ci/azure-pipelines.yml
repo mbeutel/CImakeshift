@@ -90,7 +90,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: GCC
-      cxxCompilerVersions: [7, 12]
+      cxxCompilerVersions: [9, 12]
       platforms: [x64]
 
     - os: Linux
@@ -104,7 +104,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [6, 13]
+      cxxCompilerVersions: [11, 13]
       platforms: [x64]
 
     - os: Linux
@@ -122,7 +122,7 @@ jobs:
       cxxCompiler: GCC
       cxxCompilerVersions: [8]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [11_8]
+      cudaCompilerVersions: [12_6]
       platforms: [x64]
       vcpkgPackages: ['catch2', 'gsl-lite']
       cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
@@ -130,7 +130,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: GCC
-      cxxCompilerVersions: [13]
+      cxxCompilerVersions: [14]
       cudaCompiler: NVCC
       cudaCompilerVersions: [12_8]
       platforms: [x64]
@@ -144,7 +144,7 @@ jobs:
 
     - os: MacOS
       cxxCompiler: AppleClang
-      cxxCompilerVersions: [13, 14, 15]
+      cxxCompilerVersions: [14, 15]
       platforms: [x64]
 
 - template: azure-pipelines/cmake.yml@CImakeshift
