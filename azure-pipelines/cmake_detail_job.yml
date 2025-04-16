@@ -539,8 +539,8 @@ jobs:
                       $osVersionFlat = $osVersionRaw -replace [regex]::escape('.'),''
                       $ubuntuVersion = "ubuntu$osVersionFlat"
                       & sudo apt-key del 7fa2af80
-                      & wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu$osVersionFlat/x86_64/cuda-keyring_1.0-1_all.deb
-                      & sudo dpkg -i cuda-keyring_1.0-1_all.deb
+                      & wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu$osVersionFlat/x86_64/cuda-keyring_1.1-1_all.deb
+                      & sudo dpkg -i cuda-keyring_1.1-1_all.deb
                       & sudo apt-get update
                       & sudo apt-get install cuda-toolkit-$cudaVersionDash $(CIMAKESHIFT_CUDA_PACKAGES)
                   }
