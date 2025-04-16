@@ -61,7 +61,7 @@ jobs:
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(10, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-24.04'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(6, cxxCompilerVersion), ge(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(5, cxxCompilerVersion), ge(10, cxxCompilerVersion)))) }}:
-              vmImage: 'ubuntu-20.04'
+              vmImage: 'ubuntu-22.04'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '16'), eq(cxxCompilerVersion, '16_0'), eq(cxxCompilerVersion, '16_0_0'))) }}:
               vmImage: 'macOS-15'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '15_1'), eq(cxxCompilerVersion, '15_1_0'), eq(cxxCompilerVersion, '15_2'), eq(cxxCompilerVersion, '15_2_0'), eq(cxxCompilerVersion, '15_3'), eq(cxxCompilerVersion, '15_3_0'), eq(cxxCompilerVersion, '15_4'), eq(cxxCompilerVersion, '15_4_0'))) }}:
@@ -511,6 +511,9 @@ jobs:
                   }
                   elseif ($osVersionRaw -eq '22.04') {
                       $osVersionName = 'jammy'
+                  }
+                  elseif ($osVersionRaw -eq '24.04') {
+                      $osVersionName = 'noble'
                   }
                   if ('$(CIMAKESHIFT_CXX_COMPILER)' -eq 'GCC') {
                       Write-Host "[CImakeshift] Installing packages gcc-$env:CIMAKESHIFT_CXX_COMPILER_VERSION g++-$env:CIMAKESHIFT_CXX_COMPILER_VERSION"
