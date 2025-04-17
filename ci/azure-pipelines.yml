@@ -120,7 +120,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: GCC
-      cxxCompilerVersions: [8]
+      cxxCompilerVersions: [9]
       cudaCompiler: NVCC
       cudaCompilerVersions: [12_6]
       platforms: [x64]
