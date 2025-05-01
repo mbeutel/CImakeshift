@@ -423,18 +423,20 @@ jobs:
               $cmakeTestArgs = '${{ parameters.cmakeTestArgs }}'
               if ('${{ parameters.vcpkgRef }}') {
                   echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_TOOLCHAIN_FILE]$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake'
-                  $cmakeConfigArgs = "`"--toolchain=$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake`" `"-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet $cmakeConfigArgs"
-                  $cmakePresetConfigArgs = "`"--toolchain=$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake`" `"-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" $cmakePresetConfigArgs"
+                  $cmakeConfigArgs = "--toolchain `"$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake`" -D `"VCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" -D VCPKG_TARGET_TRIPLET=$vcpkgTriplet $cmakeConfigArgs"
+                  $cmakePresetConfigArgs = "--toolchain `"$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake`" -D `"VCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" $cmakePresetConfigArgs"
               }
               else {
-                  $cmakeConfigArgs = "`"--toolchain=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" $cmakeConfigArgs"
-                  $cmakePresetConfigArgs = "`"--toolchain=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" $cmakePresetConfigArgs"
+                  $cmakeConfigArgs = "--toolchain `"$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" $cmakeConfigArgs"
+                  $cmakePresetConfigArgs = "--toolchain `"$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" $cmakePresetConfigArgs"
               }
 
               $vcpkgManifestFile = ''
               if ('${{ parameters.vcpkgRef }}' -and (Test-Path '${{ parameters.vcpkgManifestRoot }}/vcpkg.json')) {
                   $vcpkgManifestFile = '${{ parameters.vcpkgManifestRoot }}/vcpkg.json | '
                   $cacheKey += ' | ${{ parameters.vcpkgManifestRoot }}/vcpkg.json'
+                  $cmakeConfigArgs = "$cmakeConfigArgs -D `"VCPKG_MANIFEST_DIR=${{ parameters.vcpkgManifestRoot }}/vcpkg.json`""
+                  $cmakePresetConfigArgs = "$cmakePresetConfigArgs -D `"VCPKG_MANIFEST_DIR=${{ parameters.vcpkgManifestRoot }}/vcpkg.json`""
               }
 
               # public variables accessible to custom job steps
@@ -701,19 +703,19 @@ jobs:
                 cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
                 if ($env:CIMAKESHIFT_VCPKG_PACKAGES) {
                     if ('$(System.Debug)' -eq 'True') {
-                        Write-Host "& ./vcpkg --triplet $env:VCPKG_DEFAULT_TRIPLET $env:CIMAKESHIFT_VCPKG_ARGS install $env:CIMAKESHIFT_VCPKG_PACKAGES"
+                        Write-Host "& ./vcpkg --triplet $env:VCPKG_DEFAULT_TRIPLET $env:CIMAKESHIFT_VCPKG_ARGS install $env:CIMAKESHIFT_VCPKG_PACKAGES --clean-buildtrees-after-build --clean-downloads-after-build --clean-packages-after-build"
                     }
-                    & ./vcpkg --triplet $(VCPKG_DEFAULT_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES)
+                    & ./vcpkg --triplet $(VCPKG_DEFAULT_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) install $(CIMAKESHIFT_VCPKG_PACKAGES) --clean-buildtrees-after-build --clean-downloads-after-build --clean-packages-after-build
                 }
-                if (Test-Path "$env:CIMAKESHIFT_VCPKG_MANIFEST_ROOT/vcpkg.json") {
-                    # Vcpkg manifest mode
-                    cd $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
-                    if ('$(System.Debug)' -eq 'True') {
-                        Write-Host "& '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' --triplet $(VCPKG_DEFAULT_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install --x-manifest-root $env:CIMAKESHIFT_VCPKG_MANIFEST_ROOT"
-                    }
-                    & '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' --triplet $(VCPKG_DEFAULT_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install --x-manifest-root $env:CIMAKESHIFT_VCPKG_MANIFEST_ROOT
-                    cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
-                }
+                #if (Test-Path "$env:CIMAKESHIFT_VCPKG_MANIFEST_ROOT/vcpkg.json") {
+                #    # Vcpkg manifest mode
+                #    cd $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
+                #    if ('$(System.Debug)' -eq 'True') {
+                #        Write-Host "& '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' --triplet $(VCPKG_DEFAULT_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install --x-manifest-root $env:CIMAKESHIFT_VCPKG_MANIFEST_ROOT --clean-buildtrees-after-build --clean-downloads-after-build --clean-packages-after-build"
+                #    }
+                #    & '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' --triplet $(VCPKG_DEFAULT_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install --x-manifest-root $env:CIMAKESHIFT_VCPKG_MANIFEST_ROOT --x-install-root "/vcpkg_installed" --clean-buildtrees-after-build --clean-downloads-after-build --clean-packages-after-build
+                #    cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
+                #}
                 Remove-Item -Recurse -Force './buildtrees' -ErrorAction Ignore
                 Remove-Item -Recurse -Force './downloads' -ErrorAction Ignore
                 Remove-Item -Recurse -Force './packages' -ErrorAction Ignore
@@ -794,6 +796,15 @@ jobs:
               - ${{ each step in parameters.targetPostBuildSteps }}:
                 - ${{ each pair in step }}:
                     ${{ pair.key }}: ${{ pair.value }}
+
+          - ${{ if parameters.vcpkgRef }}:
+            - pwsh: |
+                cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
+                Remove-Item -Recurse -Force './buildtrees' -ErrorAction Ignore
+                Remove-Item -Recurse -Force './downloads' -ErrorAction Ignore
+                Remove-Item -Recurse -Force './packages' -ErrorAction Ignore
+              displayName: Clean up Vcpkg directories
+              condition: ne(variables.CIMAKESHIFT_DEPENDENCY_CACHE_HIT, 'true')
 
           - ${{ if eq(parameters.cmakeTest, 'true') }}:
             - task: PublishTestResults@2
