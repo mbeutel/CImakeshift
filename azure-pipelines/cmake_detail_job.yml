@@ -397,6 +397,7 @@ jobs:
                   echo '##vso[task.setvariable variable=VCPKG_OVERLAY_TRIPLETS]$(Build.BinariesDirectory)/_CImakeshift_cache/overlay-repo/vcpkg/triplets'
               }
               $vcpkgPackages = '${{ parameters.vcpkgPackages }}'
+              $cmakeConfigPreset = '${{ parameters.cmakeConfigPreset }}'
               $cacheKey = (@(
                   "revision: $revision",
                   "platform: $(Agent.OS) $(Agent.OSArchitecture)",
@@ -406,7 +407,8 @@ jobs:
                   "vcpkgRepo: $vcpkgRepo ${{ parameters.vcpkgRef }}",
                   'vcpkgOverlayRepo: ${{ parameters.vcpkgOverlayRepo }} ${{ parameters.vcpkgOverlayRef }}',
                   "vcpkgArgs: $vcpkgArgs",
-                  "vcpkgPackages: $vcpkgPackages"
+                  "vcpkgPackages: $vcpkgPackages",
+                  "cmakeConfigPreset: $cmakeConfigPreset"
               ) | Where-Object { $_ -and ($_ -replace '[A-Za-z]+:\s+','') } | % { "`"$_`"" }) -join ' | '
               if ('${{ parameters.cacheKey }}') {
                   $cacheKey += ' | ${{ parameters.cacheKey }}'

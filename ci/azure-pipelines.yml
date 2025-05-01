@@ -21,7 +21,7 @@ jobs:
 - template: azure-pipelines/cmake.yml@CImakeshift
   parameters:
     caption: Basic
-    vcpkgRef: b505fa789fd96eb5496a2e42c651c169e8460d27
+    vcpkgRef: 5a874b05fb981e2643fd0c1c9ad63e19dfe76b27
     vcpkgPackages: ['gsl-lite']
 
     cmakeSourceDir: '$(Build.SourcesDirectory)/ci/basic'
@@ -150,7 +150,7 @@ jobs:
 - template: azure-pipelines/cmake.yml@CImakeshift
   parameters:
     caption: Vcpkg manifests
-    vcpkgRef: ba2298b26ce17b5248685d30b359185485413674
+    vcpkgRef: 5a874b05fb981e2643fd0c1c9ad63e19dfe76b27
 
     cmakeSourceDir: '$(Build.SourcesDirectory)/ci/vcpkg-manifest'
     vcpkgManifestRoot: '$(Build.SourcesDirectory)/ci/vcpkg-manifest/root'
