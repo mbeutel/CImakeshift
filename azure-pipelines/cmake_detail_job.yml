@@ -435,8 +435,8 @@ jobs:
               if ('${{ parameters.vcpkgRef }}' -and (Test-Path '${{ parameters.vcpkgManifestRoot }}/vcpkg.json')) {
                   $vcpkgManifestFile = '${{ parameters.vcpkgManifestRoot }}/vcpkg.json | '
                   $cacheKey += ' | ${{ parameters.vcpkgManifestRoot }}/vcpkg.json'
-                  $cmakeConfigArgs = "$cmakeConfigArgs -D `"VCPKG_MANIFEST_DIR=${{ parameters.vcpkgManifestRoot }}/vcpkg.json`""
-                  $cmakePresetConfigArgs = "$cmakePresetConfigArgs -D `"VCPKG_MANIFEST_DIR=${{ parameters.vcpkgManifestRoot }}/vcpkg.json`""
+                  $cmakeConfigArgs = "$cmakeConfigArgs -D `"VCPKG_MANIFEST_DIR=${{ parameters.vcpkgManifestRoot }}`""
+                  $cmakePresetConfigArgs = "$cmakePresetConfigArgs -D `"VCPKG_MANIFEST_DIR=${{ parameters.vcpkgManifestRoot }}`""
               }
 
               # public variables accessible to custom job steps
