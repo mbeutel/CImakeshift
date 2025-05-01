@@ -702,9 +702,9 @@ jobs:
                     # Vcpkg manifest mode
                     cd $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
                     if ('$(System.Debug)' -eq 'True') {
-                        Write-Host "& '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' --triplet $env:VCPKG_DEFAULT_TRIPLET $env:CIMAKESHIFT_VCPKG_ARGS '--feature-flags=manifests' install --x-manifest-root=$env:CIMAKESHIFT_VCPKG_MANIFEST_ROOT"
+                        Write-Host "& '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' --triplet $(VCPKG_DEFAULT_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install --x-manifest-root $env:CIMAKESHIFT_VCPKG_MANIFEST_ROOT"
                     }
-                    & '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' --triplet $(VCPKG_DEFAULT_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install --x-manifest-root=$env:CIMAKESHIFT_VCPKG_MANIFEST_ROOT
+                    & '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/vcpkg' --triplet $(VCPKG_DEFAULT_TRIPLET) $(CIMAKESHIFT_VCPKG_ARGS) '--feature-flags=manifests' install --x-manifest-root $env:CIMAKESHIFT_VCPKG_MANIFEST_ROOT
                     cd '$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg'
                 }
                 Remove-Item -Recurse -Force './buildtrees' -ErrorAction Ignore
