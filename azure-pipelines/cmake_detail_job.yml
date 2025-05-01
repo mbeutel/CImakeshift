@@ -414,15 +414,21 @@ jobs:
                   $cacheKey += ' | ${{ parameters.cacheKey }}'
               }
               $cmakeConfigArgs = '${{ parameters.cmakeConfigArgs }}'
-              $cmakeConfigArgs = "$cmakeToolchainConfigArgs $cmakeCudaCompilerFlag $cmakeConfigArgs"
+              $cmakeConfigArgs = "-G $cmakeGenerator $cmakeToolchainConfigArgs $cmakeCudaCompilerFlag $cmakeConfigArgs"
+              $cmakePresetConfigArgs = '${{ parameters.cmakeConfigArgs }}'
+              if ('${{ parameters.cmakeGenerator }}') {
+                  $cmakePresetConfigArgs = "-G $cmakeGenerator $cmakeToolchainConfigArgs $cmakePresetConfigArgs"
+              }
               $cmakeBuildArgs = '${{ parameters.cmakeBuildArgs }}'
               $cmakeTestArgs = '${{ parameters.cmakeTestArgs }}'
               if ('${{ parameters.vcpkgRef }}') {
                   echo '##vso[task.setvariable variable=CIMAKESHIFT_VCPKG_TOOLCHAIN_FILE]$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake'
-                  $cmakeConfigArgs = "`"-DCMAKE_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake`" `"-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet $cmakeConfigArgs"
+                  $cmakeConfigArgs = "`"--toolchain=$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake`" `"-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" -DVCPKG_TARGET_TRIPLET=$vcpkgTriplet $cmakeConfigArgs"
+                  $cmakePresetConfigArgs = "`"--toolchain=$(Build.BinariesDirectory)/_CImakeshift_cache/vcpkg/scripts/buildsystems/vcpkg.cmake`" `"-DVCPKG_CHAINLOAD_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" $cmakePresetConfigArgs"
               }
               else {
-                  $cmakeConfigArgs = "`"-DCMAKE_TOOLCHAIN_FILE=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" $cmakeConfigArgs"
+                  $cmakeConfigArgs = "`"--toolchain=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" $cmakeConfigArgs"
+                  $cmakePresetConfigArgs = "`"--toolchain=$(Build.BinariesDirectory)/_CImakeshift_files/toolchain.cmake`" $cmakePresetConfigArgs"
               }
 
               $vcpkgManifestFile = ''
@@ -455,6 +461,7 @@ jobs:
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_SOURCE_DIR]${{ parameters.cmakeSourceDir }}"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_CONFIG]${{ parameters.cmakeConfig }}"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_CONFIG_ARGS]$cmakeConfigArgs"
+              echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_PRESET_CONFIG_ARGS]$cmakePresetConfigArgs"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD]${{ parameters.cmakeBuild }}"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_BUILD_ARGS]$cmakeBuildArgs"
               echo "##vso[task.setvariable variable=CIMAKESHIFT_CMAKE_TEST]${{ parameters.cmakeTest }}"
@@ -741,18 +748,18 @@ jobs:
                     New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                     cd '$(Build.BinariesDirectory)/build/${{ config }}'
                     if ('$(System.Debug)' -eq 'True') {
-                        Write-Host "& cmake $env:CIMAKESHIFT_CMAKE_SOURCE_DIR --preset '${{ parameters.cmakeConfigPreset }}' -B '$(Build.BinariesDirectory)/build/${{ config }}'"
+                        Write-Host "& cmake $env:CIMAKESHIFT_CMAKE_SOURCE_DIR --preset '${{ parameters.cmakeConfigPreset }}' $env:CIMAKESHIFT_CMAKE_PRESET_CONFIG_ARGS -B '$(Build.BinariesDirectory)/build/${{ config }}'"
                     }
-                    & cmake $env:CIMAKESHIFT_CMAKE_SOURCE_DIR --preset '${{ parameters.cmakeConfigPreset }}' -B '$(Build.BinariesDirectory)/build/${{ config }}'
+                    & cmake $env:CIMAKESHIFT_CMAKE_SOURCE_DIR --preset '${{ parameters.cmakeConfigPreset }}' $(CIMAKESHIFT_CMAKE_PRESET_CONFIG_ARGS) -B '$(Build.BinariesDirectory)/build/${{ config }}'
                   displayName: 'Configure ${{ config }}'
               - ${{ else }}:
                 - pwsh: |
                     New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
                     cd '$(Build.BinariesDirectory)/build/${{ config }}'
                     if ('$(System.Debug)' -eq 'True') {
-                        Write-Host "& cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS $env:CIMAKESHIFT_CMAKE_SOURCE_DIR"
+                        Write-Host "& cmake -DCMAKE_BUILD_TYPE=${{ config }} $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS $env:CIMAKESHIFT_CMAKE_SOURCE_DIR"
                     }
-                    & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
+                    & cmake -DCMAKE_BUILD_TYPE=${{ config }} $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
                   displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(parameters.cmakeBuild, 'true') }}:
