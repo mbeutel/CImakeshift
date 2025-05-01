@@ -18,134 +18,134 @@ resources:
       #ref: refs/tags/0.2
 
 jobs:
-#- template: azure-pipelines/cmake.yml@CImakeshift
-#  parameters:
-#    caption: Basic
-#    vcpkgRef: 5a874b05fb981e2643fd0c1c9ad63e19dfe76b27
-#    vcpkgPackages: ['gsl-lite']
-#
-#    cmakeSourceDir: '$(Build.SourcesDirectory)/ci/basic'
-#    cmakeConfigArgs: '-DBUILD_TESTING=ON -DCMAKESHIFT_WARNING_LEVEL=high'
-#    #cmakeTestArgs: '--exclude-regex cuda' # do not run CUDA tests
-#
-#    postSetupSteps:
-#    - pwsh: |
-#        Write-Host 'Custom post-setup step (global)'
-#        Write-Host "C++ compiler: $env:CIMAKESHIFT_CXX_COMPILER, version: $env:CIMAKESHIFT_CXX_COMPILER_VERSION"
-#        Write-Host "CUDA compiler: $env:CIMAKESHIFT_CUDA_COMPILER, version: $env:CIMAKESHIFT_CUDA_COMPILER_VERSION"
-#      displayName: 'Custom post-setup step (global)'
-#
-#    preBuildSteps:
-#    - pwsh: |
-#        Write-Host 'Custom pre-build step (global)'
-#        Write-Host "CMake build configuration: $env:CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION"
-#      displayName: 'Custom pre-build step (global)'
-#
-#    postBuildSteps:
-#    - pwsh: |
-#        Write-Host 'Custom post-build step (global)'
-#        Write-Host "CMake build configuration: $env:CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION"
-#      displayName: 'Custom post-build step (global)'
-#
-#    targets:
-#
-#    - os: Windows
-#      cxxCompiler: MSVC
-#      cxxCompilerVersions: [19_2, 19_3]
-#      platforms: [x86, x64]
-#
-#    - os: Windows
-#      cxxCompiler: Clang
-#      cxxCompilerVersions: [VS2019, VS2022]
-#      platforms: [x86, x64]
-#
-#    - os: Windows
-#      cxxCompiler: MSVC
-#      cxxCompilerVersions: [19_3]
-#      cudaCompiler: NVCC
-#      cudaCompilerVersions: [12_8]
-#      platforms: [x64]
-#      vcpkgPackages: ['<vcpkgPackages>', 'catch2']
-#      cudaPackages: ['nvrtc-dev']
-#      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
-#
-#      postSetupSteps:
-#      - pwsh: |
-#          Write-Host 'Custom post-setup step (target)'
-#          Write-Host "C++ compiler: $env:CIMAKESHIFT_CXX_COMPILER, version: $env:CIMAKESHIFT_CXX_COMPILER_VERSION"
-#          Write-Host "CUDA compiler: $env:CIMAKESHIFT_CUDA_COMPILER, version: $env:CIMAKESHIFT_CUDA_COMPILER_VERSION"
-#        displayName: 'Custom post-setup step (target)'
-#
-#      preBuildSteps:
-#      - pwsh: |
-#          Write-Host 'Custom pre-build step (target)'
-#          Write-Host "CMake build configuration: $env:CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION"
-#        displayName: 'Custom pre-build step (target)'
-#
-#      postBuildSteps:
-#      - pwsh: |
-#          Write-Host 'Custom post-build step (target)'
-#          Write-Host "CMake build configuration: $env:CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION"
-#        displayName: 'Custom post-build step (target)'
-#
-#    - os: Linux
-#      cxxCompiler: GCC
-#      cxxCompilerVersions: [9, 12]
-#      platforms: [x64]
-#
-#    - os: Linux
-#      cxxCompiler: GCC
-#      cxxCompilerVersions: [14]
-#      cxxStandardLibraryDebugMode: true
-#      cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer]
-#      platforms: [x64]
-#      tag: 'sanitize'
-#      cmakeBuildConfigurations: [Debug, RelWithDebInfo]
-#
-#    - os: Linux
-#      cxxCompiler: Clang
-#      cxxCompilerVersions: [11, 13]
-#      platforms: [x64]
-#
-#    - os: Linux
-#      cxxCompiler: Clang
-#      cxxCompilerVersions: [19]
-#      cxxStandardLibrary: libstdc++
-#      cxxStandardLibraryDebugMode: true
-#      cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer, ImplicitIntegerArithmeticValueChange]
-#      platforms: [x64]
-#      tag: 'sanitize'
-#      vcpkgTriplet: <platform>-<os>
-#      cmakeBuildConfigurations: [Debug, RelWithDebInfo]
-#
-#    - os: Linux
-#      cxxCompiler: GCC
-#      cxxCompilerVersions: [9]
-#      cudaCompiler: NVCC
-#      cudaCompilerVersions: [12_6]
-#      platforms: [x64]
-#      vcpkgPackages: ['catch2', 'gsl-lite']
-#      cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
-#      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
-#
-#    - os: Linux
-#      cxxCompiler: GCC
-#      cxxCompilerVersions: [14]
-#      cudaCompiler: NVCC
-#      cudaCompilerVersions: [12_8]
-#      platforms: [x64]
-#      cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
-#      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
-#
-#    - os: MacOS
-#      cxxCompiler: GCC
-#      cxxCompilerVersions: [11, 12, 13, 14]
-#      platforms: [x64]
-#
-#    - os: MacOS
-#      cxxCompiler: AppleClang
-#      cxxCompilerVersions: [14, 15]
-#      platforms: [x64]
+- template: azure-pipelines/cmake.yml@CImakeshift
+  parameters:
+    caption: Basic
+    vcpkgRef: 5a874b05fb981e2643fd0c1c9ad63e19dfe76b27
+    vcpkgPackages: ['gsl-lite']
+
+    cmakeSourceDir: '$(Build.SourcesDirectory)/ci/basic'
+    cmakeConfigArgs: '-DBUILD_TESTING=ON -DCMAKESHIFT_WARNING_LEVEL=high'
+    #cmakeTestArgs: '--exclude-regex cuda' # do not run CUDA tests
+
+    postSetupSteps:
+    - pwsh: |
+        Write-Host 'Custom post-setup step (global)'
+        Write-Host "C++ compiler: $env:CIMAKESHIFT_CXX_COMPILER, version: $env:CIMAKESHIFT_CXX_COMPILER_VERSION"
+        Write-Host "CUDA compiler: $env:CIMAKESHIFT_CUDA_COMPILER, version: $env:CIMAKESHIFT_CUDA_COMPILER_VERSION"
+      displayName: 'Custom post-setup step (global)'
+
+    preBuildSteps:
+    - pwsh: |
+        Write-Host 'Custom pre-build step (global)'
+        Write-Host "CMake build configuration: $env:CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION"
+      displayName: 'Custom pre-build step (global)'
+
+    postBuildSteps:
+    - pwsh: |
+        Write-Host 'Custom post-build step (global)'
+        Write-Host "CMake build configuration: $env:CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION"
+      displayName: 'Custom post-build step (global)'
+
+    targets:
+
+    - os: Windows
+      cxxCompiler: MSVC
+      cxxCompilerVersions: [19_2, 19_3]
+      platforms: [x86, x64]
+
+    - os: Windows
+      cxxCompiler: Clang
+      cxxCompilerVersions: [VS2019, VS2022]
+      platforms: [x86, x64]
+
+    - os: Windows
+      cxxCompiler: MSVC
+      cxxCompilerVersions: [19_3]
+      cudaCompiler: NVCC
+      cudaCompilerVersions: [12_8]
+      platforms: [x64]
+      vcpkgPackages: ['<vcpkgPackages>', 'catch2']
+      cudaPackages: ['nvrtc-dev']
+      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
+
+      postSetupSteps:
+      - pwsh: |
+          Write-Host 'Custom post-setup step (target)'
+          Write-Host "C++ compiler: $env:CIMAKESHIFT_CXX_COMPILER, version: $env:CIMAKESHIFT_CXX_COMPILER_VERSION"
+          Write-Host "CUDA compiler: $env:CIMAKESHIFT_CUDA_COMPILER, version: $env:CIMAKESHIFT_CUDA_COMPILER_VERSION"
+        displayName: 'Custom post-setup step (target)'
+
+      preBuildSteps:
+      - pwsh: |
+          Write-Host 'Custom pre-build step (target)'
+          Write-Host "CMake build configuration: $env:CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION"
+        displayName: 'Custom pre-build step (target)'
+
+      postBuildSteps:
+      - pwsh: |
+          Write-Host 'Custom post-build step (target)'
+          Write-Host "CMake build configuration: $env:CIMAKESHIFT_CMAKE_BUILD_CONFIGURATION"
+        displayName: 'Custom post-build step (target)'
+
+    - os: Linux
+      cxxCompiler: GCC
+      cxxCompilerVersions: [9, 12]
+      platforms: [x64]
+
+    - os: Linux
+      cxxCompiler: GCC
+      cxxCompilerVersions: [14]
+      cxxStandardLibraryDebugMode: true
+      cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer]
+      platforms: [x64]
+      tag: 'sanitize'
+      cmakeBuildConfigurations: [Debug, RelWithDebInfo]
+
+    - os: Linux
+      cxxCompiler: Clang
+      cxxCompilerVersions: [11, 13]
+      platforms: [x64]
+
+    - os: Linux
+      cxxCompiler: Clang
+      cxxCompilerVersions: [19]
+      cxxStandardLibrary: libstdc++
+      cxxStandardLibraryDebugMode: true
+      cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer, ImplicitIntegerArithmeticValueChange]
+      platforms: [x64]
+      tag: 'sanitize'
+      vcpkgTriplet: <platform>-<os>
+      cmakeBuildConfigurations: [Debug, RelWithDebInfo]
+
+    - os: Linux
+      cxxCompiler: GCC
+      cxxCompilerVersions: [9]
+      cudaCompiler: NVCC
+      cudaCompilerVersions: [12_6]
+      platforms: [x64]
+      vcpkgPackages: ['catch2', 'gsl-lite']
+      cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
+      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
+
+    - os: Linux
+      cxxCompiler: GCC
+      cxxCompilerVersions: [14]
+      cudaCompiler: NVCC
+      cudaCompilerVersions: [12_8]
+      platforms: [x64]
+      cudaPackages: ['<cudaPackages>', 'nvrtc-dev']
+      cmakeConfigArgs: '<cmakeConfigArgs> -DBUILD_TESTING_CUDA=ON'
+
+    - os: MacOS
+      cxxCompiler: GCC
+      cxxCompilerVersions: [11, 12, 13, 14]
+      platforms: [x64]
+
+    - os: MacOS
+      cxxCompiler: AppleClang
+      cxxCompilerVersions: [14, 15]
+      platforms: [x64]
 
 - template: azure-pipelines/cmake.yml@CImakeshift
   parameters:
