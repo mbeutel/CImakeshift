@@ -33,6 +33,7 @@ parameters:
   cmakeBuildConfigurations: []
   cmakeGenerator: ''
   cmakeConfig: ''
+  cmakeConfigPreset: ''
   cmakeBuild: ''
   cmakeTest: ''
 
@@ -491,7 +492,7 @@ jobs:
                           '12.4' = 'https://developer.download.nvidia.com/compute/cuda/12.4.1/network_installers/cuda_12.4.1_windows_network.exe'
                           '12.5' = 'https://developer.download.nvidia.com/compute/cuda/12.5.1/network_installers/cuda_12.5.1_windows_network.exe'
                           '12.6' = 'https://developer.download.nvidia.com/compute/cuda/12.6.2/network_installers/cuda_12.6.2_windows_network.exe'
-                          '12.8' = 'https://developer.download.nvidia.com/compute/cuda/12.8.0/network_installers/cuda_12.8.0_windows_network.exe'
+                          '12.8' = 'https://developer.download.nvidia.com/compute/cuda/12.8.1/network_installers/cuda_12.8.1_windows_network.exe'
                       }
                       Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
                       Write-Host "[CImakeshift] Installing CUDA packages $env:CIMAKESHIFT_CUDA_PACKAGES"
@@ -731,14 +732,24 @@ jobs:
                     ${{ pair.key }}: ${{ pair.value }}
 
             - ${{ if eq(parameters.cmakeConfig, 'true') }}:
-              - pwsh: |
-                  New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
-                  cd '$(Build.BinariesDirectory)/build/${{ config }}'
-                  if ('$(System.Debug)' -eq 'True') {
-                      Write-Host "& cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS $env:CIMAKESHIFT_CMAKE_SOURCE_DIR"
-                  }
-                  & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
-                displayName: 'Configure ${{ config }}'
+              - ${{ if parameters.cmakeConfigPreset }}:
+                - pwsh: |
+                    New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
+                    cd '$(Build.BinariesDirectory)/build/${{ config }}'
+                    if ('$(System.Debug)' -eq 'True') {
+                        Write-Host "& cmake $env:CIMAKESHIFT_CMAKE_SOURCE_DIR --preset '${{ parameters.cmakeConfigPreset }}' -B '$(Build.BinariesDirectory)/build/${{ config }}'"
+                    }
+                    & cmake $env:CIMAKESHIFT_CMAKE_SOURCE_DIR --preset '${{ parameters.cmakeConfigPreset }}' -B '$(Build.BinariesDirectory)/build/${{ config }}'
+                  displayName: 'Configure ${{ config }}'
+              - ${{ else }}:
+                - pwsh: |
+                    New-Item -Type Directory -Force '$(Build.BinariesDirectory)/build/${{ config }}'
+                    cd '$(Build.BinariesDirectory)/build/${{ config }}'
+                    if ('$(System.Debug)' -eq 'True') {
+                        Write-Host "& cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $env:CIMAKESHIFT_CMAKE_CONFIG_ARGS $env:CIMAKESHIFT_CMAKE_SOURCE_DIR"
+                    }
+                    & cmake -G $env:CIMAKESHIFT_CMAKE_GENERATOR -DCMAKE_BUILD_TYPE=${{ config }} $(CIMAKESHIFT_CMAKE_CONFIG_ARGS) $env:CIMAKESHIFT_CMAKE_SOURCE_DIR
+                  displayName: 'Configure ${{ config }}'
 
             - ${{ if eq(parameters.cmakeBuild, 'true') }}:
               - pwsh: |

@@ -1,5 +1,5 @@
 # Azure Pipelines job template for CMake builds
-# Version 0.10.0
+# Version 0.11.0
 # Author: Moritz Beutel
 #
 #
@@ -131,6 +131,7 @@ parameters:
   cmakeGenerator: ''
   cmakeConfig: true
   cmakeConfigArgs: ''
+  cmakeConfigPreset: ''
   cmakeBuild: true
   cmakeBuildArgs: ''
   cmakeTest: true
@@ -168,6 +169,7 @@ parameters:
 #    target.cmakeGenerator                  # overrides parameters.cmakeGenerator
 #    target.cmakeConfig                     # overrides parameters.cmakeConfig
 #    target.cmakeConfigArgs                 # overrides parameters.cmakeConfigArgs; can refer to parameters.cmakeConfigArgs as '<cmakeConfigArgs>'
+#    target.cmakeConfigPreset               # overrides parameters.cmakeConfigPreset
 #    target.cmakeBuild                      # overrides parameters.cmakeBuild
 #    target.cmakeBuildArgs                  # overrides parameters.cmakeBuildArgs; can refer to parameters.cmakeBuildArgs as '<cmakeBuildArgs>'
 #    target.cmakeTest                       # overrides parameters.cmakeTest
@@ -193,26 +195,26 @@ jobs:
       platforms:
       - ${{ if target.platforms }}:
         - ${{ target.platforms }}
-      - ${{ if not(target.platforms) }}:
+      - ${{ else }}:
         - ${{ parameters.platforms }}
       cxxCompiler: '${{ coalesce(target.cxxCompiler, parameters.cxxCompiler) }}'
       cxxCompilerVersions:
       - ${{ if target.cxxCompilerVersions }}:
         - ${{ target.cxxCompilerVersions }}
-      - ${{ if not(target.cxxCompilerVersions) }}:
+      - ${{ else }}:
         - ${{ parameters.cxxCompilerVersions }}
       cxxStandardLibrary: '${{ coalesce(target.cxxStandardLibrary, parameters.cxxStandardLibrary) }}'
       cxxStandardLibraryDebugMode: '${{ coalesce(target.cxxStandardLibraryDebugMode, parameters.cxxStandardLibraryDebugMode) }}'
       cxxSanitizers:
       - ${{ if target.cxxSanitizers }}:
         - ${{ target.cxxSanitizers }}
-      - ${{ if not(target.cxxSanitizers) }}:
+      - ${{ else }}:
         - ${{ parameters.cxxSanitizers }}
       cudaCompiler: '${{ coalesce(target.cudaCompiler, parameters.cudaCompiler) }}'
       cudaCompilerVersions:
       - ${{ if target.cudaCompilerVersions }}:
         - ${{ target.cudaCompilerVersions }}
-      - ${{ if not(target.cudaCompilerVersions) }}:
+      - ${{ else }}:
         - ${{ parameters.cudaCompilerVersions }}
       vcpkgRepo: '${{ coalesce(target.vcpkgRepo, parameters.vcpkgRepo) }}'
       vcpkgRef: '${{ coalesce(target.vcpkgRef, parameters.vcpkgRef) }}'
@@ -225,7 +227,7 @@ jobs:
       cmakeBuildConfigurations:
       - ${{ if target.cmakeBuildConfigurations }}:
         - ${{ target.cmakeBuildConfigurations }}
-      - ${{ if not(target.cmakeBuildConfigurations) }}:
+      - ${{ else }}:
         - ${{ parameters.cmakeBuildConfigurations }}
       cmakeGenerator: '${{ coalesce(target.cmakeGenerator, parameters.cmakeGenerator) }}'
       cmakeConfig: '${{ coalesce(target.cmakeConfig, parameters.cmakeConfig) }}'
@@ -237,3 +239,4 @@ jobs:
       cmakeConfigArgs: '${{ replace(coalesce(target.cmakeConfigArgs, ''<cmakeConfigArgs>''), ''<cmakeConfigArgs>'', parameters.cmakeConfigArgs) }}'
       cmakeBuildArgs: '${{ replace(coalesce(target.cmakeBuildArgs, ''<cmakeBuildArgs>''), ''<cmakeBuildArgs>'', parameters.cmakeBuildArgs) }}'
       cmakeTestArgs: '${{ replace(coalesce(target.cmakeTestArgs, ''<cmakeTestArgs>''), ''<cmakeTestArgs>'', parameters.cmakeTestArgs) }}'
+      cmakeConfigPreset: '${{ replace(coalesce(target.cmakeConfigPreset, ''<cmakeConfigPreset>''), ''<cmakeConfigPreset>'', parameters.cmakeConfigPreset) }}'
