@@ -414,10 +414,10 @@ jobs:
                   $cacheKey += ' | ${{ parameters.cacheKey }}'
               }
               $cmakeConfigArgs = '${{ parameters.cmakeConfigArgs }}'
-              $cmakeConfigArgs = "-G $cmakeGenerator $cmakeToolchainConfigArgs $cmakeCudaCompilerFlag $cmakeConfigArgs"
+              $cmakeConfigArgs = "-G `"$cmakeGenerator`" $cmakeToolchainConfigArgs $cmakeCudaCompilerFlag $cmakeConfigArgs"
               $cmakePresetConfigArgs = '${{ parameters.cmakeConfigArgs }}'
               if ('${{ parameters.cmakeGenerator }}') {
-                  $cmakePresetConfigArgs = "-G $cmakeGenerator $cmakeToolchainConfigArgs $cmakePresetConfigArgs"
+                  $cmakePresetConfigArgs = "-G `"$cmakeGenerator`" $cmakeToolchainConfigArgs $cmakePresetConfigArgs"
               }
               $cmakeBuildArgs = '${{ parameters.cmakeBuildArgs }}'
               $cmakeTestArgs = '${{ parameters.cmakeTestArgs }}'
