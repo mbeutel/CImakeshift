@@ -10,15 +10,15 @@ This template supports compilation of C and C++ code with MSVC, GCC, Clang, and 
 (Note that CUDA code can only be compiled, not executed, when running on Microsoft-hosted agents because they do not come with
 access to CUDA hardware.)
 For a detailed list of the platforms and compiler versions supported, please refer to
-[the comments in azure-pipelines/cmake.yml](blob/master/azure-pipelines/cmake.yml).
+[the comments in azure-pipelines/cmake.yml](azure-pipelines/cmake.yml).
 
 This code is available under the [Boost Software License](LICENSE.txt), so feel free to reuse it. However, please note that
 there is no documentation except for some comments in the code, and I cannot offer any guarantees of stability or compatibility
 for the code in this repository, which I consider an implementation detail of my other public projects. If you would like to use
 it, it is probably best to fork this repository and have your CI runners take a dependency on your own fork.
 
-That being said, here is an annotated example of a CI configuration with Azure Pipelines and the CImakeshift template taken from
-[this repository's own CI configuration](blob/master/ci/azure-pipelines.yml):
+That being said, here is an annotated example, taken from [this repository's own CI configuration](ci/azure-pipelines.yml),
+of a CI configuration with Azure Pipelines and the CImakeshift template:
 
 ```yaml
 variables:
