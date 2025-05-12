@@ -554,6 +554,7 @@ jobs:
                       & sudo dpkg -i cuda-keyring_1.1-1_all.deb
                       & sudo apt-get update
                       & sudo apt-get install cuda-toolkit-$cudaVersionDash $(CIMAKESHIFT_CUDA_PACKAGES)
+                      echo "##vso[task.prependpath]/usr/local/cuda-$cudaVersion/bin"
                   }
                   #& ln -s /usr/bin/cmake $HOME/bin/cmake
                   #& ln -s /usr/bin/ctest $HOME/bin/ctest
