@@ -14,10 +14,11 @@
             "name": "compiler presets",
             "hidden": true,
             "environment": {
-                "_CFLAGS": "$penv{CFLAGS} $env{_PRESET_CFLAGS} $env{_USE_PRESET_WARN} $env{_USE_PRESET_WARNERR} $env{_USE_PRESET_ASAN} $env{_USE_PRESET_UBSAN} $env{_USE_PRESET_TSAN} $env{_USE_PRESET_STDLIB}",
-                "_CXXFLAGS": "$penv{CXXFLAGS} $env{_PRESET_CXXFLAGS} $env{_USE_PRESET_WARN} $env{_USE_PRESET_WARNERR} $env{_USE_PRESET_ASAN} $env{_USE_PRESET_UBSAN} $env{_USE_PRESET_TSAN} $env{_USE_PRESET_STDLIB} $env{_USE_PRESET_DEBUGCHECKS}",
+                "_CFLAGS": "$penv{CFLAGS} $env{_PRESET_CFLAGS} $env{_USE_PRESET_ASAN} $env{_USE_PRESET_UBSAN} $env{_USE_PRESET_TSAN} $env{_USE_PRESET_STDLIB}",
+                "_CXXFLAGS": "$penv{CXXFLAGS} $env{_PRESET_CXXFLAGS} $env{_USE_PRESET_ASAN} $env{_USE_PRESET_UBSAN} $env{_USE_PRESET_TSAN} $env{_USE_PRESET_STDLIB} $env{_USE_PRESET_DEBUGCHECKS}",
                 "CFLAGS": "$env{_CFLAGS}",
-                "CXXFLAGS": "$env{_CXXFLAGS}"
+                "CXXFLAGS": "$env{_CXXFLAGS}",
+                "MY_COMPILE_OPTIONS": "$env{_USE_PRESET_WARN};$env{_USE_PRESET_WARNERR}"
             }
         },
 
@@ -42,10 +43,10 @@
             "hidden": true,
             "inherits": "compiler presets",
             "environment": {
-                "_PRESET_CFLAGS": "/utf-8 /permissive-",
-                "_PRESET_CXXFLAGS": "/utf-8 /permissive-",
-                "_PRESET_WARN": "/W4 /w44062 /w44242 /w44254 /w44265",
-                "_PRESET_WARNERR": "/WX",
+                "_PRESET_CFLAGS": "/utf-8",
+                "_PRESET_CXXFLAGS": "/utf-8",
+                "_PRESET_WARN": "$<$<COMPILE_LANGUAGE:C,CXX>:/permissive->;$<$<COMPILE_LANGUAGE:C,CXX>:/W4>;$<$<COMPILE_LANGUAGE:C,CXX>:/w44062>;$<$<COMPILE_LANGUAGE:C,CXX>:/w44242>;$<$<COMPILE_LANGUAGE:C,CXX>:/w44254>;$<$<COMPILE_LANGUAGE:C,CXX>:/w44265>",
+                "_PRESET_WARNERR": "$<$<COMPILE_LANGUAGE:C,CXX>:/WX>",
                 "_PRESET_ASAN": "/fsanitize=address",
                 "_PRESET_UBSAN": "/fsanitize=undefined", // not currently supported
                 "_PRESET_TSAN": "/fsanitize=thread", // not currently supported
@@ -63,10 +64,10 @@
             "hidden": true,
             "inherits": "compiler presets",
             "environment": {
-                "_PRESET_CFLAGS": "/utf-8 /permissive-",
-                "_PRESET_CXXFLAGS": "/utf-8 /permissive-",
-                "_PRESET_WARN": "/W4 /w44062 /w44242 /w44254 /w44265",
-                "_PRESET_WARNERR": "/WX",
+                "_PRESET_CFLAGS": "/utf-8",
+                "_PRESET_CXXFLAGS": "/utf-8",
+                "_PRESET_WARN": "$<$<COMPILE_LANGUAGE:C,CXX>:/permissive->;$<$<COMPILE_LANGUAGE:C,CXX>:/W4>;$<$<COMPILE_LANGUAGE:C,CXX>:/w44062>;$<$<COMPILE_LANGUAGE:C,CXX>:/w44242>;$<$<COMPILE_LANGUAGE:C,CXX>:/w44254>;$<$<COMPILE_LANGUAGE:C,CXX>:/w44265>",
+                "_PRESET_WARNERR": "$<$<COMPILE_LANGUAGE:C,CXX>:/WX>",
                 "_PRESET_ASAN": "/fsanitize=address",
                 "_PRESET_UBSAN": "-fsanitize=undefined -fsanitize-trap=undefined -fsanitize=implicit-integer-arithmetic-value-change",
                 "_PRESET_TSAN": "-fsanitize=thread", // not currently supported
@@ -86,7 +87,7 @@
             "environment": {
                 "_PRESET_CFLAGS": "",
                 "_PRESET_CXXFLAGS": "",
-                "_PRESET_WARN": "-Wall -Wextra -pedantic",
+                "_PRESET_WARN": "-Wall;-Wextra;-pedantic",
                 "_PRESET_WARNERR": "-Werror",
                 "_PRESET_ASAN": "-fsanitize=address -fno-omit-frame-pointer",
                 "_PRESET_UBSAN": "-fsanitize=undefined -fno-omit-frame-pointer -fsanitize-undefined-trap-on-error",
@@ -102,7 +103,7 @@
             "environment": {
                 "_PRESET_CFLAGS": "",
                 "_PRESET_CXXFLAGS": "",
-                "_PRESET_WARN": "-Wall -Wextra -pedantic",
+                "_PRESET_WARN": "-Wall;-Wextra;-pedantic",
                 "_PRESET_WARNERR": "-Werror",
                 "_PRESET_ASAN": "-fsanitize=address -fno-omit-frame-pointer",
                 "_PRESET_UBSAN": "-fsanitize=undefined -fno-omit-frame-pointer -fsanitize-trap=undefined -fsanitize=implicit-integer-arithmetic-value-change",
@@ -174,7 +175,7 @@
         {
             "name": "force MSVC",
             "hidden": true,
-            "inherits":  "MSVC presets",
+            "inherits": "MSVC presets",
             "environment": {
                 "CC": "cl",
                 "CXX": "cl"

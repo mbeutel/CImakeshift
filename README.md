@@ -2,9 +2,9 @@
 
 [![Build Status](https://dev.azure.com/moritzbeutel/CImakeshift/_apis/build/status/mbeutel.CImakeshift?branchName=master)](https://dev.azure.com/moritzbeutel/CImakeshift/_build/latest?definitionId=7&branchName=master)
 
-*CImakeshift* is a meant to be a collection of templates for continuous integration (CI). Currently, it contains a template for
-continuous integration testing of C++ code with [Azure Pipelines](https://azure.microsoft.com/en-us/products/devops/pipelines/)
-using [Vcpkg](https://vcpkg.io/) for dependency management.
+*CImakeshift* is a collection of templates for continuous integration (CI). Currently, it contains a template for continuous
+integration testing of C++ code with [Azure Pipelines](https://azure.microsoft.com/en-us/products/devops/pipelines/) using
+[Vcpkg](https://vcpkg.io/) for dependency management.
 
 This template supports compilation of C and C++ code with MSVC, GCC, Clang, and CUDA code with NVCC.
 (Note that CUDA code can only be compiled, not executed, when running on Microsoft-hosted agents because they do not come with
