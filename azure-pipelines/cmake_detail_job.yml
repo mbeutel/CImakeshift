@@ -73,7 +73,7 @@ jobs:
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'AppleClang'), or(eq(cxxCompilerVersion, '14'), eq(cxxCompilerVersion, '14_0'), eq(cxxCompilerVersion, '14_0_0'), eq(cxxCompilerVersion, '14_0_3'))) }}:
               vmImage: 'macOS-13'
             ${{ if and(eq(parameters.os, 'MacOS'), eq(parameters.cxxCompiler, 'GCC'), ge(cxxCompilerVersion, '10')) }}:
-              vmImage: 'macOS-14'
+              vmImage: 'macOS-15'
           steps:
           - pwsh: |
               New-Item -Type Directory -Force '$(Build.BinariesDirectory)/_CImakeshift_files'
@@ -542,7 +542,7 @@ jobs:
                           & wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key | & sudo apt-key add -
                       }
                       & sudo apt-get update
-                      & sudo apt-get install clang-$(CIMAKESHIFT_CLANG_FULL_VERSION_)
+                      & sudo apt-get install clang-$(CIMAKESHIFT_CLANG_FULL_VERSION_) clang-tidy-$(CIMAKESHIFT_CLANG_FULL_VERSION_) lld-$(CIMAKESHIFT_CLANG_FULL_VERSION_) clang-tools-$(CIMAKESHIFT_CLANG_FULL_VERSION_) libc++-$(CIMAKESHIFT_CLANG_FULL_VERSION_)-dev libc++abi-$(CIMAKESHIFT_CLANG_FULL_VERSION_)-dev libomp-$(CIMAKESHIFT_CLANG_FULL_VERSION_)-dev
                   }
                   if ('$(CIMAKESHIFT_CUDA_COMPILER)' -and '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -ne 'None') {
                       $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
