@@ -16,7 +16,6 @@
             "hidden": true,
             "inherits": "defaults",
             "cacheVariables": {
-                // Project-specific settings
                 "BUILD_TESTING": "ON"
             }
         },
@@ -25,7 +24,6 @@
             "hidden": true,
             "inherits": "defaults",
             "cacheVariables": {
-                // Project-specific settings
                 "BUILD_TESTING": "ON"
             }
         },
