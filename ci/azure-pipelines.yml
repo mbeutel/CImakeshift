@@ -51,19 +51,19 @@ jobs:
 
     - os: Windows
       cxxCompiler: MSVC
-      cxxCompilerVersions: [19_2, 19_3]
+      cxxCompilerVersions: [19_3, 19_5]
       platforms: [x86, x64]
 
     - os: Windows
       cxxCompiler: Clang
-      cxxCompilerVersions: [VS2019, VS2022]
+      cxxCompilerVersions: [VS2022, VS2026]
       platforms: [x86, x64]
 
     - os: Windows
       cxxCompiler: MSVC
-      cxxCompilerVersions: [19_3]
+      cxxCompilerVersions: [19_5]
       cudaCompiler: NVCC
-      cudaCompilerVersions: [12_8]
+      cudaCompilerVersions: [13_1]
       platforms: [x64]
       vcpkgPackages: ['<vcpkgPackages>', 'catch2']
       cudaPackages: ['nvrtc-dev']
@@ -109,7 +109,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [19]
+      cxxCompilerVersions: [21]
       cxxStandardLibrary: libstdc++
       cxxStandardLibraryDebugMode: true
       cxxSanitizers: [AddressSanitizer, UndefinedBehaviorSanitizer, ImplicitIntegerArithmeticValueChange]
@@ -144,7 +144,7 @@ jobs:
 
     - os: MacOS
       cxxCompiler: AppleClang
-      cxxCompilerVersions: [14, 16]
+      cxxCompilerVersions: [14, 17]
       platforms: [x64]
 
 - template: azure-pipelines/cmake.yml@CImakeshift
@@ -159,7 +159,7 @@ jobs:
 
     - os: Windows
       cxxCompiler: MSVC
-      cxxCompilerVersions: [19_3]
+      cxxCompilerVersions: [19_5]
       platforms: [x64]
       cmakeConfigPreset: 'ci-msvc'
 
@@ -177,7 +177,7 @@ jobs:
 
     - os: Linux
       cxxCompiler: Clang
-      cxxCompilerVersions: [19]
+      cxxCompilerVersions: [21]
       platforms: [x64]
       cmakeConfigPreset: 'ci-clang'
 

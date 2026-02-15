@@ -56,10 +56,10 @@ jobs:
           displayName: '${{ replace(replace(replace(format(''<_captionBegin_>{0}<_captionEnd_>'', parameters.caption), ''<_captionBegin_><_captionEnd_>'', ''''), ''<_captionBegin_>'', ''''), ''<_captionEnd_>'', '': '') }}${{ parameters.os }} ${{ platform }}, ${{ parameters.cxxCompiler }} ${{ replace(cxxCompilerVersion, ''_'', ''.'') }}${{ replace(replace(format(''<_cudaCompiler_>{0}'', replace(cudaCompilerVersion, ''_'', ''.'')), ''<_cudaCompiler_>None'', ''''), ''<_cudaCompiler_>'', format('', {0} '', parameters.cudaCompiler)) }}, ${{ join(''+'', parameters.cmakeBuildConfigurations) }}${{ replace(replace(replace(format(''<_tagBegin_>{0}<_tagEnd_>'', parameters.tag), ''<_tagBegin_><_tagEnd_>'', ''''), ''<_tagBegin_>'', '', ''), ''<_tagEnd_>'', '''') }}'
           pool:
             name: Azure Pipelines
+            ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2026')), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, 'VS2026'), eq(cxxCompilerVersion, '19_5'))))) }}:
+              vmImage: 'windows-2025-VS2026'
             ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2022')), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, 'VS2022'), eq(cxxCompilerVersion, '19_3'))))) }}:
-              vmImage: 'windows-2022'
-            ${{ if and(eq(parameters.os, 'Windows'), or(and(eq(parameters.cxxCompiler, 'Clang'), eq(cxxCompilerVersion, 'VS2019')), and(eq(parameters.cxxCompiler, 'MSVC'), or(eq(cxxCompilerVersion, 'VS2019'), eq(cxxCompilerVersion, '19_2'))))) }}:
-              vmImage: 'windows-2019'
+              vmImage: 'windows-2025'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(13, cxxCompilerVersion)))) }}:
               vmImage: 'ubuntu-24.04'
             ${{ if and(eq(parameters.os, 'Linux'), or(and(eq(parameters.cxxCompiler, 'GCC'), lt(8, cxxCompilerVersion), ge(10, cxxCompilerVersion)), and(eq(parameters.cxxCompiler, 'Clang'), lt(5, cxxCompilerVersion), ge(13, cxxCompilerVersion)))) }}:
@@ -272,15 +272,15 @@ jobs:
                       echo "##vso[task.setvariable variable=CC]cl.exe"
                       echo "##vso[task.setvariable variable=CXX]cl.exe"
                       $msvcOrVSVersion_msvcVersion = @{
-                          '19_2'   = '19_2'
-                          'VS2019' = '19_2'
                           '19_3'   = '19_3'
                           'VS2022' = '19_3'
+                          '19_5'   = '19_5'
+                          'VS2026' = '19_5'
                       }
                       $cxxCompilerVersion = $msvcOrVSVersion_msvcVersion[$cxxCompilerVersion]
                       $msvcVersion_msbuildGenerator = @{
-                          '19_2' = 'Visual Studio 16 2019'
                           '19_3' = 'Visual Studio 17 2022'
+                          '19_5' = 'Visual Studio 18 2026'
                       }
                       $msbuildGenerator = $msvcVersion_msbuildGenerator[$cxxCompilerVersion]
                       $defaultCmakeGenerator = 'Ninja'
@@ -302,10 +302,10 @@ jobs:
                           echo '##vso[task.setvariable variable=CFLAGS]-m64'
                           echo '##vso[task.setvariable variable=CXXFLAGS]-m64'
                       }
-                      if ('${{ cxxCompilerVersion }}' -eq 'VS2019') {
-                        $msbuildGenerator = 'Visual Studio 16 2019'
+                      if ('${{ cxxCompilerVersion }}' -eq '19_5') {
+                        $msbuildGenerator = 'Visual Studio 18 2026'
                       }
-                      else {
+                      elseif ('${{ cxxCompilerVersion }}' -eq '19_3') {
                         $msbuildGenerator = 'Visual Studio 17 2022'
                       }
                       $defaultCmakeGenerator = 'Ninja'
@@ -489,15 +489,6 @@ jobs:
                   if ('$(CIMAKESHIFT_CUDA_COMPILER)' -and '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -ne 'None') {
                       $cudaVersion = '$(CIMAKESHIFT_CUDA_COMPILER_VERSION)' -replace '_','.'
                       $cudaVersion_URL = @{
-                          '11.0' = 'http://developer.download.nvidia.com/compute/cuda/11.0.2/network_installers/cuda_11.0.2_win10_network.exe'
-                          '11.1' = 'http://developer.download.nvidia.com/compute/cuda/11.1.1/network_installers/cuda_11.1.1_win10_network.exe'
-                          '11.2' = 'http://developer.download.nvidia.com/compute/cuda/11.2.1/network_installers/cuda_11.2.1_win10_network.exe'
-                          '11.3' = 'https://developer.download.nvidia.com/compute/cuda/11.3.1/network_installers/cuda_11.3.1_win10_network.exe'
-                          '11.4' = 'https://developer.download.nvidia.com/compute/cuda/11.4.2/network_installers/cuda_11.4.2_win10_network.exe'
-                          '11.5' = 'https://developer.download.nvidia.com/compute/cuda/11.5.2/network_installers/cuda_11.5.2_windows_network.exe'
-                          '11.6' = 'https://developer.download.nvidia.com/compute/cuda/11.6.2/network_installers/cuda_11.6.2_windows_network.exe'
-                          '11.7' = 'https://developer.download.nvidia.com/compute/cuda/11.7.1/network_installers/cuda_11.7.1_windows_network.exe'
-                          '11.8' = 'https://developer.download.nvidia.com/compute/cuda/11.8.0/network_installers/cuda_11.8.0_windows_network.exe'
                           '12.0' = 'https://developer.download.nvidia.com/compute/cuda/12.0.1/network_installers/cuda_12.0.1_windows_network.exe'
                           '12.1' = 'https://developer.download.nvidia.com/compute/cuda/12.1.1/network_installers/cuda_12.1.1_windows_network.exe'
                           '12.2' = 'https://developer.download.nvidia.com/compute/cuda/12.2.2/network_installers/cuda_12.2.2_windows_network.exe'
@@ -506,7 +497,8 @@ jobs:
                           '12.5' = 'https://developer.download.nvidia.com/compute/cuda/12.5.1/network_installers/cuda_12.5.1_windows_network.exe'
                           '12.6' = 'https://developer.download.nvidia.com/compute/cuda/12.6.2/network_installers/cuda_12.6.2_windows_network.exe'
                           '12.8' = 'https://developer.download.nvidia.com/compute/cuda/12.8.1/network_installers/cuda_12.8.1_windows_network.exe'
-                          '12.9' = 'https://developer.download.nvidia.com/compute/cuda/12.9.0/network_installers/cuda_12.9.0_windows_network.exe'
+                          '12.9' = 'https://developer.download.nvidia.com/compute/cuda/12.9.1/network_installers/cuda_12.9.1_windows_network.exe'
+                          '13.1' = 'https://developer.download.nvidia.com/compute/cuda/13.1.1/network_installers/cuda_13.1.1_windows_network.exe'
                       }
                       Invoke-WebRequest $cudaVersion_URL[$cudaVersion] -OutFile "$HOME/cuda_installer_network.exe"
                       Write-Host "[CImakeshift] Installing CUDA packages $env:CIMAKESHIFT_CUDA_PACKAGES"
@@ -576,7 +568,7 @@ jobs:
                   }
                   & brew install pkg-config
               }
-              $ninjaVersion = '1.12.1'
+              $ninjaVersion = '1.13.1'
               Invoke-WebRequest "https://github.com/ninja-build/ninja/releases/download/v${ninjaVersion}/ninja-$ninjaOS.zip" -OutFile "$HOME/ninja-$ninjaOS.zip"
               Expand-Archive -LiteralPath "$HOME/ninja-$ninjaOS.zip" -DestinationPath "$HOME/bin"
               if (-not $IsWindows) {
