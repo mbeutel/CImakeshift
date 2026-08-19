@@ -288,6 +288,10 @@ jobs:
                       $llvmRoot = Join-Path $vsPath 'VC\Tools\Llvm\bin'
                       $extraPath = "$llvmRoot;$extraPath"
                       $clangClPath = "$llvmRoot\clang-cl.exe"
+                      if (-not (Test-Path $clangClPath)) {
+                          echo "ERROR: cannot find clang-cl; VS path: $vsPath; tree:"
+                          & $env:ComSpec /C TREE $vsPath
+                      }
                       echo "##vso[task.setvariable variable=CC]$clangClPath"
                       echo "##vso[task.setvariable variable=CXX]$clangClPath"
                       if ('${{ platform }}' -eq 'x86') {
