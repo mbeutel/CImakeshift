@@ -285,7 +285,7 @@ jobs:
                   }
                   elseif ('${{ parameters.cxxCompiler }}' -eq 'Clang') {
                       $vsPath = &"${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"  -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-                      $llvmRoot = Join-Path $vsPath 'VC\Tools\Llvm\bin'
+                      $llvmRoot = Join-Path $vsPath 'VC\Tools\Llvm\x64\bin'
                       $extraPath = "$llvmRoot;$extraPath"
                       $clangClPath = "$llvmRoot\clang-cl.exe"
                       if (-not (Test-Path $clangClPath)) {
